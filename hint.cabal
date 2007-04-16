@@ -1,0 +1,11 @@
+Name:                hint
+Version:             0.1
+Description:         Runtime Haskell interpreter based on the GHC API
+License:             BSD3
+License-file:        LICENSE
+Author:              Daniel Gorin
+Maintainer:          dgorin@dc.uba.ar
+Build-Depends:       base, haskell-src, ghc, mtl
+Exposed-modules:     Language.Haskell.Interpreter.GHC
+ghc-options:         -Wall -O
+hs-source-dirs:      src
