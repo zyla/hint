@@ -21,11 +21,11 @@ module Language.Haskell.Interpreter.GHC(
     --
     TypeChecked,
     typeChecks,
-    typeCheck,
+    typeCheck, as, infer,
     typeOf,
     --
-    compile,
-    eval)
+    interpret,
+    eval, eval_)
 
 where
 
@@ -123,14 +123,25 @@ typeOf expr =
 typeChecks :: String -> Interpreter Bool
 typeChecks expr = (typeOf expr >> return True) `catchError` \_ -> return False
 
--- | Attempts to verify that expr has (monomorphic) type a
-typeCheck :: Typeable a => String -> Interpreter (TypeChecked String a)
-typeCheck expr = typeOf expr >> return (TypeChecked expr)
+-- | Attempts to verify that expr has (monomorphic) type a, given a witness for
+-- the monomorphism of a
+typeCheck :: Typeable a => String -> a -> Interpreter (TypeChecked String a)
+typeCheck expr witness = liftIO (putStrLn expr_typesig) >> typeOf expr_typesig >> return (TypeChecked expr_typesig)
+    where expr_typesig = concat ["(", expr, ") :: ", show $ Data.Typeable.typeOf witness]
+
+-- | Convenience functions to be used with typeCheck to provide witnesses. Example:
+--
+--   typeCheck \"head [True,False]\" (as :: Bool)
+--
+--   typeCheck \"head $ map show [True,False]\" infer >>= interpret >>= flip typeCheck (as :: Bool) >>= interpret
+as, infer :: Typeable a => a
+as    = undefined
+infer = undefined
 
 -- | Evaluates an expression whose (monomorphic) type has been typechecked to be a, into a value of type a.
 -- Use with care: a must be monomorphic!
-compile :: TypeChecked String a -> Interpreter a
-compile (TypeChecked expr) =
+interpret :: TypeChecked String a -> Interpreter a
+interpret (TypeChecked expr) =
     do
         ghcSession <- getGhcSession
         --
@@ -143,7 +154,11 @@ compile (TypeChecked expr) =
 --
 -- TODO Load package base, if necessary
 eval :: Show a => TypeChecked String a -> Interpreter String
-eval (TypeChecked expr) = compile =<< typeCheck show_expr
+eval (TypeChecked expr) = eval_ expr
+
+-- | Evaluate show expr. Succeeds only if expr has type t and there is a Show instance for t
+eval_ :: String -> Interpreter String
+eval_ expr = interpret =<< typeCheck show_expr (as :: String)
     where show_expr = unwords ["Prelude.show", "(", expr, ") "]
 
 -- useful when debugging...
