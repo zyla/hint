@@ -117,7 +117,9 @@ typeOf expr =
         maybe_ty <- liftIO $ GHC.exprType ghcSession expr
         case maybe_ty of
             Nothing -> throwError $ TypeCheckingFailed "No error message available... yet!"
-            Just ty -> return $ ghc2hs (GHC.dropForAlls ty)
+            Just ty -> do
+                           unqual <- liftIO $ GHC.getPrintUnqual ghcSession
+                           return $ ghc2hs (GHC.dropForAlls ty, unqual)
 
 -- | Tests if the expression type checks
 typeChecks :: String -> Interpreter Bool
