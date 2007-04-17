@@ -18,8 +18,13 @@ module Language.Haskell.Interpreter.GHC(
     --
     Interpreter, withSession,
     loadPrelude,
-    typeOf,
+    --
+    TypeChecked,
     typeChecks,
+    typeCheck,
+    typeOf,
+    --
+    compile,
     eval)
 
 where
@@ -31,10 +36,12 @@ import qualified GHC.Exts(unsafeCoerce#)
 
 import Language.Haskell.Syntax(HsQualType)
 
-import Control.Monad(when)
 import Control.Monad.Trans(MonadIO(liftIO))
 import Control.Monad.Reader(ReaderT, ask, runReaderT)
 import Control.Monad.Error(Error(..), MonadError(..), ErrorT, runErrorT)
+
+import Data.Typeable(Typeable)
+import qualified Data.Typeable(typeOf)
 
 import Language.Haskell.Interpreter.GHC.Conversions(GhcToHs(ghc2hs))
 
@@ -61,7 +68,6 @@ withSession s i = runErrorT $ runReaderT (unInterpreter i) s
 
 data InterpreterError = SomeError String
                       | TypeCheckingFailed String
-                      | NoShowInstance HsQualType
                       deriving(Eq, Show)
 
 instance Error InterpreterError where
@@ -96,6 +102,12 @@ loadPrelude =
                                          (GHC.mkModuleName "Prelude")
         liftIO $ GHC.setContext ghcSession [] [preludeModule]
 
+-- | An expression that has been typechecked, along with its (phantom) type
+newtype TypeChecked expr t = TypeChecked expr
+
+instance Typeable a => Show (TypeChecked String a) where
+    show (TypeChecked s) = concat ["TypeChecked (", s, ") :: ", show $ Data.Typeable.typeOf (undefined :: a)]
+
 -- | Returns an abstract syntax tree of the type of the expression
 typeOf :: String -> Interpreter HsQualType
 typeOf expr =
@@ -111,30 +123,28 @@ typeOf expr =
 typeChecks :: String -> Interpreter Bool
 typeChecks expr = (typeOf expr >> return True) `catchError` \_ -> return False
 
--- | Evaluates the expression using Show (thus, it must be an instance of Show)
-eval :: String -> Interpreter String
-eval expr =
-    do
-        -- if this fails, expr doesn't compile. we just propagate the exception
-        expr_type <- typeOf expr
-        --
-        let show_expr = unwords ["Prelude.show", "(", expr, ") "]
-        hasShowInstance <- typeChecks show_expr
-        when (not hasShowInstance) $
-            throwError $ NoShowInstance expr_type
-        --
-        show_expr_val <- compileExpr show_expr
-        return show_expr_val
+-- | Attempts to verify that expr has (monomorphic) type a
+typeCheck :: Typeable a => String -> Interpreter (TypeChecked String a)
+typeCheck expr = typeOf expr >> return (TypeChecked expr)
 
-compileExpr :: String -> Interpreter a
-compileExpr expr =
+-- | Evaluates an expression whose (monomorphic) type has been typechecked to be a, into a value of type a.
+-- Use with care: a must be monomorphic!
+compile :: TypeChecked String a -> Interpreter a
+compile (TypeChecked expr) =
     do
         ghcSession <- getGhcSession
         --
         maybe_expr_val <- liftIO $ GHC.compileExpr ghcSession expr
         case maybe_expr_val of
-            Nothing       -> throwError $ TypeCheckingFailed (unwords ["compileExpr", expr])
+            Nothing       -> fail (unwords ["compilation of typechecked expression failed:", expr])
             Just expr_val -> return (GHC.Exts.unsafeCoerce# expr_val :: a)
+
+-- | Evaluates a typechecked expression whose using Show (thus, it must be an instance of Show)
+--
+-- TODO Load package base, if necessary
+eval :: Show a => TypeChecked String a -> Interpreter String
+eval (TypeChecked expr) = compile =<< typeCheck show_expr
+    where show_expr = unwords ["Prelude.show", "(", expr, ") "]
 
 -- useful when debugging...
 -- mySession = newSession "/opt/local/lib/ghc-6.6"
