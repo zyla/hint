@@ -19,19 +19,16 @@ module Language.Haskell.Interpreter.GHC(
     Interpreter, withSession,
     loadPrelude,
     --
-    TypeChecked,
-    typeChecks,
-    typeCheck, as, infer,
-    typeOf,
+    typeChecks, typeOf,
     --
-    interpret,
-    eval, eval_)
+    interpret, as, infer,
+    eval)
 
 where
 
 import qualified GHC
 import qualified PackageConfig as GHC.P(stringToPackageId)
-import qualified Outputable    as GHC.O(Outputable(ppr), PprStyle, showSDoc)
+import qualified Outputable    as GHC.O(Outputable(ppr), PprStyle, withPprStyle, showSDoc)
 import qualified SrcLoc        as GHC.S(SrcSpan)
 import qualified ErrUtils      as GHC.E(Message)
 
@@ -111,11 +108,11 @@ newSession ghcRoot =
         return $ InterpreterSession ghcSessionMV ghcErrListRef
 
 mkLogHandler :: IORef [GhcError] -> (GHC.Severity -> GHC.S.SrcSpan -> GHC.O.PprStyle -> GHC.E.Message -> IO ())
-mkLogHandler r sev src _ msg = modifyIORef r (errorEntry :)
+mkLogHandler r sev src style msg = modifyIORef r (errorEntry :)
     where errorEntry = unlines ["GHC ERROR:",
                                 showSev sev,
-                                GHC.O.showSDoc $ GHC.O.ppr src,
-                                GHC.O.showSDoc msg]
+                                GHC.O.showSDoc . GHC.O.withPprStyle style $ GHC.O.ppr src,
+                                GHC.O.showSDoc . GHC.O.withPprStyle style $ msg]
           showSev GHC.SevInfo    = "SevInfo"
           showSev GHC.SevWarning = "SevWarning"
           showSev GHC.SevError   = "SevError"
@@ -138,12 +135,6 @@ loadPrelude =
                                          (GHC.mkModuleName "Prelude")
         liftIO $ GHC.setContext ghcSession [] [preludeModule]
 
--- | An expression that has been typechecked, along with its (phantom) type
-newtype TypeChecked expr t = TypeChecked expr
-
-instance Typeable a => Show (TypeChecked String a) where
-    show (TypeChecked s) = concat ["TypeChecked (", s, ") :: ", show $ Data.Typeable.typeOf (undefined :: a)]
-
 -- | Returns an abstract syntax tree of the type of the expression
 typeOf :: String -> Interpreter HsQualType
 typeOf expr =
@@ -160,41 +151,29 @@ typeOf expr =
 typeChecks :: String -> Interpreter Bool
 typeChecks expr = (typeOf expr >> return True) `catchError` \_ -> return False
 
--- | Attempts to verify that expr has (monomorphic) type a, given a witness for
--- the monomorphism of a
-typeCheck :: Typeable a => String -> a -> Interpreter (TypeChecked String a)
-typeCheck expr witness = liftIO (putStrLn expr_typesig) >> typeOf expr_typesig >> return (TypeChecked expr_typesig)
-    where expr_typesig = concat ["(", expr, ") :: ", show $ Data.Typeable.typeOf witness]
-
 -- | Convenience functions to be used with typeCheck to provide witnesses. Example:
 --
---   typeCheck \"head [True,False]\" (as :: Bool)
+--   interpret \"head [True,False]\" (as :: Bool)
 --
---   typeCheck \"head $ map show [True,False]\" infer >>= interpret >>= flip typeCheck (as :: Bool) >>= interpret
+--
 as, infer :: Typeable a => a
 as    = undefined
 infer = undefined
 
--- | Evaluates an expression whose (monomorphic) type has been typechecked to be a, into a value of type a.
--- Use with care: a must be monomorphic!
-interpret :: TypeChecked String a -> Interpreter a
-interpret (TypeChecked expr) =
+-- | Evaluates an expression, given a witness for its monomorphic type.
+interpret :: Typeable a => String -> a -> Interpreter a
+interpret expr witness =
     do
         ghcSession <- getGhcSession
         --
-        expr_val <- mayFail $ GHC.compileExpr ghcSession expr
+        let expr_typesig = concat ["(", expr, ") :: ", show $ Data.Typeable.typeOf witness]
+        expr_val <- mayFail $ GHC.compileExpr ghcSession expr_typesig
         --
         return (GHC.Exts.unsafeCoerce# expr_val :: a)
 
--- | Evaluates a typechecked expression whose using Show (thus, it must be an instance of Show)
---
--- TODO Load package base, if necessary
-eval :: Show a => TypeChecked String a -> Interpreter String
-eval (TypeChecked expr) = eval_ expr
-
 -- | Evaluate show expr. Succeeds only if expr has type t and there is a Show instance for t
-eval_ :: String -> Interpreter String
-eval_ expr = interpret =<< typeCheck show_expr (as :: String)
+eval :: String -> Interpreter String
+eval expr = interpret show_expr (as :: String)
     where show_expr = unwords ["Prelude.show", "(", expr, ") "]
 
 mayFail :: IO (Maybe a) -> Interpreter a
