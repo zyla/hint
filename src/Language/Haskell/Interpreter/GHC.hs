@@ -36,7 +36,7 @@ import qualified GHC.Exts(unsafeCoerce#)
 
 import Language.Haskell.Syntax(HsQualType)
 
-import Control.Monad.Trans(MonadIO(liftIO), lift)
+import Control.Monad.Trans(MonadIO(liftIO))
 import Control.Monad.Reader(ReaderT, ask, runReaderT)
 import Control.Monad.Error(Error(..), MonadError(..), ErrorT, runErrorT)
 
@@ -48,9 +48,7 @@ import qualified Data.Typeable(typeOf)
 
 import Language.Haskell.Interpreter.GHC.Conversions(GhcToHs(ghc2hs))
 
-newtype Interpreter a = Interpreter{unInterpreter :: ReaderT GHC.Session
-                                                     ((ReaderT InterpreterSession)
-                                                     (ErrorT  InterpreterError IO)) a}
+newtype Interpreter a = Interpreter{unInterpreter :: ReaderT SessionState (ErrorT  InterpreterError IO) a}
 
 instance Monad Interpreter where
     return  = Interpreter . return
@@ -69,8 +67,8 @@ instance MonadError InterpreterError Interpreter where
 -- | Executes the interpreter using a given session. This is a thread-safe operation,
 -- if the InterpreterSession is in-use, the call will block until the other one finishes.
 withSession :: InterpreterSession -> Interpreter a -> IO (Either InterpreterError a)
-withSession s i = withMVar (theGhcSessionMV s) $ \ghcSession ->
-    runErrorT . flip runReaderT s . flip runReaderT ghcSession $ unInterpreter i
+withSession s i = withMVar (sessionState s) $ \ss ->
+    runErrorT . flip runReaderT ss $ unInterpreter i
 
 
 data InterpreterError = SomeError String
@@ -81,8 +79,13 @@ instance Error InterpreterError where
     noMsg  = SomeError ""
     strMsg = SomeError
 
-data InterpreterSession = InterpreterSession{theGhcSessionMV  :: MVar GHC.Session,
-                                             theGhcErrListRef :: IORef [GhcError]}
+-- I'm assuming operations on a ghcSession are not thread-safe. Besides, we need to
+-- be sure that messages captured by the log handler correspond to a single operation.
+-- Hence, we put the whole state on an MVar, and synchronize on it
+newtype InterpreterSession = InterpreterSession {sessionState :: MVar SessionState}
+
+data SessionState = SessionState{theGhcSession    :: GHC.Session,
+                                 theGhcErrListRef :: IORef [GhcError]}
 
 type GhcError = String
 
@@ -92,10 +95,6 @@ newSession ghcRoot =
     do
         ghcSession <- GHC.newSession GHC.Interactive $ Just ghcRoot
         --
-        -- I'm assuming operations on a ghcSession are not thread-safe. Besides, we need to
-        -- be sure that messages captured by the log handler correspond to a single operation.
-        -- Hence, we put the session on an MVar, and synchronize on it
-        ghcSessionMV  <- newMVar ghcSession
         ghcErrListRef <- newIORef []
         --
         -- set HscTarget to HscInterpreted (must be done manually, default is HsAsm!)
@@ -105,7 +104,7 @@ newSession ghcRoot =
                              GHC.log_action = mkLogHandler ghcErrListRef}
         GHC.setSessionDynFlags ghcSession myFlags
         --
-        return $ InterpreterSession ghcSessionMV ghcErrListRef
+        return . InterpreterSession =<< newMVar (SessionState ghcSession ghcErrListRef)
 
 mkLogHandler :: IORef [GhcError] -> (GHC.Severity -> GHC.S.SrcSpan -> GHC.O.PprStyle -> GHC.E.Message -> IO ())
 mkLogHandler r sev src style msg = modifyIORef r (errorEntry :)
@@ -120,10 +119,10 @@ mkLogHandler r sev src style msg = modifyIORef r (errorEntry :)
 
 
 getGhcSession :: Interpreter GHC.Session
-getGhcSession = Interpreter ask
+getGhcSession = Interpreter $ fmap theGhcSession ask
 
 getGhcErrListRef :: Interpreter (IORef [GhcError])
-getGhcErrListRef = fmap theGhcErrListRef $ Interpreter (lift ask)
+getGhcErrListRef = Interpreter $ fmap theGhcErrListRef ask
 
 -- | By default, no module is loaded. Use this function to load the standard Prelude
 loadPrelude :: Interpreter ()
