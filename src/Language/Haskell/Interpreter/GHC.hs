@@ -14,7 +14,7 @@
 module Language.Haskell.Interpreter.GHC(
     InterpreterSession, newSession,
     --
-    InterpreterError(..),
+    InterpreterError(..), GhcError,
     --
     Interpreter, withSession,
     loadPrelude,
@@ -30,22 +30,30 @@ module Language.Haskell.Interpreter.GHC(
 where
 
 import qualified GHC
-import qualified PackageConfig(stringToPackageId)
+import qualified PackageConfig as GHC.P(stringToPackageId)
+import qualified Outputable    as GHC.O(Outputable(ppr), PprStyle, showSDoc)
+import qualified SrcLoc        as GHC.S(SrcSpan)
+import qualified ErrUtils      as GHC.E(Message)
 
 import qualified GHC.Exts(unsafeCoerce#)
 
 import Language.Haskell.Syntax(HsQualType)
 
-import Control.Monad.Trans(MonadIO(liftIO))
+import Control.Monad.Trans(MonadIO(liftIO), lift)
 import Control.Monad.Reader(ReaderT, ask, runReaderT)
 import Control.Monad.Error(Error(..), MonadError(..), ErrorT, runErrorT)
+
+import Control.Concurrent.MVar(MVar, newMVar, withMVar)
+import Data.IORef(IORef, newIORef, modifyIORef, atomicModifyIORef)
 
 import Data.Typeable(Typeable)
 import qualified Data.Typeable(typeOf)
 
 import Language.Haskell.Interpreter.GHC.Conversions(GhcToHs(ghc2hs))
 
-newtype Interpreter a = Interpreter{unInterpreter :: ReaderT InterpreterSession (ErrorT InterpreterError IO) a}
+newtype Interpreter a = Interpreter{unInterpreter :: ReaderT GHC.Session
+                                                     ((ReaderT InterpreterSession)
+                                                     (ErrorT  InterpreterError IO)) a}
 
 instance Monad Interpreter where
     return  = Interpreter . return
@@ -61,20 +69,25 @@ instance MonadError InterpreterError Interpreter where
     throwError  = Interpreter . throwError
     catchError (Interpreter m) catchE = Interpreter (catchError m (\e -> unInterpreter $ catchE e))
 
--- | Executes the interpreter using a given session
+-- | Executes the interpreter using a given session. This is a thread-safe operation,
+-- if the InterpreterSession is in-use, the call will block until the other one finishes.
 withSession :: InterpreterSession -> Interpreter a -> IO (Either InterpreterError a)
-withSession s i = runErrorT $ runReaderT (unInterpreter i) s
+withSession s i = withMVar (theGhcSessionMV s) $ \ghcSession ->
+    runErrorT . flip runReaderT s . flip runReaderT ghcSession $ unInterpreter i
 
 
 data InterpreterError = SomeError String
-                      | TypeCheckingFailed String
+                      | TypeCheckingFailed [GhcError]
                       deriving(Eq, Show)
 
 instance Error InterpreterError where
     noMsg  = SomeError ""
     strMsg = SomeError
 
-newtype InterpreterSession = InterpreterSession{theGhcSession :: GHC.Session}
+data InterpreterSession = InterpreterSession{theGhcSessionMV  :: MVar GHC.Session,
+                                             theGhcErrListRef :: IORef [GhcError]}
+
+type GhcError = String
 
 -- | Builds new session, given the path to a GHC installation (e.g. \/opt\/local\/lib\/ghc-6.6)
 newSession :: FilePath -> IO InterpreterSession
@@ -82,15 +95,38 @@ newSession ghcRoot =
     do
         ghcSession <- GHC.newSession GHC.Interactive $ Just ghcRoot
         --
+        -- I'm assuming operations on a ghcSession are not thread-safe. Besides, we need to
+        -- be sure that messages captured by the log handler correspond to a single operation.
+        -- Hence, we put the session on an MVar, and synchronize on it
+        ghcSessionMV  <- newMVar ghcSession
+        ghcErrListRef <- newIORef []
+        --
         -- set HscTarget to HscInterpreted (must be done manually, default is HsAsm!)
         -- setSessionDynFlags loads info on packages availables. Call is mandatory!
         dflags <- GHC.getSessionDynFlags ghcSession
-        GHC.setSessionDynFlags ghcSession dflags{GHC.hscTarget=GHC.HscInterpreted}
+        let myFlags = dflags{GHC.hscTarget  = GHC.HscInterpreted,
+                             GHC.log_action = mkLogHandler ghcErrListRef}
+        GHC.setSessionDynFlags ghcSession myFlags
         --
-        return $ InterpreterSession ghcSession
+        return $ InterpreterSession ghcSessionMV ghcErrListRef
+
+mkLogHandler :: IORef [GhcError] -> (GHC.Severity -> GHC.S.SrcSpan -> GHC.O.PprStyle -> GHC.E.Message -> IO ())
+mkLogHandler r sev src _ msg = modifyIORef r (errorEntry :)
+    where errorEntry = unlines ["GHC ERROR:",
+                                showSev sev,
+                                GHC.O.showSDoc $ GHC.O.ppr src,
+                                GHC.O.showSDoc msg]
+          showSev GHC.SevInfo    = "SevInfo"
+          showSev GHC.SevWarning = "SevWarning"
+          showSev GHC.SevError   = "SevError"
+          showSev GHC.SevFatal   = "SevFatal"
+
 
 getGhcSession :: Interpreter GHC.Session
-getGhcSession = fmap theGhcSession $ Interpreter ask
+getGhcSession = Interpreter ask
+
+getGhcErrListRef :: Interpreter (IORef [GhcError])
+getGhcErrListRef = fmap theGhcErrListRef $ Interpreter (lift ask)
 
 -- | By default, no module is loaded. Use this function to load the standard Prelude
 loadPrelude :: Interpreter ()
@@ -98,7 +134,7 @@ loadPrelude =
     do
         ghcSession <- getGhcSession
         --
-        let preludeModule = GHC.mkModule (PackageConfig.stringToPackageId "base")
+        let preludeModule = GHC.mkModule (GHC.P.stringToPackageId "base")
                                          (GHC.mkModuleName "Prelude")
         liftIO $ GHC.setContext ghcSession [] [preludeModule]
 
@@ -114,12 +150,11 @@ typeOf expr =
     do
         ghcSession <- getGhcSession
         --
-        maybe_ty <- liftIO $ GHC.exprType ghcSession expr
-        case maybe_ty of
-            Nothing -> throwError $ TypeCheckingFailed "No error message available... yet!"
-            Just ty -> do
-                           unqual <- liftIO $ GHC.getPrintUnqual ghcSession
-                           return $ ghc2hs (GHC.dropForAlls ty, unqual)
+        ty <- mayFail $ GHC.exprType ghcSession expr
+        --
+        -- Unqualify necessary types (i.e., do not expose internals)
+        unqual <- liftIO $ GHC.getPrintUnqual ghcSession
+        return $ ghc2hs (GHC.dropForAlls ty, unqual)
 
 -- | Tests if the expression type checks
 typeChecks :: String -> Interpreter Bool
@@ -147,10 +182,9 @@ interpret (TypeChecked expr) =
     do
         ghcSession <- getGhcSession
         --
-        maybe_expr_val <- liftIO $ GHC.compileExpr ghcSession expr
-        case maybe_expr_val of
-            Nothing       -> fail (unwords ["compilation of typechecked expression failed:", expr])
-            Just expr_val -> return (GHC.Exts.unsafeCoerce# expr_val :: a)
+        expr_val <- mayFail $ GHC.compileExpr ghcSession expr
+        --
+        return (GHC.Exts.unsafeCoerce# expr_val :: a)
 
 -- | Evaluates a typechecked expression whose using Show (thus, it must be an instance of Show)
 --
@@ -163,5 +197,14 @@ eval_ :: String -> Interpreter String
 eval_ expr = interpret =<< typeCheck show_expr (as :: String)
     where show_expr = unwords ["Prelude.show", "(", expr, ") "]
 
+mayFail :: IO (Maybe a) -> Interpreter a
+mayFail ghcAction =
+    do
+        maybe_res <- liftIO ghcAction
+        case maybe_res of
+            Nothing -> do  e <- liftIO . flip atomicModifyIORef (\l -> ([], l)) =<< getGhcErrListRef
+                           throwError $ TypeCheckingFailed (reverse e)
+            Just a  -> return a
+
 -- useful when debugging...
--- mySession = newSession "/opt/local/lib/ghc-6.6"
+mySession = newSession "/opt/local/lib/ghc-6.6"
