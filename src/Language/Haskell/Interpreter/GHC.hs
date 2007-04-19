@@ -72,6 +72,7 @@ withSession s i = withMVar (sessionState s) $ \ss ->
 
 
 data InterpreterError = SomeError String
+                      | ParsingFailed [GhcError]
                       | TypeCheckingFailed [GhcError]
                       deriving(Eq, Show)
 
@@ -84,8 +85,9 @@ instance Error InterpreterError where
 -- Hence, we put the whole state on an MVar, and synchronize on it
 newtype InterpreterSession = InterpreterSession {sessionState :: MVar SessionState}
 
-data SessionState = SessionState{theGhcSession    :: GHC.Session,
-                                 theGhcErrListRef :: IORef [GhcError]}
+data SessionState = SessionState{ghcSession     :: GHC.Session,
+                                 ghcErrListRef  :: IORef [GhcError],
+                                 modulesListRef :: IORef [FilePath]}
 
 type GhcError = String
 
@@ -93,18 +95,23 @@ type GhcError = String
 newSession :: FilePath -> IO InterpreterSession
 newSession ghcRoot =
     do
-        ghcSession <- GHC.newSession GHC.Interactive $ Just ghcRoot
+        ghc_session      <- GHC.newSession GHC.Interactive $ Just ghcRoot
         --
-        ghcErrListRef <- newIORef []
+        ghc_err_list_ref <- newIORef []
+        mod_list_ref     <- newIORef []
+        --
+        let session_state = SessionState{ghcSession     =  ghc_session,
+                                         ghcErrListRef  = ghc_err_list_ref,
+                                         modulesListRef = mod_list_ref}
         --
         -- set HscTarget to HscInterpreted (must be done manually, default is HsAsm!)
         -- setSessionDynFlags loads info on packages availables. Call is mandatory!
-        dflags <- GHC.getSessionDynFlags ghcSession
+        dflags <- GHC.getSessionDynFlags ghc_session
         let myFlags = dflags{GHC.hscTarget  = GHC.HscInterpreted,
-                             GHC.log_action = mkLogHandler ghcErrListRef}
-        GHC.setSessionDynFlags ghcSession myFlags
+                             GHC.log_action = mkLogHandler ghc_err_list_ref}
+        GHC.setSessionDynFlags ghc_session myFlags
         --
-        return . InterpreterSession =<< newMVar (SessionState ghcSession ghcErrListRef)
+        return . InterpreterSession =<< newMVar session_state
 
 mkLogHandler :: IORef [GhcError] -> (GHC.Severity -> GHC.S.SrcSpan -> GHC.O.PprStyle -> GHC.E.Message -> IO ())
 mkLogHandler r sev src style msg = modifyIORef r (errorEntry :)
@@ -117,33 +124,45 @@ mkLogHandler r sev src style msg = modifyIORef r (errorEntry :)
           showSev GHC.SevError   = "SevError"
           showSev GHC.SevFatal   = "SevFatal"
 
+fromSessionState :: (SessionState -> a) -> Interpreter a
+fromSessionState f = Interpreter $ fmap f ask
 
-getGhcSession :: Interpreter GHC.Session
-getGhcSession = Interpreter $ fmap theGhcSession ask
-
-getGhcErrListRef :: Interpreter (IORef [GhcError])
-getGhcErrListRef = Interpreter $ fmap theGhcErrListRef ask
+-- modifies the session state and returns the old value
+modifySessionState :: Show a => (SessionState -> IORef a) -> (a -> a) -> Interpreter a
+modifySessionState target f =
+    do
+        ref     <- fromSessionState target
+        old_val <- liftIO $ atomicModifyIORef ref (\a -> (f a, a))
+        return old_val
 
 -- | By default, no module is loaded. Use this function to load the standard Prelude
 loadPrelude :: Interpreter ()
 loadPrelude =
     do
-        ghcSession <- getGhcSession
+        ghc_session <- fromSessionState ghcSession
         --
-        let preludeModule = GHC.mkModule (GHC.P.stringToPackageId "base")
-                                         (GHC.mkModuleName "Prelude")
-        liftIO $ GHC.setContext ghcSession [] [preludeModule]
+        let prelude_module = GHC.mkModule (GHC.P.stringToPackageId "base")
+                                          (GHC.mkModuleName "Prelude")
+        liftIO $ GHC.setContext ghc_session [] [prelude_module]
+
+-- | Loads the
+--loadModulesFromSrc :: [FilePath] -> Interpreter ()
+--loadModulesFromSrc fs =
+--    do
+--        ghcSession <- getGhcSession
+--        --
+        
 
 -- | Returns an abstract syntax tree of the type of the expression
 typeOf :: String -> Interpreter HsQualType
 typeOf expr =
     do
-        ghcSession <- getGhcSession
+        ghc_session <- fromSessionState ghcSession
         --
-        ty <- mayFail $ GHC.exprType ghcSession expr
+        ty <- mayFail $ GHC.exprType ghc_session expr
         --
         -- Unqualify necessary types (i.e., do not expose internals)
-        unqual <- liftIO $ GHC.getPrintUnqual ghcSession
+        unqual <- liftIO $ GHC.getPrintUnqual ghc_session
         return $ ghc2hs (GHC.dropForAlls ty, unqual)
 
 -- | Tests if the expression type checks
@@ -163,10 +182,10 @@ infer = undefined
 interpret :: Typeable a => String -> a -> Interpreter a
 interpret expr witness =
     do
-        ghcSession <- getGhcSession
+        ghc_session <- fromSessionState ghcSession
         --
         let expr_typesig = concat ["(", expr, ") :: ", show $ Data.Typeable.typeOf witness]
-        expr_val <- mayFail $ GHC.compileExpr ghcSession expr_typesig
+        expr_val <- mayFail $ GHC.compileExpr ghc_session expr_typesig
         --
         return (GHC.Exts.unsafeCoerce# expr_val :: a)
 
@@ -176,13 +195,21 @@ eval expr = interpret show_expr (as :: String)
     where show_expr = unwords ["Prelude.show", "(", expr, ") "]
 
 mayFail :: IO (Maybe a) -> Interpreter a
-mayFail ghcAction =
+mayFail ghc_action =
     do
-        maybe_res <- liftIO ghcAction
+        maybe_res <- liftIO ghc_action
+        --
+        e <- modifySessionState ghcErrListRef (const [])
+        --
         case maybe_res of
-            Nothing -> do  e <- liftIO . flip atomicModifyIORef (\l -> ([], l)) =<< getGhcErrListRef
-                           throwError $ TypeCheckingFailed (reverse e)
-            Just a  -> return a
+            Nothing -> if null e
+                           -- GHC is sending all parse errors straight to stderr,
+                           -- so there is no easy way to collect them at the moment
+                           then throwError $ ParsingFailed ["A parsing error must have occurred!"]
+                           else throwError $ TypeCheckingFailed (reverse e)
+            Just a  -> if null e
+                           then return a
+                           else fail "GHC reported errors and gave a result!"
 
 -- useful when debugging...
 mySession = newSession "/opt/local/lib/ghc-6.6"
