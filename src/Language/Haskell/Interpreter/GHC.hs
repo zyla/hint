@@ -14,7 +14,7 @@
 module Language.Haskell.Interpreter.GHC(
     InterpreterSession, newSessionWith,
     --
-    InterpreterError(..), GhcError(..),
+    InterpreterError(..), GhcError(..), Phase(..),
     --
     Interpreter, withSession,
     loadPrelude,
@@ -36,8 +36,6 @@ import qualified ErrUtils      as GHC.E(Message, mkLocMessage)
 
 import qualified GHC.Exts(unsafeCoerce#)
 
-import Language.Haskell.Syntax(HsQualType)
-
 import Control.Monad.Trans(MonadIO(liftIO))
 import Control.Monad.Reader(ReaderT, ask, runReaderT)
 import Control.Monad.Error(Error(..), MonadError(..), ErrorT, runErrorT)
@@ -49,7 +47,7 @@ import Data.Typeable(Typeable)
 import qualified Data.Typeable(typeOf)
 
 import Language.Haskell.Interpreter.GHC.Parsers(ParseResult(..), parseExpr)
-import Language.Haskell.Interpreter.GHC.Conversions(GhcToHs(ghc2hs))
+import Language.Haskell.Interpreter.GHC.Conversions(FromGhcRep(..))
 
 newtype Interpreter a = Interpreter{unInterpreter :: ReaderT SessionState (ErrorT  InterpreterError IO) a}
 
@@ -170,8 +168,8 @@ loadPrelude =
 --        --
 
 
--- | Returns an abstract syntax tree of the type of the expression
-typeOf :: String -> Interpreter HsQualType
+-- | Returns a string representation of the type of the expression
+typeOf :: String -> Interpreter String
 typeOf expr =
     do
         ghc_session <- fromSessionState ghcSession
@@ -185,11 +183,13 @@ typeOf expr =
         --
         -- Unqualify necessary types (i.e., do not expose internals)
         unqual <- liftIO $ GHC.getPrintUnqual ghc_session
-        return $ ghc2hs (GHC.dropForAlls ty, unqual)
+        return $ fromGhcRep (GHC.dropForAlls ty, unqual)
 
 -- | Tests if the expression type checks
 typeChecks :: String -> Interpreter Bool
-typeChecks expr = (typeOf expr >> return True) `catchError` \_ -> return False
+typeChecks expr = (typeOf expr >> return True)
+                  `catchError`
+                  onCompilationError (\_ -> return False)
 
 -- | Convenience functions to be used with typeCheck to provide witnesses. Example:
 --
@@ -260,6 +260,10 @@ failOnParseError parser expr =
         -- "may Have Failed", actually :)
         mayFail (return res)
 
+onCompilationError :: ([GhcError] -> Interpreter a) -> (InterpreterError -> Interpreter a)
+onCompilationError recover = \interp_error -> case interp_error of
+                                                  WontCompile errs -> recover errs
+                                                  otherErr         -> throwError otherErr
 
 -- useful when debugging...
 mySession = newSessionWith "/opt/local/lib/ghc-6.6"
