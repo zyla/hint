@@ -3,8 +3,8 @@ module Language.Haskell.Interpreter.GHC.Conversions(FromGhcRep(..))
 
 where
 
-import qualified GHC        as GHC  (Type, PrintUnqualified, alwaysQualify)
-import qualified Outputable as GHC.O(Outputable(ppr), showSDocForUser)
+import qualified GHC        as GHC  (Type, Kind, PrintUnqualified, alwaysQualify)
+import qualified Outputable as GHC.O(Outputable(ppr), showSDoc, showSDocForUser)
 
 import Language.Haskell.Syntax(HsModule(..), HsDecl(..), HsQualType)
 import Language.Haskell.Parser(parseModule, ParseResult(ParseOk))
@@ -13,6 +13,7 @@ import Language.Haskell.Parser(parseModule, ParseResult(ParseOk))
 class FromGhcRep ghc target where
     fromGhcRep :: ghc -> target
 
+-- --------- Types -----------------------
 instance FromGhcRep GHC.Type HsQualType where
     fromGhcRep t = fromGhcRep (t, GHC.alwaysQualify)
 
@@ -29,3 +30,9 @@ parseModule' :: String -> HsModule
 parseModule' s = case parseModule s of
                     ParseOk m -> m
                     failed    -> error $ unlines ["parseModulde' failed?!", s, show failed]
+
+
+-- --------------------- Kinds -----------------
+
+instance FromGhcRep GHC.Kind String where
+    fromGhcRep k = GHC.O.showSDoc (GHC.O.ppr k)

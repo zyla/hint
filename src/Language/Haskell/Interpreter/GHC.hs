@@ -19,7 +19,7 @@ module Language.Haskell.Interpreter.GHC(
     Interpreter, withSession,
     loadPrelude,
     --
-    typeChecks, typeOf,
+    typeChecks, typeOf, kindOf,
     --
     interpret, as, infer,
     eval)
@@ -46,7 +46,7 @@ import Data.IORef(IORef, newIORef, modifyIORef, atomicModifyIORef)
 import Data.Typeable(Typeable)
 import qualified Data.Typeable(typeOf)
 
-import Language.Haskell.Interpreter.GHC.Parsers(ParseResult(..), parseExpr)
+import Language.Haskell.Interpreter.GHC.Parsers(ParseResult(..), parseExpr, parseType)
 import Language.Haskell.Interpreter.GHC.Conversions(FromGhcRep(..))
 
 newtype Interpreter a = Interpreter{unInterpreter :: ReaderT SessionState (ErrorT  InterpreterError IO) a}
@@ -190,6 +190,22 @@ typeChecks :: String -> Interpreter Bool
 typeChecks expr = (typeOf expr >> return True)
                   `catchError`
                   onCompilationError (\_ -> return False)
+
+-- | Returns a string representation of the kind of the type expression
+kindOf :: String -> Interpreter String
+kindOf type_expr =
+    do
+        ghc_session <- fromSessionState ghcSession
+        --
+        -- First, make sure the expression has no syntax errors,
+        -- for this is the only way we have to "intercept" this
+        -- kind of errors
+        failOnParseError parseType type_expr
+
+        kind <- mayFail $ GHC.typeKind ghc_session type_expr
+        --
+        return $ fromGhcRep kind
+
 
 -- | Convenience functions to be used with typeCheck to provide witnesses. Example:
 --
