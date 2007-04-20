@@ -12,9 +12,9 @@
 -- A Haskell interpreter built on top of the GHC API
 -----------------------------------------------------------------------------
 module Language.Haskell.Interpreter.GHC(
-    InterpreterSession, newSession,
+    InterpreterSession, newSessionWith,
     --
-    InterpreterError(..), GhcError,
+    InterpreterError(..), GhcError(..),
     --
     Interpreter, withSession,
     loadPrelude,
@@ -26,11 +26,13 @@ module Language.Haskell.Interpreter.GHC(
 
 where
 
+import Prelude hiding(span)
+
 import qualified GHC
 import qualified PackageConfig as GHC.P(stringToPackageId)
-import qualified Outputable    as GHC.O(Outputable(ppr), PprStyle, withPprStyle, showSDoc)
+import qualified Outputable    as GHC.O(PprStyle, withPprStyle, defaultErrStyle, showSDoc)
 import qualified SrcLoc        as GHC.S(SrcSpan)
-import qualified ErrUtils      as GHC.E(Message)
+import qualified ErrUtils      as GHC.E(Message, mkLocMessage)
 
 import qualified GHC.Exts(unsafeCoerce#)
 
@@ -46,6 +48,7 @@ import Data.IORef(IORef, newIORef, modifyIORef, atomicModifyIORef)
 import Data.Typeable(Typeable)
 import qualified Data.Typeable(typeOf)
 
+import Language.Haskell.Interpreter.GHC.Parsers(ParseResult(..), parseExpr)
 import Language.Haskell.Interpreter.GHC.Conversions(GhcToHs(ghc2hs))
 
 newtype Interpreter a = Interpreter{unInterpreter :: ReaderT SessionState (ErrorT  InterpreterError IO) a}
@@ -71,14 +74,13 @@ withSession s i = withMVar (sessionState s) $ \ss ->
     runErrorT . flip runReaderT ss $ unInterpreter i
 
 
-data InterpreterError = SomeError String
-                      | ParsingFailed [GhcError]
-                      | TypeCheckingFailed [GhcError]
-                      deriving(Eq, Show)
+data InterpreterError = UnknownError String
+                      | WontCompile [GhcError]
+                      deriving Show
 
 instance Error InterpreterError where
-    noMsg  = SomeError ""
-    strMsg = SomeError
+    noMsg  = UnknownError ""
+    strMsg = UnknownError
 
 -- I'm assuming operations on a ghcSession are not thread-safe. Besides, we need to
 -- be sure that messages captured by the log handler correspond to a single operation.
@@ -87,42 +89,57 @@ newtype InterpreterSession = InterpreterSession {sessionState :: MVar SessionSta
 
 data SessionState = SessionState{ghcSession     :: GHC.Session,
                                  ghcErrListRef  :: IORef [GhcError],
+                                 ghcErrLogger   :: GhcErrLogger,
                                  modulesListRef :: IORef [FilePath]}
 
-type GhcError = String
+-- When intercepting errors reported by GHC, we only get a GHC.E.Message
+-- and a GHC.S.SrcSpan. The latter holds the file name and the location
+-- of the error. However, SrcSpan is abstract and it doesn't provide
+-- functions to retrieve the line and column of the error... we can only
+-- generate a string with this information. Maybe I can parse this string
+-- later.... (sigh)
+data GhcError = GhcError{phase  :: Phase, errMsg :: String} deriving Show
+
+data Phase = ParsingPhase | TypeCheckingPhase deriving(Eq, Show)
+
+mkGhcError :: Phase -> GHC.S.SrcSpan -> GHC.O.PprStyle -> GHC.E.Message -> GhcError
+mkGhcError p span style msg = GhcError{phase  = p, errMsg = niceErrMsg}
+    where niceErrMsg = GHC.O.showSDoc . GHC.O.withPprStyle style $ GHC.E.mkLocMessage span msg
+
+type GhcErrLogger = GHC.Severity -> GHC.S.SrcSpan -> GHC.O.PprStyle -> GHC.E.Message -> IO ()
 
 -- | Builds new session, given the path to a GHC installation (e.g. \/opt\/local\/lib\/ghc-6.6)
-newSession :: FilePath -> IO InterpreterSession
-newSession ghcRoot =
+newSessionWith :: FilePath -> IO InterpreterSession
+newSessionWith ghcRoot =
     do
         ghc_session      <- GHC.newSession GHC.Interactive $ Just ghcRoot
         --
         ghc_err_list_ref <- newIORef []
         mod_list_ref     <- newIORef []
+        let log_handler  =  mkLogHandler ghc_err_list_ref
         --
-        let session_state = SessionState{ghcSession     =  ghc_session,
+        let session_state = SessionState{ghcSession     = ghc_session,
                                          ghcErrListRef  = ghc_err_list_ref,
+                                         ghcErrLogger   = log_handler,
                                          modulesListRef = mod_list_ref}
         --
         -- set HscTarget to HscInterpreted (must be done manually, default is HsAsm!)
         -- setSessionDynFlags loads info on packages availables. Call is mandatory!
+        -- also set a custom log handler, to intercept typechecking error messages :S
         dflags <- GHC.getSessionDynFlags ghc_session
         let myFlags = dflags{GHC.hscTarget  = GHC.HscInterpreted,
-                             GHC.log_action = mkLogHandler ghc_err_list_ref}
+                             GHC.log_action = log_handler}
         GHC.setSessionDynFlags ghc_session myFlags
         --
         return . InterpreterSession =<< newMVar session_state
 
-mkLogHandler :: IORef [GhcError] -> (GHC.Severity -> GHC.S.SrcSpan -> GHC.O.PprStyle -> GHC.E.Message -> IO ())
-mkLogHandler r sev src style msg = modifyIORef r (errorEntry :)
-    where errorEntry = unlines ["GHC ERROR:",
-                                showSev sev,
-                                GHC.O.showSDoc . GHC.O.withPprStyle style $ GHC.O.ppr src,
-                                GHC.O.showSDoc . GHC.O.withPprStyle style $ msg]
-          showSev GHC.SevInfo    = "SevInfo"
-          showSev GHC.SevWarning = "SevWarning"
-          showSev GHC.SevError   = "SevError"
-          showSev GHC.SevFatal   = "SevFatal"
+mkLogHandler :: IORef [GhcError] -> GhcErrLogger
+mkLogHandler r _ src style msg = modifyIORef r (errorEntry :)
+    where errorEntry = mkGhcError TypeCheckingPhase src style msg
+--          showSev GHC.SevInfo    = "SevInfo"
+--          showSev GHC.SevWarning = "SevWarning"
+--          showSev GHC.SevError   = "SevError"
+--          showSev GHC.SevFatal   = "SevFatal"
 
 fromSessionState :: (SessionState -> a) -> Interpreter a
 fromSessionState f = Interpreter $ fmap f ask
@@ -151,13 +168,18 @@ loadPrelude =
 --    do
 --        ghcSession <- getGhcSession
 --        --
-        
+
 
 -- | Returns an abstract syntax tree of the type of the expression
 typeOf :: String -> Interpreter HsQualType
 typeOf expr =
     do
         ghc_session <- fromSessionState ghcSession
+        --
+        -- First, make sure the expression has no syntax errors,
+        -- for this is the only way we have to "intercept" this
+        -- kind of errors
+        failOnParseError parseExpr expr
         --
         ty <- mayFail $ GHC.exprType ghc_session expr
         --
@@ -173,7 +195,7 @@ typeChecks expr = (typeOf expr >> return True) `catchError` \_ -> return False
 --
 --   interpret \"head [True,False]\" (as :: Bool)
 --
---
+--   interpret "head $ map show [True,False]" infer >>= flip interpret (as :: Bool)
 as, infer :: Typeable a => a
 as    = undefined
 infer = undefined
@@ -183,6 +205,11 @@ interpret :: Typeable a => String -> a -> Interpreter a
 interpret expr witness =
     do
         ghc_session <- fromSessionState ghcSession
+        --
+        -- First, make sure the expression has no syntax errors,
+        -- for this is the only way we have to "intercept" this
+        -- kind of errors
+        failOnParseError parseExpr expr
         --
         let expr_typesig = concat ["(", expr, ") :: ", show $ Data.Typeable.typeOf witness]
         expr_val <- mayFail $ GHC.compileExpr ghc_session expr_typesig
@@ -199,17 +226,40 @@ mayFail ghc_action =
     do
         maybe_res <- liftIO ghc_action
         --
-        e <- modifySessionState ghcErrListRef (const [])
+        es <- modifySessionState ghcErrListRef (const [])
         --
         case maybe_res of
-            Nothing -> if null e
-                           -- GHC is sending all parse errors straight to stderr,
-                           -- so there is no easy way to collect them at the moment
-                           then throwError $ ParsingFailed ["A parsing error must have occurred!"]
-                           else throwError $ TypeCheckingFailed (reverse e)
-            Just a  -> if null e
+            Nothing -> if null es
+                           then throwError $ UnknownError "Got no error message"
+                           else throwError $ WontCompile (reverse es)
+            Just a  -> if null es
                            then return a
-                           else fail "GHC reported errors and gave a result!"
+                           else fail "GHC reported errors and also gave a result!"
+
+failOnParseError :: (GHC.Session -> String -> IO ParseResult) -> String -> Interpreter ()
+failOnParseError parser expr =
+    do
+        ghc_session <- fromSessionState ghcSession
+        --
+        parsed <- liftIO $ parser ghc_session expr
+        --
+        -- If there was a parsing error, do the "standard" error reporting
+        res <- case parsed of
+                   ParseOk             -> return (Just ())
+                   --
+                   ParseError span err ->
+                       do
+                       -- parsing failed, so we add a GhcError to the error list
+                       -- (just like the log_action does on type checking errors)
+                       let errorEntry = mkGhcError ParsingPhase span GHC.O.defaultErrStyle err
+                       modifySessionState ghcErrListRef (errorEntry :)
+                       --
+                       -- behave like the rest of the GHC API functions do on error
+                       return Nothing
+        --
+        -- "may Have Failed", actually :)
+        mayFail (return res)
+
 
 -- useful when debugging...
-mySession = newSession "/opt/local/lib/ghc-6.6"
+mySession = newSessionWith "/opt/local/lib/ghc-6.6"
