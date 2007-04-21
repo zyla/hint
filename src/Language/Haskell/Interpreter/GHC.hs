@@ -17,7 +17,8 @@ module Language.Haskell.Interpreter.GHC(
     InterpreterError(..), GhcError(..), Phase(..),
     --
     Interpreter, withSession,
-    loadPrelude,
+    --
+    loadPrelude, loadModules, reset,
     --
     typeChecks, typeOf, kindOf,
     --
@@ -36,6 +37,7 @@ import qualified ErrUtils      as GHC.E(Message, mkLocMessage)
 
 import qualified GHC.Exts(unsafeCoerce#)
 
+import Control.Monad(guard)
 import Control.Monad.Trans(MonadIO(liftIO))
 import Control.Monad.Reader(ReaderT, ask, runReaderT)
 import Control.Monad.Error(Error(..), MonadError(..), ErrorT, runErrorT)
@@ -50,6 +52,7 @@ import Language.Haskell.Interpreter.GHC.Parsers(ParseResult(..), parseExpr, pars
 import Language.Haskell.Interpreter.GHC.Conversions(FromGhcRep(..))
 
 newtype Interpreter a = Interpreter{unInterpreter :: ReaderT SessionState (ErrorT  InterpreterError IO) a}
+                        deriving(Typeable)
 
 instance Monad Interpreter where
     return  = Interpreter . return
@@ -87,8 +90,7 @@ newtype InterpreterSession = InterpreterSession {sessionState :: MVar SessionSta
 
 data SessionState = SessionState{ghcSession     :: GHC.Session,
                                  ghcErrListRef  :: IORef [GhcError],
-                                 ghcErrLogger   :: GhcErrLogger,
-                                 modulesListRef :: IORef [FilePath]}
+                                 ghcErrLogger   :: GhcErrLogger}
 
 -- When intercepting errors reported by GHC, we only get a GHC.E.Message
 -- and a GHC.S.SrcSpan. The latter holds the file name and the location
@@ -113,13 +115,11 @@ newSessionWith ghcRoot =
         ghc_session      <- GHC.newSession GHC.Interactive $ Just ghcRoot
         --
         ghc_err_list_ref <- newIORef []
-        mod_list_ref     <- newIORef []
         let log_handler  =  mkLogHandler ghc_err_list_ref
         --
         let session_state = SessionState{ghcSession     = ghc_session,
                                          ghcErrListRef  = ghc_err_list_ref,
-                                         ghcErrLogger   = log_handler,
-                                         modulesListRef = mod_list_ref}
+                                         ghcErrLogger   = log_handler}
         --
         -- set HscTarget to HscInterpreted (must be done manually, default is HsAsm!)
         -- setSessionDynFlags loads info on packages availables. Call is mandatory!
@@ -160,12 +160,54 @@ loadPrelude =
                                           (GHC.mkModuleName "Prelude")
         liftIO $ GHC.setContext ghc_session [] [prelude_module]
 
--- | Loads the
---loadModulesFromSrc :: [FilePath] -> Interpreter ()
---loadModulesFromSrc fs =
---    do
---        ghcSession <- getGhcSession
---        --
+-- | Tries to load all the requested modules. Modules my be indicated by
+-- their Haskell name (e.g. My.Module) or the full path to its source file.
+--
+-- The interpreter is reset before loading the modules, and in the event of
+-- an error.
+loadModules :: [String] -> Interpreter ()
+loadModules fs =
+    do
+        ghc_session <- fromSessionState ghcSession
+        --
+        -- first, unload everything
+        reset
+        --
+        let doLoad = mayFail $ do
+            targets <- mapM (\f -> GHC.guessTarget f Nothing) fs
+            --
+            GHC.setTargets ghc_session targets
+            res <- GHC.load ghc_session GHC.LoadAllTargets
+            return $ guard (isSucceeded res) >> Just ()
+        --
+        doLoad `catchError` (\e -> reset >> throwError e)
+        --
+        return ()
+
+
+-- | All imported modules are cleared from the context, and
+--   loaded modules are unloaded. It is similar to a ":load" in
+--   GHCi, but observe that not even the Prelude will be in
+--   context after a reset
+reset :: Interpreter ()
+reset =
+    do
+        ghc_session <- fromSessionState ghcSession
+        --
+        -- Remove all modules from context
+        liftIO $ GHC.setContext ghc_session [] []
+        --
+        -- Unload all previously loaded modules
+        liftIO $ GHC.setTargets ghc_session []
+        liftIO $ GHC.load ghc_session GHC.LoadAllTargets
+        --
+        -- At this point, GHCi would call rts_revertCAFs and
+        -- reset the buffering of stdin, stdout and stderr.
+        -- Should we do any of these?
+        --
+        -- liftIO $ rts_revertCAFs
+        --
+        return ()
 
 
 -- | Returns a string representation of the type of the expression
@@ -232,6 +274,7 @@ interpret expr witness =
         --
         return (GHC.Exts.unsafeCoerce# expr_val :: a)
 
+-- TODO: Make eval work even if Prelude is not in context!
 -- | Evaluate show expr. Succeeds only if expr has type t and there is a Show instance for t
 eval :: String -> Interpreter String
 eval expr = interpret show_expr (as :: String)
@@ -276,10 +319,18 @@ failOnParseError parser expr =
         -- "may Have Failed", actually :)
         mayFail (return res)
 
+isSucceeded :: GHC.SuccessFlag -> Bool
+isSucceeded GHC.Succeeded = True
+isSucceeded GHC.Failed    = False
+
 onCompilationError :: ([GhcError] -> Interpreter a) -> (InterpreterError -> Interpreter a)
 onCompilationError recover = \interp_error -> case interp_error of
                                                   WontCompile errs -> recover errs
                                                   otherErr         -> throwError otherErr
+
+-- SHOULD WE CALL THIS WHEN MODULES ARE LOADED / UNLOADED?
+-- foreign import ccall "revertCAFs" rts_revertCAFs  :: IO ()
+
 
 -- useful when debugging...
 mySession = newSessionWith "/opt/local/lib/ghc-6.6"
