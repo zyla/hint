@@ -18,7 +18,7 @@ module Language.Haskell.Interpreter.GHC(
     --
     Interpreter, withSession,
     --
-    ModuleName, loadPrelude,
+    ModuleName,
     loadModules, getLoadedModules, setTopLevelModules,
     setImports,
     reset,
@@ -156,16 +156,6 @@ modifySessionState target f =
         ref     <- fromSessionState target
         old_val <- liftIO $ atomicModifyIORef ref (\a -> (f a, a))
         return old_val
-
--- | By default, no module is loaded. Use this function to load the standard Prelude
-loadPrelude :: Interpreter ()
-loadPrelude =
-    do
-        ghc_session <- fromSessionState ghcSession
-        --
-        let prelude_module = GHC.mkModule (GHC.P.stringToPackageId "base")
-                                          (GHC.mkModuleName "Prelude")
-        liftIO $ GHC.setContext ghc_session [] [prelude_module]
 
 -- | Module names are _not_ filepaths
 type ModuleName = String
