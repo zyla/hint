@@ -18,7 +18,9 @@ module Language.Haskell.Interpreter.GHC(
     --
     Interpreter, withSession,
     --
-    loadPrelude, loadModules, reset,
+    ModuleName, loadPrelude,
+    loadModules, getLoadedModules, setTopLevelModules,
+    reset,
     --
     typeChecks, typeOf, kindOf,
     --
@@ -37,7 +39,7 @@ import qualified ErrUtils      as GHC.E(Message, mkLocMessage)
 
 import qualified GHC.Exts(unsafeCoerce#)
 
-import Control.Monad(guard)
+import Control.Monad(liftM, filterM, guard, when)
 import Control.Monad.Trans(MonadIO(liftIO))
 import Control.Monad.Reader(ReaderT, ask, runReaderT)
 import Control.Monad.Error(Error(..), MonadError(..), ErrorT, runErrorT)
@@ -47,6 +49,8 @@ import Data.IORef(IORef, newIORef, modifyIORef, atomicModifyIORef)
 
 import Data.Typeable(Typeable)
 import qualified Data.Typeable(typeOf)
+
+import Data.List((\\))
 
 import Language.Haskell.Interpreter.GHC.Parsers(ParseResult(..), parseExpr, parseType)
 import Language.Haskell.Interpreter.GHC.Conversions(FromGhcRep(..))
@@ -77,6 +81,7 @@ withSession s i = withMVar (sessionState s) $ \ss ->
 
 data InterpreterError = UnknownError String
                       | WontCompile [GhcError]
+                      | NotAllowed  String
                       deriving Show
 
 instance Error InterpreterError where
@@ -158,11 +163,15 @@ loadPrelude =
                                           (GHC.mkModuleName "Prelude")
         liftIO $ GHC.setContext ghc_session [] [prelude_module]
 
--- | Tries to load all the requested modules. Modules my be indicated by
--- their Haskell name (e.g. My.Module) or the full path to its source file.
+-- | Module names are _not_ filepaths
+type ModuleName = String
+
+-- | Tries to load all the requested modules from their source file.
+--   Modules my be indicated by their ModuleName (e.g. \"My.Module\") or
+--   by the full path to its source file.
 --
--- The interpreter is reset before loading the modules, and in the event of
--- an error.
+-- The interpreter is "reset" both before loading the modules and in the event
+-- of an error.
 loadModules :: [String] -> Interpreter ()
 loadModules fs =
     do
@@ -181,6 +190,60 @@ loadModules fs =
         doLoad `catchError` (\e -> reset >> throwError e)
         --
         return ()
+
+-- | Returns the list of modules loaded with "loadModules"
+getLoadedModules :: Interpreter [ModuleName]
+getLoadedModules = liftM (map modNameFromSummary) getLoadedModSummaries
+
+modNameFromSummary :: GHC.ModSummary -> ModuleName
+modNameFromSummary =  modNameFromModule . GHC.ms_mod
+
+modNameFromModule :: GHC.Module -> ModuleName
+modNameFromModule = GHC.moduleNameString . GHC.moduleName
+
+getLoadedModSummaries :: Interpreter [GHC.ModSummary]
+getLoadedModSummaries =
+    do
+        ghc_session <- fromSessionState ghcSession
+        --
+        all_mod_summ <- liftIO $ GHC.getModuleGraph ghc_session
+        filterM (liftIO . GHC.isLoaded ghc_session . GHC.ms_mod_name) all_mod_summ
+
+-- | Sets the modules whose context is used during evaluation. All bindings
+--   of these modules are in scope, not only those exported.
+--
+--   Modules must be interpreted to use this function
+setTopLevelModules :: [ModuleName] -> Interpreter ()
+setTopLevelModules ms =
+    do
+        ghc_session <- fromSessionState ghcSession
+        --
+        loaded_mods_ghc <- getLoadedModSummaries
+        --
+        let not_loaded = ms \\ map modNameFromSummary loaded_mods_ghc
+        when (not . null $ not_loaded) $
+            throwError $ NotAllowed ("These modules have not been loaded:\n" ++ unlines not_loaded)
+        --
+        ms_mods <- liftM (map GHC.ms_mod) $ mapToModSummaries ms
+        --
+        not_interpreted <- liftIO $ filterM (liftM not . GHC.moduleIsInterpreted ghc_session) ms_mods
+        when (not . null $ not_interpreted) $
+            throwError $ NotAllowed ("These modules are not interpreted:\n" ++ unlines (map modNameFromModule not_interpreted))
+        --
+        liftIO $ do
+            (_, old_imports) <- GHC.getContext ghc_session
+            GHC.setContext ghc_session ms_mods old_imports
+
+
+mapToModSummaries :: [ModuleName] -> Interpreter [GHC.ModSummary]
+mapToModSummaries ms =
+    do
+        ghc_session <- fromSessionState ghcSession
+        --
+        all_mod_summs <- liftIO $ GHC.getModuleGraph ghc_session
+        --
+        let filterByName = filter $ (`elem` ms) . modNameFromSummary
+        return $ filterByName all_mod_summs
 
 
 -- | All imported modules are cleared from the context, and
