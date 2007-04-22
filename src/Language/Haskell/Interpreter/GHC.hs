@@ -20,6 +20,7 @@ module Language.Haskell.Interpreter.GHC(
     --
     ModuleName, loadPrelude,
     loadModules, getLoadedModules, setTopLevelModules,
+    setImports,
     reset,
     --
     typeChecks, typeOf, kindOf,
@@ -47,8 +48,11 @@ import Control.Monad.Error(Error(..), MonadError(..), ErrorT, runErrorT)
 import Control.Concurrent.MVar(MVar, newMVar, withMVar)
 import Data.IORef(IORef, newIORef, modifyIORef, atomicModifyIORef)
 
+import Control.Exception(Exception(DynException), tryJust)
+
 import Data.Typeable(Typeable)
 import qualified Data.Typeable(typeOf)
+import Data.Dynamic(fromDynamic)
 
 import Data.List((\\))
 
@@ -222,9 +226,9 @@ setTopLevelModules ms =
         --
         let not_loaded = ms \\ map modNameFromSummary loaded_mods_ghc
         when (not . null $ not_loaded) $
-            throwError $ NotAllowed ("These modules have not been loaded:\n" ++ unlines not_loaded)
+            throwError $ NotAllowed ("These modules have not been previously loaded:\n" ++ unlines not_loaded)
         --
-        ms_mods <- liftM (map GHC.ms_mod) $ mapToModSummaries ms
+        ms_mods <- mapM findModule ms
         --
         not_interpreted <- liftIO $ filterM (liftM not . GHC.moduleIsInterpreted ghc_session) ms_mods
         when (not . null $ not_interpreted) $
@@ -234,17 +238,35 @@ setTopLevelModules ms =
             (_, old_imports) <- GHC.getContext ghc_session
             GHC.setContext ghc_session ms_mods old_imports
 
-
-mapToModSummaries :: [ModuleName] -> Interpreter [GHC.ModSummary]
-mapToModSummaries ms =
+findModule :: ModuleName -> Interpreter GHC.Module
+findModule mn =
     do
         ghc_session <- fromSessionState ghcSession
         --
-        all_mod_summs <- liftIO $ GHC.getModuleGraph ghc_session
-        --
-        let filterByName = filter $ (`elem` ms) . modNameFromSummary
-        return $ filterByName all_mod_summs
+        let mod_name = GHC.mkModuleName mn
+        mapGhcExceptions NotAllowed $ GHC.findModule ghc_session mod_name Nothing
 
+mapGhcExceptions :: (String -> InterpreterError) -> IO a -> Interpreter a
+mapGhcExceptions buildEx action =
+    do
+        r <- liftIO $ tryJust ghcExceptions action
+        either (throwError . buildEx . flip GHC.showGhcException []) return r
+
+ghcExceptions :: Exception -> Maybe GHC.GhcException
+ghcExceptions (DynException a) = fromDynamic a
+ghcExceptions  _               = Nothing
+
+-- | Sets the modules whose exports must be in context
+setImports :: [ModuleName] -> Interpreter ()
+setImports ms =
+    do
+        ghc_session <- fromSessionState ghcSession
+        --
+        ms_mods <- mapM findModule ms
+        --
+        liftIO $ do
+            (old_top_level, _) <- GHC.getContext ghc_session
+            GHC.setContext ghc_session old_top_level ms_mods
 
 -- | All imported modules are cleared from the context, and
 --   loaded modules are unloaded. It is similar to a ":load" in
