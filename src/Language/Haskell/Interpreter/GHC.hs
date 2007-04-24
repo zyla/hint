@@ -33,7 +33,6 @@ where
 import Prelude hiding(span)
 
 import qualified GHC
-import qualified PackageConfig as GHC.P(stringToPackageId)
 import qualified Outputable    as GHC.O(PprStyle, withPprStyle, defaultErrStyle, showSDoc)
 import qualified SrcLoc        as GHC.S(SrcSpan)
 import qualified ErrUtils      as GHC.E(Message, mkLocMessage)
@@ -50,7 +49,7 @@ import Data.IORef(IORef, newIORef, modifyIORef, atomicModifyIORef)
 
 import Control.Exception(Exception(DynException), tryJust)
 
-import Data.Typeable(Typeable)
+import Data.Typeable(Typeable, TypeRep, mkTyCon, mkTyConApp, splitTyConApp)
 import qualified Data.Typeable(typeOf)
 import Data.Dynamic(fromDynamic)
 
@@ -342,10 +341,18 @@ interpret expr witness =
         -- kind of errors
         failOnParseError parseExpr expr
         --
-        let expr_typesig = concat ["(", expr, ") :: ", show $ Data.Typeable.typeOf witness]
+        let expr_typesig = concat ["(", expr, ") :: ", show $ myTypeOf witness]
         expr_val <- mayFail $ GHC.compileExpr ghc_session expr_typesig
         --
         return (GHC.Exts.unsafeCoerce# expr_val :: a)
+
+-- HACK! Allows evaluations even when the Prelude is not in scope
+myTypeOf :: Typeable a => a -> TypeRep
+myTypeOf a = if type_of_a == type_of_string then qual_type_of_string else type_of_a
+    where type_of_a           = Data.Typeable.typeOf a
+          type_of_string      = Data.Typeable.typeOf (undefined :: [Char])
+          (list_ty_con, _)    = splitTyConApp type_of_string
+          qual_type_of_string = mkTyConApp list_ty_con [mkTyConApp (mkTyCon "Prelude.Char") []]
 
 -- TODO: Make eval work even if Prelude is not in context!
 -- | Evaluate show expr. Succeeds only if expr has type t and there is a Show instance for t
