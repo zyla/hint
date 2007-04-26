@@ -18,6 +18,8 @@ module Language.Haskell.Interpreter.GHC(
     --
     Interpreter, withSession,
     --
+    setUseLanguageExtensions,
+    --
     ModuleName,
     loadModules, getLoadedModules, setTopLevelModules,
     setImports,
@@ -155,6 +157,25 @@ modifySessionState target f =
         ref     <- fromSessionState target
         old_val <- liftIO $ atomicModifyIORef ref (\a -> (f a, a))
         return old_val
+
+-- | Set to true to allow GHC's extensions to Haskell 98
+setUseLanguageExtensions :: Bool -> Interpreter ()
+setUseLanguageExtensions val =
+    do
+        ghc_session <- fromSessionState ghcSession
+        --
+        let negate_or_not = if val then "" else "no-"
+        let flag = concat ["-f", negate_or_not, "glasgow-exts"]
+        --
+        old_flags               <- liftIO $ GHC.getSessionDynFlags ghc_session
+        (new_flags, not_parsed) <- liftIO $ GHC.parseDynamicFlags old_flags [flag]
+        --
+        when (not . null $ not_parsed) $
+            throwError $ UnknownError (concat ["flag: '", flag, "' not recognized"])
+        --
+        liftIO $ GHC.setSessionDynFlags ghc_session new_flags
+        --
+        return ()
 
 -- | Module names are _not_ filepaths
 type ModuleName = String
