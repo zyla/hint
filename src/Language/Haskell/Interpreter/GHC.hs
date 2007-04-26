@@ -12,23 +12,26 @@
 -- A Haskell interpreter built on top of the GHC API
 -----------------------------------------------------------------------------
 module Language.Haskell.Interpreter.GHC(
-    InterpreterSession, newSessionWith,
-    --
-    InterpreterError(..), GhcError(..),
-    --
-    Interpreter, withSession,
-    --
-    setUseLanguageExtensions,
-    --
-    ModuleName,
-    loadModules, getLoadedModules, setTopLevelModules,
-    setImports,
-    reset,
-    --
-    typeChecks, typeOf, kindOf,
-    --
-    interpret, as, infer,
-    eval)
+    -- * Session handling
+     InterpreterSession, newSessionUsing,
+    -- * Error handling
+     InterpreterError(..), GhcError(..),
+    -- * The interpreter type
+     Interpreter,
+    -- ** Running the interpreter
+     withSession,
+    -- ** Interpreter options
+     setUseLanguageExtensions,
+    -- ** Module handling
+     ModuleName,
+     loadModules, getLoadedModules, setTopLevelModules,
+     setImports,
+     reset,
+    -- ** Type inference
+     typeOf, typeChecks, kindOf,
+    -- ** Evaluation
+     interpret, as, infer,
+     eval)
 
 where
 
@@ -116,9 +119,9 @@ mkGhcError span style msg = GhcError{errMsg = niceErrMsg}
 
 type GhcErrLogger = GHC.Severity -> GHC.S.SrcSpan -> GHC.O.PprStyle -> GHC.E.Message -> IO ()
 
--- | Builds new session, given the path to a GHC installation (e.g. \/opt\/local\/lib\/ghc-6.6)
-newSessionWith :: FilePath -> IO InterpreterSession
-newSessionWith ghcRoot =
+-- | Builds a new session, given the path to a GHC installation (e.g. \/usr\/local\/lib\/ghc-6.6).
+newSessionUsing :: FilePath -> IO InterpreterSession
+newSessionUsing ghcRoot =
     do
         ghc_session      <- GHC.newSession GHC.Interactive $ Just ghcRoot
         --
@@ -158,7 +161,7 @@ modifySessionState target f =
         old_val <- liftIO $ atomicModifyIORef ref (\a -> (f a, a))
         return old_val
 
--- | Set to true to allow GHC's extensions to Haskell 98
+-- | Set to true to allow GHC's extensions to Haskell 98.
 setUseLanguageExtensions :: Bool -> Interpreter ()
 setUseLanguageExtensions val =
     do
@@ -177,14 +180,14 @@ setUseLanguageExtensions val =
         --
         return ()
 
--- | Module names are _not_ filepaths
+-- | Module names are _not_ filepaths.
 type ModuleName = String
 
 -- | Tries to load all the requested modules from their source file.
 --   Modules my be indicated by their ModuleName (e.g. \"My.Module\") or
 --   by the full path to its source file.
 --
--- The interpreter is "reset" both before loading the modules and in the event
+-- The interpreter is 'reset' both before loading the modules and in the event
 -- of an error.
 loadModules :: [String] -> Interpreter ()
 loadModules fs =
@@ -205,7 +208,7 @@ loadModules fs =
         --
         return ()
 
--- | Returns the list of modules loaded with "loadModules"
+-- | Returns the list of modules loaded with 'loadModules'.
 getLoadedModules :: Interpreter [ModuleName]
 getLoadedModules = liftM (map modNameFromSummary) getLoadedModSummaries
 
@@ -226,7 +229,7 @@ getLoadedModSummaries =
 -- | Sets the modules whose context is used during evaluation. All bindings
 --   of these modules are in scope, not only those exported.
 --
---   Modules must be interpreted to use this function
+--   Modules must be interpreted to use this function.
 setTopLevelModules :: [ModuleName] -> Interpreter ()
 setTopLevelModules ms =
     do
@@ -266,7 +269,7 @@ ghcExceptions :: Exception -> Maybe GHC.GhcException
 ghcExceptions (DynException a) = fromDynamic a
 ghcExceptions  _               = Nothing
 
--- | Sets the modules whose exports must be in context
+-- | Sets the modules whose exports must be in context.
 setImports :: [ModuleName] -> Interpreter ()
 setImports ms =
     do
@@ -279,9 +282,9 @@ setImports ms =
             GHC.setContext ghc_session old_top_level ms_mods
 
 -- | All imported modules are cleared from the context, and
---   loaded modules are unloaded. It is similar to a ":load" in
+--   loaded modules are unloaded. It is similar to a @:load@ in
 --   GHCi, but observe that not even the Prelude will be in
---   context after a reset
+--   context after a reset.
 reset :: Interpreter ()
 reset =
     do
@@ -303,7 +306,7 @@ reset =
         return ()
 
 
--- | Returns a string representation of the type of the expression
+-- | Returns a string representation of the type of the expression.
 typeOf :: String -> Interpreter String
 typeOf expr =
     do
@@ -320,13 +323,13 @@ typeOf expr =
         unqual <- liftIO $ GHC.getPrintUnqual ghc_session
         return $ fromGhcRep (GHC.dropForAlls ty, unqual)
 
--- | Tests if the expression type checks
+-- | Tests if the expression type checks.
 typeChecks :: String -> Interpreter Bool
 typeChecks expr = (typeOf expr >> return True)
                   `catchError`
                   onCompilationError (\_ -> return False)
 
--- | Returns a string representation of the kind of the type expression
+-- | Returns a string representation of the kind of the type expression.
 kindOf :: String -> Interpreter String
 kindOf type_expr =
     do
@@ -344,9 +347,9 @@ kindOf type_expr =
 
 -- | Convenience functions to be used with typeCheck to provide witnesses. Example:
 --
---   interpret \"head [True,False]\" (as :: Bool)
+--   * @interpret \"head [True,False]\" (as :: Bool)@
 --
---   interpret "head $ map show [True,False]" infer >>= flip interpret (as :: Bool)
+--   * @interpret \"head $ map show [True,False]\" infer >>= flip interpret (as :: Bool)@
 as, infer :: Typeable a => a
 as    = undefined
 infer = undefined
@@ -375,8 +378,8 @@ myTypeOf a = if type_of_a == type_of_string then qual_type_of_string else type_o
           (list_ty_con, _)    = splitTyConApp type_of_string
           qual_type_of_string = mkTyConApp list_ty_con [mkTyConApp (mkTyCon "Prelude.Char") []]
 
--- TODO: Make eval work even if Prelude is not in context!
--- | Evaluate show expr. Succeeds only if expr has type t and there is a Show instance for t
+-- | @eval expr@ will evaluate @show expr@.
+--  It will succeed only if @expr@ has type t and there is a 'Show' instance for t.
 eval :: String -> Interpreter String
 eval expr = interpret show_expr (as :: String)
     where show_expr = unwords ["Prelude.show", "(", expr, ") "]
@@ -435,4 +438,4 @@ onCompilationError recover = \interp_error -> case interp_error of
 
 
 -- useful when debugging...
-mySession = newSessionWith "/opt/local/lib/ghc-6.6"
+mySession = newSessionUsing "/opt/local/lib/ghc-6.6"

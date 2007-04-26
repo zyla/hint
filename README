@@ -1,0 +1,6 @@
+To install locally:
+
+> runhaskell Setup.lhs configure --prefix=$USER --user
+> runhaskell Setup.lhs build
+> runhaskell Setup.lhs haddock
+> runhaskell Setup.lhs install
