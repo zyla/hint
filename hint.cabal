@@ -7,5 +7,8 @@ Author:              Daniel Gorin
 Maintainer:          dgorin@dc.uba.ar
 Build-Depends:       base, haskell-src, ghc, mtl
 Exposed-modules:     Language.Haskell.Interpreter.GHC
-ghc-options:         -Wall -O
+Other-modules:       Language.Haskell.Interpreter.GHC.Conversions
+                     Language.Haskell.Interpreter.GHC.Parsers
+                     Language.Haskell.Interpreter.GHC.LibDir
+ghc-options:         -Wall -O2
 hs-source-dirs:      src
