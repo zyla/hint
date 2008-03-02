@@ -1,5 +1,5 @@
 Name:                hint
-Version:             0.1
+Version:             0.2-devel
 Description:
 	This library defines an @Interpreter@ monad, inside which modules can be
         loaded, and strings with Haskell expressions can be evaluated, coerced
