@@ -21,11 +21,14 @@ module Language.Haskell.Interpreter.GHC(
      withSession,
     -- ** Interpreter options
      setUseLanguageExtensions,
-    -- ** Module handling
+    -- ** Context handling
      ModuleName,
      loadModules, getLoadedModules, setTopLevelModules,
      setImports,
      reset,
+    -- ** Module querying
+     ModuleElem(..), Id, name, children,
+     getModuleExports,
     -- ** Type inference
      typeOf, typeChecks, kindOf,
     -- ** Evaluation
@@ -37,10 +40,10 @@ where
 import Prelude hiding ( span )
 
 import qualified GHC
-import qualified Outputable    as GHC.O ( PprStyle, withPprStyle,
-                                          defaultErrStyle, showSDoc )
-import qualified SrcLoc        as GHC.S ( SrcSpan )
-import qualified ErrUtils      as GHC.E ( Message, mkLocMessage )
+import qualified Outputable as GHC.O
+import qualified SrcLoc     as GHC.S
+import qualified ErrUtils   as GHC.E
+import qualified Name       as GHC.N
 
 import qualified GHC.Exts ( unsafeCoerce# )
 
@@ -60,7 +63,8 @@ import Data.Typeable           ( Typeable, TypeRep, mkTyCon,
 import qualified Data.Typeable ( typeOf )
 import Data.Dynamic            ( fromDynamic )
 
-import Data.List ( (\\) )
+import Data.List  ( (\\) )
+import Data.Maybe ( catMaybes )
 
 import Language.Haskell.Interpreter.GHC.Parsers     ( ParseResult(..),
                                                       parseExpr, parseType )
@@ -86,7 +90,7 @@ instance MonadIO Interpreter where
 
 instance MonadError InterpreterError Interpreter where
     throwError  = Interpreter . throwError
-    catchError (Interpreter m) catchE = Interpreter $ m `catchError` (\e -> 
+    catchError (Interpreter m) catchE = Interpreter $ m `catchError` (\e ->
                                                        unInterpreter $ catchE e)
 
 -- | Executes the interpreter using a given session. This is a thread-safe
@@ -209,6 +213,22 @@ setUseLanguageExtensions val =
 -- | Module names are _not_ filepaths.
 type ModuleName = String
 
+-- | An Id for a class, a type constructor, a data constructor, a binding, etc
+type Id = String
+
+data ModuleElem = Fun Id | Class Id [Id] | Data Id [Id]
+  deriving (Read, Show, Eq)
+
+name :: ModuleElem -> Id
+name (Fun f)     = f
+name (Class c _) = c
+name (Data d _)  = d
+
+children :: ModuleElem -> [Id]
+children (Fun   _)     = []
+children (Class _ ms)  = ms
+children (Data  _ dcs) = dcs
+
 -- | Tries to load all the requested modules from their source file.
 --   Modules my be indicated by their ModuleName (e.g. \"My.Module\") or
 --   by the full path to its source file.
@@ -279,6 +299,45 @@ setTopLevelModules ms =
         liftIO $ do
             (_, old_imports) <- GHC.getContext ghc_session
             GHC.setContext ghc_session ms_mods old_imports
+
+-- | Gets an abstract representation of all the entities exported by the module.
+--   It is similar to the @:browse@ command in GHCi. 
+getModuleExports :: ModuleName -> Interpreter [ModuleElem]
+getModuleExports mn =
+    do
+        ghc_session <- fromSessionState ghcSession
+        --
+        module_  <- findModule mn
+        mod_info <- mayFail $ GHC.getModuleInfo ghc_session module_
+        exports  <- liftIO $ mapM (GHC.lookupName ghc_session)
+                                  (GHC.modInfoExports mod_info)
+        --
+        return (asModElemList $ catMaybes exports)
+
+asModElemList :: [GHC.TyThing] -> [ModuleElem]
+asModElemList xs = concat [cs',
+                           ts',
+                           ds \\ (concatMap (map Fun . children) ts'),
+                           fs \\ (concatMap (map Fun . children) cs')]
+    where (cs,ts,ds,fs) = ([asModElem c | c@GHC.AClass{}   <- xs],
+                           [asModElem t | t@GHC.ATyCon{}   <- xs],
+                           [asModElem d | d@GHC.ADataCon{} <- xs],
+                           [asModElem f | f@GHC.AnId{}     <- xs])
+          cs' = [Class n $ filter (alsoIn fs) ms  | Class n ms  <- cs]
+          ts' = [Data  t $ filter (alsoIn ds) dcs | Data  t dcs <- ts]
+          alsoIn es = (`elem` (map name es))
+
+
+asModElem :: GHC.TyThing -> ModuleElem
+asModElem (GHC.AnId f)      = Fun $ getUnqualName f
+asModElem (GHC.ADataCon dc) = Fun $ getUnqualName dc
+asModElem (GHC.ATyCon tc)   = Data  (getUnqualName tc)
+                                    (map getUnqualName $ GHC.tyConDataCons tc)
+asModElem (GHC.AClass c)    = Class (getUnqualName c)
+                                    (map getUnqualName $ GHC.classMethods c)
+
+getUnqualName :: GHC.NamedThing a => a -> String
+getUnqualName = GHC.O.showSDocUnqual . GHC.pprParenSymName
 
 findModule :: ModuleName -> Interpreter GHC.Module
 findModule mn =
