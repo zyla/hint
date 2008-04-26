@@ -22,4 +22,10 @@ Other-modules:       Language.Haskell.Interpreter.GHC.Base
                      Language.Haskell.Interpreter.GHC.LibDir
 ghc-options:         -Wall -O2
 hs-source-dirs:      src
-extensions: CPP
+extensions:          CPP
+	             GeneralizedNewtypeDeriving
+	    	     MultiParamTypeClasses
+	    	     DeriveDataTypeable
+		     MagicHash
+		     TypeSynonymInstances
+		     FlexibleInstances
