@@ -15,8 +15,11 @@ Author:              Daniel Gorin
 Maintainer:          jcpetruzza@gmail.com
 Build-Depends:       base, haskell-src, ghc, mtl
 Exposed-modules:     Language.Haskell.Interpreter.GHC
-Other-modules:       Language.Haskell.Interpreter.GHC.Conversions
+Other-modules:       Language.Haskell.Interpreter.GHC.Base
+                     Language.Haskell.Interpreter.GHC.Compat
+		     Language.Haskell.Interpreter.GHC.Conversions
                      Language.Haskell.Interpreter.GHC.Parsers
                      Language.Haskell.Interpreter.GHC.LibDir
 ghc-options:         -Wall -O2
 hs-source-dirs:      src
+extensions: CPP
