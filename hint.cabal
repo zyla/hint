@@ -1,11 +1,12 @@
 name:                hint
 version:             0.2
 description:
-	This library defines an @Interpreter@ monad, inside which modules can be
-        loaded and browsed; and strings with Haskell expressions can be
-        evaluated, coerced into values or type-checked. The library is
-        thread-safe and all operations (even the coertion of expressions to
-        values) are type-safe.
+	This library defines an @Interpreter@ monad. It allows to load Haskell
+        modules, browse them, type-check and evaluate strings with Haskell
+        expressions and even coerce them into values. The library is
+        thread-safe and type-safe (even the coertion of expressions to
+        values).
+
 	It is, esentially, a huge subset of the GHC API wrapped in a simpler
 	API. Works with GHC 6.6.x and 6.8.x.
 synopsis:            Runtime Haskell interpreter (GHC API wrapper)
@@ -16,6 +17,7 @@ author:              Daniel Gorin
 maintainer:          jcpetruzza@gmail.com
 
 cabal-version:       >= 1.2
+build-type:          Custom
 tested-with:         GHC==6.6.1, GHC==6.8.2
 
 
