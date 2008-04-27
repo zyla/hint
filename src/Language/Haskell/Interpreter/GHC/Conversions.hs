@@ -2,36 +2,48 @@ module Language.Haskell.Interpreter.GHC.Conversions(FromGhcRep(..))
 
 where
 
-import qualified GHC        as GHC  (Type, Kind, PrintUnqualified, alwaysQualify)
-import qualified Outputable as GHC.O(Outputable(ppr), showSDoc, showSDocForUser)
+import Control.Monad.Trans ( liftIO )
 
-import Language.Haskell.Syntax(HsModule(..), HsDecl(..), HsQualType)
-import Language.Haskell.Parser(parseModule, ParseResult(ParseOk))
+import qualified GHC        as GHC
+import qualified Outputable as GHC.O
+
+import Language.Haskell.Interpreter.GHC.Base
+import qualified Language.Haskell.Interpreter.GHC.Compat as Compat
+
+import Language.Haskell.Syntax ( HsModule(..), HsDecl(..), HsQualType )
+import Language.Haskell.Parser ( parseModule, ParseResult(ParseOk) )
 
 -- | Conversions from GHC representation to standard representations
 class FromGhcRep ghc target where
-    fromGhcRep :: ghc -> target
+    fromGhcRep :: ghc -> Interpreter target
 
--- --------- Types -----------------------
+-- --------- Types / Kinds -----------------------
+
 instance FromGhcRep GHC.Type HsQualType where
-    fromGhcRep t = fromGhcRep (t, GHC.alwaysQualify)
+    fromGhcRep t =
+        do t_str <- fromGhcRep t
+           --
+           let mod_str = unlines ["f ::" ++ t_str,
+                                  "f = undefined"]
+           let HsModule  _ _ _ _ [decl,_] = parseModule' mod_str
+               HsTypeSig _ _ qualType     = decl
+           --
+           return qualType
 
-instance FromGhcRep (GHC.Type, GHC.PrintUnqualified) HsQualType where
-    fromGhcRep (t, p) = qualType
-        where HsModule  _ _ _ _ [decl,_] = parseModule' $ unlines ["f ::" ++ fromGhcRep (t,p),
-                                                                   "f = undefined"]
-              HsTypeSig _ _ qualType     = decl
 
-instance FromGhcRep (GHC.Type, GHC.PrintUnqualified) String where
-    fromGhcRep (t, p) = GHC.O.showSDocForUser p . GHC.O.ppr $ t
+instance FromGhcRep GHC.Type String where
+    fromGhcRep t = do ghc_session <- fromSessionState ghcSession
+                      -- Unqualify necessary types
+                      -- (i.e., do not expose internals)
+                      unqual <- liftIO $ GHC.getPrintUnqual ghc_session
+                      return $ GHC.O.showSDocForUser unqual (Compat.pprType t)
 
 parseModule' :: String -> HsModule
 parseModule' s = case parseModule s of
                     ParseOk m -> m
-                    failed    -> error $ unlines ["parseModulde' failed?!", s, show failed]
+                    failed    -> error $ unlines ["parseModulde' failed?!",
+                                                  s,
+                                                  show failed]
 
-
--- --------------------- Kinds -----------------
-
-instance FromGhcRep GHC.Kind String where
-    fromGhcRep k = GHC.O.showSDoc (GHC.O.ppr k)
+instance FromGhcRep Compat.Kind String where
+    fromGhcRep (Compat.Kind k) = return $ GHC.O.showSDoc (Compat.pprKind k)

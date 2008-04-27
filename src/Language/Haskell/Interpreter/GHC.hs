@@ -40,7 +40,6 @@ import Prelude hiding ( span )
 
 import qualified GHC
 import qualified Outputable as GHC.O
-import qualified SrcLoc     as GHC.S
 import qualified ErrUtils   as GHC.E
 import qualified Name       as GHC.N
 
@@ -50,8 +49,7 @@ import Control.Monad        ( liftM, filterM, guard, when )
 import Control.Monad.Trans  ( liftIO )
 import Control.Monad.Error  ( MonadError(throwError, catchError) )
 
-
-import Control.Exception ( Exception(DynException), tryJust, throwDyn )
+import Control.Exception ( Exception(DynException), tryJust )
 
 import Data.Typeable           ( Typeable, TypeRep, mkTyCon,
                                  mkTyConApp, splitTyConApp )
@@ -63,12 +61,11 @@ import Data.Maybe ( catMaybes )
 
 import Language.Haskell.Interpreter.GHC.Base
 
-import qualified Language.Haskell.Interpreter.GHC.Compat as Compat
-
 import Language.Haskell.Interpreter.GHC.Parsers     ( ParseResult(..),
                                                       parseExpr, parseType )
 import Language.Haskell.Interpreter.GHC.Conversions ( FromGhcRep(..) )
 
+import qualified Language.Haskell.Interpreter.GHC.Compat as Compat
 
 -- | Set to true to allow GHC's extensions to Haskell 98.
 setUseLanguageExtensions :: Bool -> Interpreter ()
@@ -182,7 +179,7 @@ setTopLevelModules ms =
             GHC.setContext ghc_session ms_mods old_imports
 
 -- | Gets an abstract representation of all the entities exported by the module.
---   It is similar to the @:browse@ command in GHCi. 
+--   It is similar to the @:browse@ command in GHCi.
 getModuleExports :: ModuleName -> Interpreter [ModuleElem]
 getModuleExports mn =
     do
@@ -290,9 +287,8 @@ typeOf expr =
         --
         ty <- mayFail $ GHC.exprType ghc_session expr
         --
-        -- Unqualify necessary types (i.e., do not expose internals)
-        unqual <- liftIO $ GHC.getPrintUnqual ghc_session
-        return $ fromGhcRep (GHC.dropForAlls ty, unqual)
+        fromGhcRep ty
+
 
 -- | Tests if the expression type checks.
 typeChecks :: String -> Interpreter Bool
@@ -313,7 +309,7 @@ kindOf type_expr =
 
         kind <- mayFail $ GHC.typeKind ghc_session type_expr
         --
-        return $ fromGhcRep kind
+        fromGhcRep (Compat.Kind kind)
 
 
 -- | Convenience functions to be used with typeCheck to provide witnesses.
