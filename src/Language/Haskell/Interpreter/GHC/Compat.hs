@@ -39,3 +39,4 @@ pprKind :: GHC.Kind -> (Outputable.PprStyle -> Pretty.Doc)
 pprKind = Outputable.ppr
 
 #endif
+

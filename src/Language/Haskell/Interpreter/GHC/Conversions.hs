@@ -47,3 +47,4 @@ parseModule' s = case parseModule s of
 
 instance FromGhcRep Compat.Kind String where
     fromGhcRep (Compat.Kind k) = return $ GHC.O.showSDoc (Compat.pprKind k)
+
