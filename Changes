@@ -1,0 +1,6 @@
+- ver 0.2
+
+ * Works also with GHC 6.8 and 6.6
+ * Added the getModuleExports function
+ * withSession function throws a dynamic exception instead of returning Either Error a
+ * Requires Cabal 1.2.x
