@@ -4,17 +4,14 @@ import Language.Haskell.Interpreter.GHC
 
 main :: IO ()
 main = do s <- newSession
-          r <- withSession s testHint
-          --
-          case r of
-              Left  err -> putStrLn $ "Ups: " ++ show err
-              Right ()   -> putStrLn "that's all folks"
-                       
+          withSession s testHint
+          putStrLn "that's all folks"
 
-testHint :: Interpreter ()                  
+
+testHint :: Interpreter ()
 testHint =
     do
-      say "Load SomeModule.hs" 
+      say "Load SomeModule.hs"
       loadModules ["SomeModule.hs"]
       --
       say "Put the Prelude and *SomeModule in scope"
