@@ -61,3 +61,4 @@ say = liftIO . putStrLn
 
 printInterpreterError :: InterpreterError -> IO ()
 printInterpreterError e = putStrLn $ "Ups... " ++ (show e)
+
