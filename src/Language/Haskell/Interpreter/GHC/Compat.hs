@@ -19,7 +19,13 @@ newtype Kind = Kind GHC.Kind
 #if __GLASGOW_HASKELL__ >= 608
 
 newSession :: FilePath -> IO GHC.Session
-newSession ghc_root = GHC.newSession (Just ghc_root)
+newSession ghc_root =
+    do s <- GHC.newSession (Just ghc_root)
+       dflags <- GHC.getSessionDynFlags s
+       GHC.setSessionDynFlags s dflags{GHC.ghcMode    = GHC.CompManager,
+                                       GHC.hscTarget  = GHC.HscInterpreted,
+                                       GHC.ghcLink    = GHC.LinkInMemory}
+       return s
 
 pprType :: GHC.Type -> (Outputable.PprStyle -> Pretty.Doc)
 pprType = PprTyThing.pprTypeForUser False -- False means drop explicit foralls
@@ -30,7 +36,11 @@ pprKind = pprType
 #elif __GLASGOW_HASKELL__ >= 606
 
 newSession :: FilePath -> IO GHC.Session
-newSession ghc_root = GHC.newSession GHC.Interactive (Just ghc_root)
+newSession ghc_root =
+    do s <- GHC.newSession GHC.Interactive (Just ghc_root)
+       dflags <- GHC.getSessionDynFlags s
+       GHC.setSessionDynFlags s dflags{GHC.hscTarget  = GHC.HscInterpreted}
+       return s
 
 pprType :: GHC.Type -> (Outputable.PprStyle -> Pretty.Doc)
 pprType = Outputable.ppr . GHC.dropForAlls
