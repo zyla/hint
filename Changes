@@ -1,3 +1,6 @@
+- ver 0.2.0.2
+ * BUGFIX: Module reloading was broken under 6.8
+
 - ver 0.2.0.1
  * Adds the requirement cabal-version < 1.3
 

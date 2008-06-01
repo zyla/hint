@@ -2,6 +2,7 @@ module Language.Haskell.Interpreter.GHC.Base
 
 where
 
+import Control.Monad           ( liftM )
 import Control.Monad.Trans     ( MonadIO(liftIO) )
 import Control.Monad.Reader    ( ReaderT, ask, runReaderT )
 import Control.Monad.Error     ( Error(..), MonadError(..), ErrorT, runErrorT )
@@ -94,20 +95,18 @@ newSessionUsing ghc_root =
         ghc_err_list_ref <- newIORef []
         let log_handler  =  mkLogHandler ghc_err_list_ref
         --
-        let session_state = SessionState{ghcSession     = ghc_session,
-                                         ghcErrListRef  = ghc_err_list_ref,
-                                         ghcErrLogger   = log_handler}
+        let session_state = SessionState{ghcSession    = ghc_session,
+                                         ghcErrListRef = ghc_err_list_ref,
+                                         ghcErrLogger  = log_handler}
         --
-        -- set HscTarget to HscInterpreted (default is HsAsm!).
-        -- setSessionDynFlags loads info on packages availables; this call
-        -- is mandatory!
-        -- also set a custom log handler, to intercept error messages :S
+        -- Set a custom log handler, to intercept error messages :S
+        -- Observe that, setSessionDynFlags loads info on packages available;
+        -- calling this function once is mandatory! (nevertheless it was most
+        -- likely already done in Compat.newSession...)
         dflags <- GHC.getSessionDynFlags ghc_session
-        let myFlags = dflags{GHC.hscTarget  = GHC.HscInterpreted,
-                             GHC.log_action = log_handler}
-        GHC.setSessionDynFlags ghc_session myFlags
+        GHC.setSessionDynFlags ghc_session dflags{GHC.log_action = log_handler}
         --
-        return . InterpreterSession =<< newMVar session_state
+        InterpreterSession `liftM` newMVar session_state
 
 mkLogHandler :: IORef [GhcError] -> GhcErrLogger
 mkLogHandler r _ src style msg = modifyIORef r (errorEntry :)
