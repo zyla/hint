@@ -7,7 +7,7 @@ import Control.Monad.Trans     ( MonadIO(liftIO) )
 import Control.Monad.Reader    ( ReaderT, ask, runReaderT )
 import Control.Monad.Error     ( Error(..), MonadError(..), ErrorT, runErrorT )
 
-import Control.Exception       ( throwDyn )
+import Control.Exception       ( catchDyn, throwDyn )
 
 import Control.Concurrent.MVar ( MVar, newMVar, withMVar )
 import Data.IORef              ( IORef, newIORef,
@@ -42,6 +42,9 @@ instance MonadError InterpreterError Interpreter where
 data InterpreterError = UnknownError String
                       | WontCompile [GhcError]
                       | NotAllowed  String
+                      -- | GhcExceptions from the underlying GHC API are caught
+                      -- and rethrown as this.
+                      | GhcException GHC.GhcException
                       deriving (Show, Typeable)
 
 instance Error InterpreterError where
@@ -124,6 +127,11 @@ withSession :: InterpreterSession -> Interpreter a -> IO a
 withSession s i = withMVar (sessionState s) $ \ss ->
     do err_or_res <- runErrorT . flip runReaderT ss $ unInterpreter i
        either throwDyn return err_or_res
+    `catchDyn` rethrowGhcException
+
+rethrowGhcException :: GHC.GhcException -> IO a
+rethrowGhcException = throwDyn . GhcException
+
 
 
 -- ================ Handling the interpreter state =================

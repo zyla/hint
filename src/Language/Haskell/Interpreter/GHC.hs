@@ -14,6 +14,7 @@ module Language.Haskell.Interpreter.GHC(
      InterpreterSession, newSession, newSessionUsing,
     -- * Error handling
      InterpreterError(..), GhcError(..),
+     GhcException(..),
     -- * The interpreter type
      Interpreter,
     -- ** Running the interpreter
@@ -39,6 +40,7 @@ where
 import Prelude hiding ( span )
 
 import qualified GHC
+import GHC ( GhcException(..) )
 import qualified Outputable as GHC.O
 import qualified ErrUtils   as GHC.E
 import qualified Name       as GHC.N
