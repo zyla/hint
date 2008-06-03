@@ -1,4 +1,4 @@
-- ver 0.2.0.2
+- ver 0.2.1
  * BUGFIX: Module reloading was broken under 6.8
  * GHC.GhcExceptions are catched and turned into InterpreterErrors
 
