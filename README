@@ -9,7 +9,7 @@ To install locally:
 === Documentation ===
 
 The library cames with haddock documentation you can build
-(see above). Also, examples/example.hs to see a simple but
+(see above). Also, check examples/example.hs to see a simple but
 comprehensive example (it must be run from the examples
 directory, since it expects to find the SomeModule.hs file
 located there).
