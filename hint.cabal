@@ -33,9 +33,11 @@ other-modules:       Language.Haskell.Interpreter.GHC.Base
 
 hs-source-dirs:      src
 extra-source-files:  README
+                     AUTHORS
 		     Changes
 		     examples/example.hs
 		     examples/SomeModule.hs
+                     unit-tests/run-unit-tests.hs
 
 ghc-options:         -Wall -O2
 extensions:          CPP
