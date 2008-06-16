@@ -2,6 +2,7 @@
  * setOptimizations added
  * Module Language.Haskell.Interpreter.GHC.Unsafe added
    (contains unsafeSetGhcOption)
+ * unit tests now based on HUnit
 
 - ver 0.2.1
  * BUGFIX: Module reloading was broken under 6.8
