@@ -1,5 +1,5 @@
 name:                hint
-version:             0.2.1
+version:             0.2.2
 description:
 	This library defines an @Interpreter@ monad. It allows to load Haskell
         modules, browse them, type-check and evaluate strings with Haskell
@@ -8,8 +8,7 @@ description:
         values).
 
 	It is, esentially, a huge subset of the GHC API wrapped in a simpler
-	API. Works with GHC 6.6.x and 6.8.x. NOTE: Requires Cabal 1.2, currently
-        won't install with Cabal 1.3 and above.
+	API. Works with GHC 6.6.x and 6.8.x.
 synopsis:            Runtime Haskell interpreter (GHC API wrapper)
 category:            Language, Compilers/Interpreters
 license:             BSD3
@@ -17,7 +16,7 @@ license-file:        LICENSE
 author:              Daniel Gorin
 maintainer:          jcpetruzza@gmail.com
 
-cabal-version:       >= 1.2 && < 1.3
+cabal-version:       >= 1.2 && < 1.5
 build-type:          Custom
 tested-with:         GHC==6.6.1, GHC==6.8.2
 
