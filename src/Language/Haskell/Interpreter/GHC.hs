@@ -19,7 +19,6 @@ module Language.Haskell.Interpreter.GHC(
     -- ** Running the interpreter
      withSession,
     -- ** Interpreter options
-     setOption,
      setUseLanguageExtensions,
     -- ** Context handling
      ModuleName,
@@ -68,24 +67,10 @@ import Language.Haskell.Interpreter.GHC.Conversions ( FromGhcRep(..) )
 
 import qualified Language.Haskell.Interpreter.GHC.Compat as Compat
 
--- | Set a normal GHC option for the current session, eg. 'setOption "-O2"'.
-setOption :: String -> Interpreter ()
-setOption opt = do ghc_session <- fromSessionState ghcSession
-                   old_flags   <- liftIO $ GHC.getSessionDynFlags ghc_session
-                   (new_flags, not_parsed) <- liftIO $ GHC.parseDynamicFlags old_flags
-                                              [opt]
-                   when (not . null $ not_parsed) $
-                        throwError $ UnknownError (concat ["flag: '", opt,
-                                                           "' not recognized"])
-                   liftIO $ GHC.setSessionDynFlags ghc_session new_flags
-                   return ()
-
 -- | Set to true to allow GHC's extensions to Haskell 98.
 setUseLanguageExtensions :: Bool -> Interpreter ()
-setUseLanguageExtensions val =
-    do  let negate_or_not = if val then "" else "no-"
-        let flag = concat ["-f", negate_or_not, "glasgow-exts"]
-        setOption flag
+setUseLanguageExtensions True  = setGhcOption "-fglasgow-exts"
+setUseLanguageExtensions False = setGhcOption "-fno-glasgow-exts"
 
 -- | Module names are _not_ filepaths.
 type ModuleName = String

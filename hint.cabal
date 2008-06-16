@@ -25,6 +25,7 @@ tested-with:         GHC==6.6.1, GHC==6.8.2
 build-depends:       base, haskell-src, ghc, mtl
 
 exposed-modules:     Language.Haskell.Interpreter.GHC
+                     Language.Haskell.Interpreter.GHC.Unsafe
 other-modules:       Language.Haskell.Interpreter.GHC.Base
                      Language.Haskell.Interpreter.GHC.Compat
 		     Language.Haskell.Interpreter.GHC.Conversions
