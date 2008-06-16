@@ -2,7 +2,7 @@ module Language.Haskell.Interpreter.GHC.Base
 
 where
 
-import Control.Monad           ( liftM )
+import Control.Monad           ( liftM, when )
 import Control.Monad.Trans     ( MonadIO(liftIO) )
 import Control.Monad.Reader    ( ReaderT, ask, runReaderT )
 import Control.Monad.Error     ( Error(..), MonadError(..), ErrorT, runErrorT )
@@ -149,3 +149,19 @@ modifySessionState target f =
         ref     <- fromSessionState target
         old_val <- liftIO $ atomicModifyIORef ref (\a -> (f a, a))
         return old_val
+
+-- ================ Interpreter options =====================
+
+setGhcOptions :: [String] -> Interpreter ()
+setGhcOptions opts =
+    do ghc_session <- fromSessionState ghcSession
+       old_flags   <- liftIO $ GHC.getSessionDynFlags ghc_session
+       (new_flags, not_parsed) <- liftIO $ GHC.parseDynamicFlags old_flags opts
+       when (not . null $ not_parsed) $
+            throwError $ UnknownError (concat ["flag: '", unwords opts,
+                                               "' not recognized"])
+       liftIO $ GHC.setSessionDynFlags ghc_session new_flags
+       return ()
+
+setGhcOption :: String -> Interpreter ()
+setGhcOption opt = setGhcOptions [opt]
