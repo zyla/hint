@@ -75,6 +75,7 @@ setUseLanguageExtensions False = setGhcOption "-fno-glasgow-exts"
 
 data Optimizations = None | Some | All deriving (Eq, Read, Show)
 
+-- | Set the optimization level (none, some, all)
 setOptimizations :: Optimizations -> Interpreter ()
 setOptimizations None = setGhcOption "-O0"
 setOptimizations Some = setGhcOption "-O1"
