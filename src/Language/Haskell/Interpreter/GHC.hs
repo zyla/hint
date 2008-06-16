@@ -20,6 +20,7 @@ module Language.Haskell.Interpreter.GHC(
      withSession,
     -- ** Interpreter options
      setUseLanguageExtensions,
+     Optimizations(..), setOptimizations,
     -- ** Context handling
      ModuleName,
      loadModules, getLoadedModules, setTopLevelModules,
@@ -71,6 +72,13 @@ import qualified Language.Haskell.Interpreter.GHC.Compat as Compat
 setUseLanguageExtensions :: Bool -> Interpreter ()
 setUseLanguageExtensions True  = setGhcOption "-fglasgow-exts"
 setUseLanguageExtensions False = setGhcOption "-fno-glasgow-exts"
+
+data Optimizations = None | Some | All deriving (Eq, Read, Show)
+
+setOptimizations :: Optimizations -> Interpreter ()
+setOptimizations None = setGhcOption "-O0"
+setOptimizations Some = setGhcOption "-O1"
+setOptimizations All  = setGhcOption "-O2"
 
 -- | Module names are _not_ filepaths.
 type ModuleName = String
