@@ -48,6 +48,5 @@
 \.(obj|a|exe|so|lo|la)$
 ^\.darcs-temp-mail$
 (^|/)dist($|/)
-(^|/)src/Language/Haskell/Interpreter/GHC/LibDir.hs$
 (^|/)ghc-ref($|/)
 
