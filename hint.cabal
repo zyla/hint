@@ -29,7 +29,6 @@ other-modules:      Language.Haskell.Interpreter.GHC.Base
                     Language.Haskell.Interpreter.GHC.Compat
                     Language.Haskell.Interpreter.GHC.Conversions
                     Language.Haskell.Interpreter.GHC.Parsers
-                    Language.Haskell.Interpreter.GHC.LibDir
 
 hs-source-dirs:     src
 extra-source-files: README
