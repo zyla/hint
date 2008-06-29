@@ -1,4 +1,4 @@
-module Language.Haskell.Interpreter.GHC.Conversions(FromGhcRep(..))
+module Hint.GHC.Conversions( FromGhcRep(..), FromGhcRep_(..), isSucceeded )
 
 where
 
@@ -7,8 +7,8 @@ import Control.Monad.Trans ( liftIO )
 import qualified GHC        as GHC
 import qualified Outputable as GHC.O
 
-import Language.Haskell.Interpreter.GHC.Base
-import qualified Language.Haskell.Interpreter.GHC.Compat as Compat
+import Hint.GHC.Base
+import qualified Hint.GHC.Compat as Compat
 
 import Language.Haskell.Syntax ( HsModule(..), HsDecl(..), HsQualType )
 import Language.Haskell.Parser ( parseModule, ParseResult(ParseOk) )

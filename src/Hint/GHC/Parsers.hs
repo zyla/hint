@@ -1,4 +1,4 @@
-module Language.Haskell.Interpreter.GHC.Parsers
+module Hint.GHC.Parsers
 
 where
 

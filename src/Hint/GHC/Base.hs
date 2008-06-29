@@ -1,4 +1,4 @@
-module Language.Haskell.Interpreter.GHC.Base
+module Hint.GHC.Base
 
 where
 
@@ -22,7 +22,7 @@ import qualified SrcLoc     as GHC.S
 import qualified ErrUtils   as GHC.E
 
 
-import qualified Language.Haskell.Interpreter.GHC.Compat as Compat
+import qualified Hint.GHC.Compat as Compat
 
 newtype Interpreter a =
     Interpreter{unInterpreter :: ReaderT SessionState
