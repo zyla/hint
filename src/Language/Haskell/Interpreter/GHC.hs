@@ -37,4 +37,9 @@ module Language.Haskell.Interpreter.GHC(
 
 where
 
-import Hint.GHC
+import Hint.GHC.Base
+import Hint.GHC.Configuration
+import Hint.GHC.Context
+import Hint.GHC.Reflection
+import Hint.GHC.Typecheck
+import Hint.GHC.Eval

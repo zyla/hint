@@ -17,6 +17,9 @@ import Language.Haskell.Parser ( parseModule, ParseResult(ParseOk) )
 class FromGhcRep ghc target where
     fromGhcRep :: ghc -> Interpreter target
 
+class FromGhcRep_ ghc target where
+    fromGhcRep_ :: ghc -> target
+
 -- --------- Types / Kinds -----------------------
 
 instance FromGhcRep GHC.Type HsQualType where
@@ -45,6 +48,17 @@ parseModule' s = case parseModule s of
                                                   s,
                                                   show failed]
 
-instance FromGhcRep Compat.Kind String where
-    fromGhcRep (Compat.Kind k) = return $ GHC.O.showSDoc (Compat.pprKind k)
+instance FromGhcRep_ Compat.Kind String where
+    fromGhcRep_ (Compat.Kind k) = GHC.O.showSDoc (Compat.pprKind k)
 
+
+-- ---------------- Modules --------------------------
+
+instance FromGhcRep_ GHC.Module String where
+    fromGhcRep_ = GHC.moduleNameString . GHC.moduleName
+
+-- ---------------- Misc -----------------------------
+
+isSucceeded :: GHC.SuccessFlag -> Bool
+isSucceeded GHC.Succeeded = True
+isSucceeded GHC.Failed    = False
