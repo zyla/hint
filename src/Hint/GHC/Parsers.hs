@@ -33,4 +33,3 @@ runParser parser ghc_session expr =
             GHC.L.POk{}            -> return ParseOk
             --
             GHC.L.PFailed span err -> return (ParseError span err)
-
