@@ -1,4 +1,4 @@
-module Language.Haskell.Interpreter.GHC.Compat
+module Hint.GHC.Compat
 
 where
 
