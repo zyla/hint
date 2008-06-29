@@ -25,16 +25,16 @@ build-depends:      base, haskell-src, ghc, mtl, ghc-paths
 
 exposed-modules:    Language.Haskell.Interpreter.GHC
                     Language.Haskell.Interpreter.GHC.Unsafe
-other-modules:      Hint.GHC.Base
-                    Hint.GHC.Base
-                    Hint.GHC.Compat
-                    Hint.GHC.Configuration
-                    Hint.GHC.Context
-                    Hint.GHC.Conversions
-                    Hint.GHC.Eval
-                    Hint.GHC.Parsers
-                    Hint.GHC.Reflection
-                    Hint.GHC.Typecheck
+other-modules:      Hint.Base
+                    Hint.Base
+                    Hint.Compat
+                    Hint.Configuration
+                    Hint.Context
+                    Hint.Conversions
+                    Hint.Eval
+                    Hint.Parsers
+                    Hint.Reflection
+                    Hint.Typecheck
 
 hs-source-dirs:     src
 extra-source-files: README

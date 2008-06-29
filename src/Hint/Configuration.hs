@@ -1,4 +1,4 @@
-module Hint.GHC.Configuration (
+module Hint.Configuration (
 
       setGhcOption, setGhcOptions,
 
@@ -10,9 +10,8 @@ module Hint.GHC.Configuration (
 where
 
 import Control.Monad.Error
-
 import qualified GHC
-import Hint.GHC.Base
+import Hint.Base
 
 setGhcOptions :: [String] -> Interpreter ()
 setGhcOptions opts =

@@ -1,4 +1,4 @@
-module Hint.GHC.Parsers
+module Hint.Parsers
 
 where
 

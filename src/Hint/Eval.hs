@@ -1,4 +1,4 @@
-module Hint.GHC.Eval (
+module Hint.Eval (
 
       interpret, as, infer,
       eval )
@@ -12,8 +12,8 @@ import qualified GHC.Exts ( unsafeCoerce# )
 import Data.Typeable hiding ( typeOf )
 import qualified Data.Typeable ( typeOf )
 
-import Hint.GHC.Base
-import Hint.GHC.Parsers
+import Hint.Base
+import Hint.Parsers
 
 
 -- | Convenience functions to be used with @interpret@ to provide witnesses.

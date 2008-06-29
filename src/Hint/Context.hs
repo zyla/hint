@@ -1,4 +1,4 @@
-module Hint.GHC.Context (
+module Hint.Context (
 
       ModuleName,
       loadModules, getLoadedModules, setTopLevelModules,
@@ -13,8 +13,8 @@ import Data.List
 
 import Control.Monad.Error
 
-import Hint.GHC.Base
-import Hint.GHC.Conversions
+import Hint.Base
+import Hint.Conversions
 
 import qualified GHC
 

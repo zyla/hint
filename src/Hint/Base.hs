@@ -1,4 +1,4 @@
-module Hint.GHC.Base
+module Hint.Base
 
 where
 
@@ -21,8 +21,8 @@ import qualified SrcLoc     as GHC.S
 import qualified ErrUtils   as GHC.E
 
 
-import qualified Hint.GHC.Compat as Compat
-import Hint.GHC.Parsers
+import qualified Hint.Compat as Compat
+import Hint.Parsers
 
 newtype Interpreter a =
     Interpreter{unInterpreter :: ReaderT SessionState

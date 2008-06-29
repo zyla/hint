@@ -1,4 +1,4 @@
-module Hint.GHC.Reflection (
+module Hint.Reflection (
 
       ModuleElem(..), Id, name, children,
       getModuleExports,
@@ -12,7 +12,7 @@ import Data.Maybe
 
 import Control.Monad.Trans
 
-import Hint.GHC.Base
+import Hint.Base
 
 import qualified GHC
 import qualified Outputable as GHC.O

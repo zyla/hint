@@ -1,4 +1,4 @@
-module Hint.GHC.Typecheck (
+module Hint.Typecheck (
 
       typeOf, typeChecks, kindOf
 
@@ -8,11 +8,11 @@ where
 
 import Control.Monad.Error
 
-import Hint.GHC.Base
-import Hint.GHC.Parsers
-import Hint.GHC.Conversions
+import Hint.Base
+import Hint.Parsers
+import Hint.Conversions
 
-import qualified Hint.GHC.Compat as Compat
+import qualified Hint.Compat as Compat
 
 import qualified GHC
 
