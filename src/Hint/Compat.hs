@@ -1,4 +1,4 @@
-module Hint.GHC.Compat
+module Hint.Compat
 
 where
 

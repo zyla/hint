@@ -2,8 +2,8 @@ module Language.Haskell.Interpreter.GHC.Unsafe ( unsafeSetGhcOption )
 
 where
 
-import Hint.GHC.Base
-import Hint.GHC.Configuration
+import Hint.Base
+import Hint.Configuration
 
 -- | Set a GHC option for the current session,
 --   eg. @unsafeSetGhcOption \"-fno-monomorphism-restriction\"@.
