@@ -1,11 +1,15 @@
-import Control.Exception   ( catchDyn, finally )
+module Main ( main ) where
+
+import Control.Exception
 
 import Control.Monad       ( liftM, when )
 import Control.Monad.Trans ( MonadIO(liftIO) )
 import Control.Monad.Error ( catchError )
 
-import System.Directory    ( doesFileExist, removeFile )
+import System.IO
+import System.Directory
 import System.Exit
+
 
 import Test.HUnit ( (@?=), (@?) )
 import qualified Test.HUnit as HUnit
@@ -58,31 +62,53 @@ test_lang_exts s = testCase "lang_exts" [mod_file] $ do
                             return True
                          `catchError` (\_ -> return False)
 
+test_work_in_main :: H.InterpreterSession -> HUnit.Test
+test_work_in_main s = testCase "work_in_main" [mod_file] $ do
+                        writeFile mod_file "f = id"
+                        H.withSession s $ do
+                          H.loadModules [mod_file]
+                          H.setTopLevelModules ["Main"]
+                          H.setImports ["Prelude"]
+                          --
+                          H.typeOf "f $ 1+1" @@?= "(Num a) => a"
+                          H.eval "f $ filter odd [1,2]" @@?= "[1]"
+                          H.interpret "f $ 1 == 2" H.infer @@?= False
+    --
+    where mod_file     = "TEST_WorkInMain.hs"
+
 main :: IO ()
 main = do s <- H.newSession
           --
           c <- HUnit.runTestTT $ HUnit.TestList [
                    test_reload_modified s,
-                   test_lang_exts s]
+                   test_lang_exts s,
+                   test_work_in_main s]
           --
           let failures  = HUnit.errors c + HUnit.failures c
               exit_code
                   | failures > 0 = ExitFailure failures
                   | otherwise    = ExitSuccess
           exitWith exit_code
-       `catchDyn` printInterpreterError
+       `catchDyn` (printInterpreterError >=> \_ -> exitWith (ExitFailure $ -1))
 
 printInterpreterError :: H.InterpreterError -> IO ()
-printInterpreterError e = do putStrLn $ "Ups... " ++ (show e)
-                             exitWith (ExitFailure $ -1)
+printInterpreterError = hPutStrLn stderr . show
+
+
+(>=>) :: Monad m => (a -> m b) -> (b -> m c) -> (a -> m c)
+f >=> g = \a -> f a >>= g
 
 (@@?) :: (HUnit.AssertionPredicable p, MonadIO m) => m p -> String -> m ()
 p @@? msg = do b <- p; liftIO (b @? msg)
 
+(@@?=) :: (Eq a, Show a, MonadIO m) => m a -> a -> m ()
+m_a @@?= b = do a <- m_a; liftIO (a @?= b)
+
 testCase :: String -> [FilePath] -> HUnit.Assertion -> HUnit.Test
 testCase title tmps test = HUnit.TestLabel title $
-                               HUnit.TestCase (test `finally` clean_up)
-    where clean_up = mapM_ removeIfExists tmps
+                               HUnit.TestCase (test' `finally` clean_up)
+    where test' = test `catchDyn` (printInterpreterError >=> throwDyn)
+          clean_up = mapM_ removeIfExists tmps
           removeIfExists f = do exists <- doesFileExist f
                                 when exists $
                                      removeFile f
