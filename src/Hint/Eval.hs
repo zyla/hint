@@ -14,6 +14,7 @@ import qualified Data.Typeable ( typeOf )
 
 import Hint.Base
 import Hint.Parsers
+import Hint.Sandbox
 
 
 -- | Convenience functions to be used with @interpret@ to provide witnesses.
@@ -28,19 +29,19 @@ infer = undefined
 
 -- | Evaluates an expression, given a witness for its monomorphic type.
 interpret :: Typeable a => String -> a -> Interpreter a
-interpret expr witness =
-    do
-        ghc_session <- fromSessionState ghcSession
-        --
-        -- First, make sure the expression has no syntax errors,
-        -- for this is the only way we have to "intercept" this
-        -- kind of errors
-        failOnParseError parseExpr expr
-        --
-        let expr_typesig = concat ["(", expr, ") :: ", show $ myTypeOf witness]
-        expr_val <- mayFail $ GHC.compileExpr ghc_session expr_typesig
-        --
-        return (GHC.Exts.unsafeCoerce# expr_val :: a)
+interpret expr witness = sandboxed go expr
+  where go e =
+         do ghc_session <- fromSessionState ghcSession
+            --
+            -- First, make sure the expression has no syntax errors,
+            -- for this is the only way we have to "intercept" this
+            -- kind of errors
+            failOnParseError parseExpr e
+            --
+            let expr_typesig = concat ["(", e, ") :: ", show $ myTypeOf witness]
+            expr_val <- mayFail $ GHC.compileExpr ghc_session expr_typesig
+            --
+            return (GHC.Exts.unsafeCoerce# expr_val :: a)
 
 -- HACK! Allows evaluations even when the Prelude is not in scope
 myTypeOf :: Typeable a => a -> TypeRep
@@ -59,4 +60,3 @@ myTypeOf a
 eval :: String -> Interpreter String
 eval expr = interpret show_expr (as :: String)
     where show_expr = unwords ["Prelude.show", "(", expr, ") "]
-

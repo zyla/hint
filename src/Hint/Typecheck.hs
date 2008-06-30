@@ -1,6 +1,8 @@
 module Hint.Typecheck (
 
-      typeOf, typeChecks, kindOf
+      typeOf, typeChecks, kindOf,
+
+      typeOf_unsandboxed, typeChecks_unsandboxed
 
 )
 
@@ -11,6 +13,7 @@ import Control.Monad.Error
 import Hint.Base
 import Hint.Parsers
 import Hint.Conversions
+import Hint.Sandbox
 
 import qualified Hint.Compat as Compat
 
@@ -18,7 +21,10 @@ import qualified GHC
 
 -- | Returns a string representation of the type of the expression.
 typeOf :: String -> Interpreter String
-typeOf expr =
+typeOf = sandboxed typeOf_unsandboxed
+
+typeOf_unsandboxed :: String -> Interpreter String
+typeOf_unsandboxed expr =
     do
         ghc_session <- fromSessionState ghcSession
         --
@@ -31,28 +37,29 @@ typeOf expr =
         --
         fromGhcRep ty
 
-
 -- | Tests if the expression type checks.
 typeChecks :: String -> Interpreter Bool
-typeChecks expr = (typeOf expr >> return True)
-                  `catchError`
-                  onCompilationError (\_ -> return False)
+typeChecks = sandboxed typeChecks_unsandboxed
+
+typeChecks_unsandboxed :: String -> Interpreter Bool
+typeChecks_unsandboxed expr = (typeOf_unsandboxed expr >> return True)
+                              `catchError`
+                              onCompilationError (\_ -> return False)
 
 -- | Returns a string representation of the kind of the type expression.
 kindOf :: String -> Interpreter String
-kindOf type_expr =
-    do
-        ghc_session <- fromSessionState ghcSession
-        --
-        -- First, make sure the expression has no syntax errors,
-        -- for this is the only way we have to "intercept" this
-        -- kind of errors
-        failOnParseError parseType type_expr
-
-        kind <- mayFail $ GHC.typeKind ghc_session type_expr
-        --
-        return $ fromGhcRep_ (Compat.Kind kind)
-
+kindOf = sandboxed go
+    where go type_expr =
+              do ghc_session <- fromSessionState ghcSession
+                 --
+                 -- First, make sure the expression has no syntax errors,
+                 -- for this is the only way we have to "intercept" this
+                 -- kind of errors
+                 failOnParseError parseType type_expr
+                 --
+                 kind <- mayFail $ GHC.typeKind ghc_session type_expr
+                 --
+                 return $ fromGhcRep_ (Compat.Kind kind)
 
 onCompilationError :: ([GhcError] -> Interpreter a)
                    -> (InterpreterError -> Interpreter a)

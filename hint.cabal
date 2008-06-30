@@ -21,12 +21,18 @@ build-type:         Simple
 tested-with:        GHC==6.6.1, GHC==6.8.2
 
 
-build-depends:      base, haskell-src, ghc, mtl, ghc-paths
+build-depends:      base,
+                    haskell-src,
+                    ghc,
+                    mtl,
+                    ghc-paths,
+                    random,
+                    filepath,
+                    directory
 
 exposed-modules:    Language.Haskell.Interpreter.GHC
                     Language.Haskell.Interpreter.GHC.Unsafe
 other-modules:      Hint.Base
-                    Hint.Base
                     Hint.Compat
                     Hint.Configuration
                     Hint.Context
@@ -35,6 +41,7 @@ other-modules:      Hint.Base
                     Hint.Parsers
                     Hint.Reflection
                     Hint.Typecheck
+                    Hint.Sandbox
 
 hs-source-dirs:     src
 extra-source-files: README

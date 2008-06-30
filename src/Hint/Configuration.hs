@@ -3,8 +3,9 @@ module Hint.Configuration (
       setGhcOption, setGhcOptions,
 
       setUseLanguageExtensions,
-      Optimizations(..), setOptimizations
+      Optimizations(..), setOptimizations,
 
+      setInstalledModsAreInScopeQualified
 )
 
 where
@@ -40,3 +41,15 @@ setOptimizations :: Optimizations -> Interpreter ()
 setOptimizations None = setGhcOption "-O0"
 setOptimizations Some = setGhcOption "-O1"
 setOptimizations All  = setGhcOption "-O2"
+
+-- | When set to @True@, every module in every available package is implicitly
+--   imported qualified. This is very convenient for interactive
+--   evaluation, but can be a problem in sandboxed environments
+--   (e.g. 'System.Unsafe.unsafePerformIO' is in scope').
+--
+--   Default value is @True@.
+--
+--   Observe that due to limitations in the GHC-API, when set to @False@, the
+--   private symbols in interpreted modules will not be in scope.
+setInstalledModsAreInScopeQualified :: Bool -> Interpreter ()
+setInstalledModsAreInScopeQualified b = onConf $ \c -> c{all_mods_in_scope = b}

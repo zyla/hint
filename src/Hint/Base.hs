@@ -48,6 +48,10 @@ instance Error InterpreterError where
     noMsg  = UnknownError ""
     strMsg = UnknownError
 
+data InterpreterConf = Conf{all_mods_in_scope :: Bool}
+
+defaultConf :: InterpreterConf
+defaultConf = Conf {all_mods_in_scope = True}
 
 -- I'm assuming operations on a ghcSession are not thread-safe. Besides, we need
 -- to be sure that messages captured by the log handler correspond to a single
@@ -55,9 +59,10 @@ instance Error InterpreterError where
 newtype InterpreterSession =
     InterpreterSession {sessionState :: MVar SessionState}
 
-data SessionState = SessionState{ghcSession     :: GHC.Session,
-                                 ghcErrListRef  :: IORef [GhcError],
-                                 ghcErrLogger   :: GhcErrLogger}
+data SessionState = SessionState{configuration :: IORef InterpreterConf,
+                                 ghcSession    :: GHC.Session,
+                                 ghcErrListRef :: IORef [GhcError],
+                                 ghcErrLogger  :: GhcErrLogger}
 
 -- When intercepting errors reported by GHC, we only get a GHC.E.Message
 -- and a GHC.S.SrcSpan. The latter holds the file name and the location
@@ -105,10 +110,12 @@ newSessionUsing ghc_root =
     do
         ghc_session      <- Compat.newSession ghc_root
         --
+        default_conf     <- newIORef defaultConf
         ghc_err_list_ref <- newIORef []
         let log_handler  =  mkLogHandler ghc_err_list_ref
         --
-        let session_state = SessionState{ghcSession    = ghc_session,
+        let session_state = SessionState{configuration = default_conf,
+                                         ghcSession    = ghc_session,
                                          ghcErrListRef = ghc_err_list_ref,
                                          ghcErrLogger  = log_handler}
         --
@@ -149,16 +156,19 @@ rethrowGhcException = throwDyn . GhcException
 fromSessionState :: (SessionState -> a) -> Interpreter a
 fromSessionState f = Interpreter $ fmap f ask
 
--- modifies the session state and returns the old value
-modifySessionState :: Show a
-                   => (SessionState -> IORef a)
-                   -> (a -> a)
-                   -> Interpreter a
-modifySessionState target f =
-    do
-        ref     <- fromSessionState target
-        old_val <- liftIO $ atomicModifyIORef ref (\a -> (f a, a))
-        return old_val
+-- modifies a ref in the session state and returns the old value
+modifySessionStateRef :: (SessionState -> IORef a) -> (a -> a) -> Interpreter a
+modifySessionStateRef target f =
+    do ref     <- fromSessionState target
+       old_val <- liftIO $ atomicModifyIORef ref (\a -> (f a, a))
+       return old_val
+
+fromConf :: (InterpreterConf -> a) -> Interpreter a
+fromConf f = do ref_conf <- fromSessionState configuration
+                liftIO $ f `fmap` readIORef ref_conf
+
+onConf :: (InterpreterConf -> InterpreterConf) -> Interpreter ()
+onConf f = modifySessionStateRef configuration f >> return ()
 
 -- =============== Error handling ==============================
 
@@ -167,7 +177,7 @@ mayFail ghc_action =
     do
         maybe_res <- liftIO ghc_action
         --
-        es <- modifySessionState ghcErrListRef (const [])
+        es <- modifySessionStateRef ghcErrListRef (const [])
         --
         case maybe_res of
             Nothing -> if null es
