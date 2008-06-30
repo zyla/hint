@@ -21,6 +21,7 @@ module Language.Haskell.Interpreter.GHC(
     -- ** Interpreter options
      setUseLanguageExtensions,
      Optimizations(..), setOptimizations,
+     setInstalledModsAreInScopeQualified,
     -- ** Context handling
      ModuleName,
      loadModules, getLoadedModules, setTopLevelModules,
