@@ -51,7 +51,6 @@ usingAModule do_stuff_on = \expr ->
                          ["module " ++ mod_name],
                          ["where"],
                          ["import " ++ m | m <- loaded ++ imports],
-                         ["default ()"],
                          [e ++ " = " ++ expr] ]
                 liftIO $ writeFile mod_file mod_text
                 let t = fileTarget mod_file
