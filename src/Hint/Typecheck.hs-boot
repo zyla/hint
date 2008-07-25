@@ -1,7 +1,5 @@
-module Hint.Typecheck
+module Hint.Typecheck where
 
-where
-
-import Hint.Base ( Interpreter )
+import Hint.Base (Interpreter)
 
 typeChecks_unsandboxed :: String -> Interpreter Bool

@@ -5,10 +5,7 @@ module Hint.Configuration (
       setUseLanguageExtensions,
       Optimizations(..), setOptimizations,
 
-      setInstalledModsAreInScopeQualified
-)
-
-where
+      setInstalledModsAreInScopeQualified ) where
 
 import Control.Monad.Error
 import qualified GHC
@@ -27,7 +24,6 @@ setGhcOptions opts =
 
 setGhcOption :: String -> Interpreter ()
 setGhcOption opt = setGhcOptions [opt]
-
 
 -- | Set to true to allow GHC's extensions to Haskell 98.
 setUseLanguageExtensions :: Bool -> Interpreter ()
