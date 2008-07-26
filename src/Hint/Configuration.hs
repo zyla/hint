@@ -27,7 +27,8 @@ setGhcOption opt = setGhcOptions [opt]
 
 -- | Set to true to allow GHC's extensions to Haskell 98.
 setUseLanguageExtensions :: Bool -> Interpreter ()
-setUseLanguageExtensions True  = setGhcOption "-fglasgow-exts"
+setUseLanguageExtensions True  = do setGhcOption "-fglasgow-exts"
+                                    setGhcOption "-XExtendedDefaultRules"
 setUseLanguageExtensions False = setGhcOption "-fno-glasgow-exts"
 
 data Optimizations = None | Some | All deriving (Eq, Read, Show)
