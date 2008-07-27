@@ -28,7 +28,8 @@ build-depends:      base,
                     ghc-paths,
                     random,
                     filepath,
-                    directory
+                    directory,
+                    utf8-string
 
 exposed-modules:    Language.Haskell.Interpreter.GHC
                     Language.Haskell.Interpreter.GHC.Unsafe
