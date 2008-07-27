@@ -11,8 +11,7 @@ import qualified DriverPhases as DP
 
 import Data.Char
 
-import Control.Monad
-import Control.Monad.Trans
+import Control.Monad.Error
 
 import System.Directory
 import System.FilePath
@@ -30,8 +29,7 @@ sandboxed do_stuff = \expr -> do dont_need_sandbox <- fromConf all_mods_in_scope
 
 usingAModule :: (Expr -> Interpreter a) -> (Expr -> Interpreter a)
 usingAModule do_stuff_on = \expr ->
-    do ghc_session <- fromSessionState ghcSession
-       (mod_name, mod_file) <- mkModName
+    do (mod_name, mod_file) <- mkModName
        --
        -- To avoid defaulting, we will evaluate this expression without the
        -- monomorphism-restriction. This means that expressions that normally
@@ -47,28 +45,36 @@ usingAModule do_stuff_on = \expr ->
              do (loaded, imports) <- modulesInContext
                 --
                 let e = safeBndFor expr
-                let mod_text = textify [
-                         ["{-# OPTIONS_GHC -fno-monomorphism-restriction #-}"],
-                         ["{-# OPTIONS_GHC -fno-implicit-prelude #-}"],
-                         ["module " ++ mod_name],
-                         ["where"],
-                         ["import " ++ m | m <- loaded ++ imports],
-                         [e ++ " = " ++ expr] ]
-                liftIO $ UTF.writeFile mod_file mod_text
+                let mod_text no_prel = textify [
+                        ["{-# OPTIONS_GHC -fno-monomorphism-restriction #-}"],
+                        ["{-# OPTIONS_GHC -fno-implicit-prelude #-}" | no_prel],
+                        ["module " ++ mod_name],
+                        ["where"],
+                        ["import " ++ m | m <- loaded ++ imports],
+                        [e ++ " = " ++ expr] ]
+                let write_mod = liftIO . UTF.writeFile mod_file . mod_text
                 let t = fileTarget mod_file
                 --
                 setTopLevelModules []
                 setImports []
-                mayFail $ do GHC.addTarget ghc_session t
-                             res <- GHC.load ghc_session GHC.LoadAllTargets
-                             return $ guard (isSucceeded res) >> Just ()
+                let go = do addTarget t
+                            setTopLevelModules [mod_name]
+                            do_stuff_on e
+                write_mod True
+                -- If the Prelude was not explicitly imported but implicitly
+                -- imported in some interpreted module, then the user may
+                -- get very unintuitive errors when turning sandboxing on. Thus
+                -- we will import the Prelude if the operation fails...
+                -- I guess this may lead to even more obscure errors, but
+                -- hopefully in much less frequent situations...
+                r <- go
+                      `catchError` (\err -> case err of
+                                             WontCompile _ -> do removeTarget t
+                                                                 write_mod False
+                                                                 go
+                                             _             -> throwError err)
                 --
-                setTopLevelModules [mod_name]
-                r <- do_stuff_on e
-                --
-                mayFail $ do GHC.removeTarget ghc_session (targetId t)
-                             res <- GHC.load ghc_session GHC.LoadAllTargets
-                             return $ guard (isSucceeded res) >> Just ()
+                removeTarget t
                 setTopLevelModules loaded
                 setImports imports
                 --
@@ -79,8 +85,20 @@ usingAModule do_stuff_on = \expr ->
            where textify    = unlines . concat
                  clean_up f = liftIO $ do exists <- doesFileExist f
                                           when exists $
-                                               removeFile f
+                                               return () -- removeFile f
 
+
+addTarget :: GHC.Target -> Interpreter ()
+addTarget t = do ghc_session <- fromSessionState ghcSession
+                 mayFail $ do GHC.addTarget ghc_session t
+                              res <- GHC.load ghc_session GHC.LoadAllTargets
+                              return $ guard (isSucceeded res) >> Just ()
+
+removeTarget :: GHC.Target -> Interpreter ()
+removeTarget t = do ghc_session <- fromSessionState ghcSession
+                    mayFail $ do GHC.removeTarget ghc_session (targetId t)
+                                 res <- GHC.load ghc_session GHC.LoadAllTargets
+                                 return $ guard (isSucceeded res) >> Just ()
 
 targetId :: GHC.Target -> GHC.TargetId
 targetId (GHC.Target _id _) = _id

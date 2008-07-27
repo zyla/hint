@@ -17,7 +17,7 @@ import qualified Test.HUnit as HUnit
 import qualified Language.Haskell.Interpreter.GHC as H
 
 test_reload_modified :: H.InterpreterSession -> HUnit.Test
-test_reload_modified s = testCase "reload_modifie" [mod_file] $ do
+test_reload_modified s = testCase "reload_modified" [mod_file] $ do
                             writeFile mod_file mod_v1
                             f_v1 <- H.withSession s get_f
                             --
@@ -76,15 +76,40 @@ test_work_in_main s = testCase "work_in_main" [mod_file] $ do
     --
     where mod_file     = "TEST_WorkInMain.hs"
 
+test_priv_syms_in_scope :: H.InterpreterSession -> HUnit.Test
+test_priv_syms_in_scope s = testCase "private_syms_in_scope" [mod_file] $ do
+                               writeFile mod_file mod_text
+                               H.withSession s $ do
+                                 H.loadModules [mod_file]
+                                 H.setTopLevelModules ["T"]
+                                 H.typeChecks "g" @@? "g is hidden"
+    where mod_text = unlines ["module T(f) where", "f = g", "g = id"]
+          mod_file = "TEST_PrivateSymbolsInScope.hs"
+
+
+common_tests :: H.InterpreterSession -> [HUnit.Test]
+common_tests s = [test_reload_modified s,
+                  test_lang_exts s,
+                  test_work_in_main s]
+
+
+non_sb_tests :: H.InterpreterSession -> HUnit.Test
+non_sb_tests s = HUnit.TestList $ common_tests s ++ [test_priv_syms_in_scope s]
+
+sb_tests :: H.InterpreterSession -> HUnit.Test
+sb_tests s = HUnit.TestList $ common_tests s
+
 main :: IO ()
 main = do s <- H.newSession
           --
-          c <- HUnit.runTestTT $ HUnit.TestList [
-                   test_reload_modified s,
-                   test_lang_exts s,
-                   test_work_in_main s]
+          -- run the tests...
+          c <- HUnit.runTestTT $ non_sb_tests s
+          -- then run again, but with sandboxing on...
+          setSandbox s
+          c' <- HUnit.runTestTT $ sb_tests s
           --
-          let failures  = HUnit.errors c + HUnit.failures c
+          let failures  = HUnit.errors c  + HUnit.failures c +
+                          HUnit.errors c' + HUnit.failures c'
               exit_code
                   | failures > 0 = ExitFailure failures
                   | otherwise    = ExitSuccess
@@ -94,6 +119,8 @@ main = do s <- H.newSession
 printInterpreterError :: H.InterpreterError -> IO ()
 printInterpreterError = hPutStrLn stderr . show
 
+setSandbox :: H.InterpreterSession -> IO ()
+setSandbox s = H.withSession s $ H.setInstalledModsAreInScopeQualified False
 
 (>=>) :: Monad m => (a -> m b) -> (b -> m c) -> (a -> m c)
 f >=> g = \a -> f a >>= g
