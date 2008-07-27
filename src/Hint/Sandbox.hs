@@ -18,6 +18,8 @@ import System.Directory
 import System.FilePath
 import System.Random
 
+import qualified System.IO.UTF8 as UTF (writeFile)
+
 type Expr = String
 
 sandboxed :: (Expr -> Interpreter a) -> (Expr -> Interpreter a)
@@ -52,7 +54,7 @@ usingAModule do_stuff_on = \expr ->
                          ["where"],
                          ["import " ++ m | m <- loaded ++ imports],
                          [e ++ " = " ++ expr] ]
-                liftIO $ writeFile mod_file mod_text
+                liftIO $ UTF.writeFile mod_file mod_text
                 let t = fileTarget mod_file
                 --
                 setTopLevelModules []
