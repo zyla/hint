@@ -20,31 +20,6 @@ cabal-version:      >= 1.2
 build-type:         Simple
 tested-with:        GHC==6.6.1, GHC==6.8.2
 
-
-build-depends:      base,
-                    haskell-src,
-                    ghc,
-                    ghc-paths,
-                    mtl,
-                    random,
-                    filepath,
-                    directory,
-                    utf8-string
-
-exposed-modules:    Language.Haskell.Interpreter.GHC
-                    Language.Haskell.Interpreter.GHC.Unsafe
-other-modules:      Hint.Base
-                    Hint.Compat
-                    Hint.Configuration
-                    Hint.Context
-                    Hint.Conversions
-                    Hint.Eval
-                    Hint.Parsers
-                    Hint.Reflection
-                    Hint.Typecheck
-                    Hint.Sandbox
-
-hs-source-dirs:     src
 extra-source-files: README
                     AUTHORS
                     Changes
@@ -52,11 +27,47 @@ extra-source-files: README
                     examples/SomeModule.hs
                     unit-tests/run-unit-tests.hs
 
-ghc-options:        -Wall -O2
-extensions:         CPP
-                    GeneralizedNewtypeDeriving
-                    MultiParamTypeClasses
-                    DeriveDataTypeable
-                    MagicHash
-                    TypeSynonymInstances
-                    FlexibleInstances
+Library
+  if impl(ghc >= 6.8) {
+    build-depends:      base >= 3,
+                        haskell-src,
+                        ghc,
+                        ghc-paths,
+                        mtl,
+                        random,
+                        filepath,
+                        directory,
+                        utf8-string
+  } else {
+    build-depends:      base < 3,
+                        haskell-src,
+                        ghc > 6.6,
+                        ghc-paths,
+                        mtl,
+                        filepath,
+                        utf8-string < 0.3
+  }
+
+  exposed-modules:    Language.Haskell.Interpreter.GHC
+                      Language.Haskell.Interpreter.GHC.Unsafe
+  other-modules:      Hint.Base
+                      Hint.Compat
+                      Hint.Configuration
+                      Hint.Context
+                      Hint.Conversions
+                      Hint.Eval
+                      Hint.Parsers
+                      Hint.Reflection
+                      Hint.Typecheck
+                      Hint.Sandbox
+
+  hs-source-dirs:     src
+
+  ghc-options:        -Wall -O2
+  extensions:         CPP
+                      GeneralizedNewtypeDeriving
+                      MultiParamTypeClasses
+                      DeriveDataTypeable
+                      MagicHash
+                      TypeSynonymInstances
+                      FlexibleInstances
