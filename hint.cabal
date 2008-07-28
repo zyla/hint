@@ -16,7 +16,7 @@ license-file:       LICENSE
 author:             Daniel Gorin
 maintainer:         jcpetruzza@gmail.com
 
-cabal-version:      >= 1.2 && < 1.5
+cabal-version:      >= 1.2
 build-type:         Simple
 tested-with:        GHC==6.6.1, GHC==6.8.2
 
@@ -24,8 +24,8 @@ tested-with:        GHC==6.6.1, GHC==6.8.2
 build-depends:      base,
                     haskell-src,
                     ghc,
-                    mtl,
                     ghc-paths,
+                    mtl,
                     random,
                     filepath,
                     directory,
