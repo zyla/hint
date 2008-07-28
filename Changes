@@ -1,3 +1,7 @@
+- ver 0.2.4
+ * setInstalledModsAreInScopeQualified added
+ * Now depends on ghc-paths (no longer needs a custom cabal script)
+
 - ver 0.2.2
  * setOptimizations added
  * Module Language.Haskell.Interpreter.GHC.Unsafe added
