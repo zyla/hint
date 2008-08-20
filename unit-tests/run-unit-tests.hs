@@ -86,11 +86,22 @@ test_priv_syms_in_scope s = testCase "private_syms_in_scope" [mod_file] $ do
     where mod_text = unlines ["module T(f) where", "f = g", "g = id"]
           mod_file = "TEST_PrivateSymbolsInScope.hs"
 
+test_comments_in_expr :: H.InterpreterSession -> HUnit.Test
+test_comments_in_expr s = testCase "comments_in_expr" [] $ do
+                               H.withSession s $ do
+                                 H.reset
+                                 H.setImports ["Prelude"]
+                                 let expr = "length $ concat [[1,2],[3]] -- bla"
+                                 H.typeChecks expr @@? "comment on expression"
+                                 H.eval expr
+                                 H.interpret expr (H.as :: Int)
+                                 return ()
 
 common_tests :: H.InterpreterSession -> [HUnit.Test]
 common_tests s = [test_reload_modified s,
                   test_lang_exts s,
-                  test_work_in_main s]
+                  test_work_in_main s,
+                  test_comments_in_expr s]
 
 
 non_sb_tests :: H.InterpreterSession -> HUnit.Test
