@@ -1,3 +1,6 @@
+- ver 0.2.4.1
+ * BUGFIX: No longer fails on expressions ending in a -- comment
+
 - ver 0.2.4
  * setInstalledModsAreInScopeQualified added
  * Now depends on ghc-paths (no longer needs a custom cabal script)
