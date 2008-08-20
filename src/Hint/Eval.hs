@@ -8,9 +8,10 @@ where
 import qualified GHC
 import qualified GHC.Exts ( unsafeCoerce# )
 
-
 import Data.Typeable hiding ( typeOf )
 import qualified Data.Typeable ( typeOf )
+
+import Data.Char
 
 import Hint.Base
 import Hint.Parsers
@@ -38,7 +39,7 @@ interpret expr witness = sandboxed go expr
             -- kind of errors
             failOnParseError parseExpr e
             --
-            let expr_typesig = concat ["(", e, ") :: ", show $ myTypeOf witness]
+            let expr_typesig = concat [parens e," :: ",show $ myTypeOf witness]
             expr_val <- mayFail $ GHC.compileExpr ghc_session expr_typesig
             --
             return (GHC.Exts.unsafeCoerce# expr_val :: a)
@@ -59,4 +60,20 @@ myTypeOf a
 --  instance for t.
 eval :: String -> Interpreter String
 eval expr = interpret show_expr (as :: String)
-    where show_expr = unwords ["Prelude.show", "(", expr, ") "]
+    where show_expr =  "Prelude.show" ++ (parens expr)
+
+
+-- Conceptually, @parens s = "(" ++ s ++ ")"@, where s is some valid haskell
+-- expression. In practice, it is harder than this.
+-- Observe that if @s@ ends with a trailing comment, then @parens s@ would
+-- be a malformed expression. The straightforward solution for this is to
+-- put the closing parenthesis in a different line. However, now we are
+-- messing with the layout rules and we don't know where @s@ is going to
+-- be used!
+-- Solution: @parens s = "(let {foo = " ++ s ++
+--                       "  ;} in foo)@ where foo does not occur in s
+parens :: String -> String
+parens s = concat ["(let {", foo, " = ", s, "\n",
+                    "                     ;} in ", foo, ")"]
+    where foo = "foo_1" ++ filter isDigit s
+        -- same trick as in Sandbox.safeBndFor
