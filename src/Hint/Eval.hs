@@ -11,11 +11,10 @@ import qualified GHC.Exts ( unsafeCoerce# )
 import Data.Typeable hiding ( typeOf )
 import qualified Data.Typeable ( typeOf )
 
-import Data.Char
-
 import Hint.Base
 import Hint.Parsers
 import Hint.Sandbox
+import Hint.Util
 
 
 -- | Convenience functions to be used with @interpret@ to provide witnesses.
@@ -75,5 +74,4 @@ eval expr = interpret show_expr (as :: String)
 parens :: String -> String
 parens s = concat ["(let {", foo, " = ", s, "\n",
                     "                     ;} in ", foo, ")"]
-    where foo = "foo_1" ++ filter isDigit s
-        -- same trick as in Sandbox.safeBndFor
+    where foo = safeBndFor s

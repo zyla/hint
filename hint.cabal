@@ -60,6 +60,7 @@ Library
                       Hint.Reflection
                       Hint.Typecheck
                       Hint.Sandbox
+                      Hint.Util
 
   hs-source-dirs:     src
 
