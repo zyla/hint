@@ -50,4 +50,4 @@ setOptimizations All  = setGhcOption "-O2"
 --   Observe that due to limitations in the GHC-API, when set to @False@, the
 --   private symbols in interpreted modules will not be in scope.
 setInstalledModsAreInScopeQualified :: Bool -> Interpreter ()
-setInstalledModsAreInScopeQualified b = onConf $ \c -> c{all_mods_in_scope = b}
+setInstalledModsAreInScopeQualified b = onState $ \s -> s{all_mods_in_scope = b}

@@ -10,8 +10,8 @@ import Data.List
 import Control.Monad.Error
 
 sandboxed :: (Expr -> Interpreter a) -> (Expr -> Interpreter a)
-sandboxed do_stuff = \expr -> do dont_need_sandbox <- fromConf all_mods_in_scope
-                                 if dont_need_sandbox
+sandboxed do_stuff = \expr -> do no_sandbox <- fromState all_mods_in_scope
+                                 if no_sandbox
                                    then do_stuff expr
                                    else usingAModule do_stuff expr
 

@@ -48,10 +48,14 @@ instance Error InterpreterError where
     noMsg  = UnknownError ""
     strMsg = UnknownError
 
-data InterpreterConf = Conf{all_mods_in_scope :: Bool}
+data InterpreterState = St{all_mods_in_scope :: Bool,
+                           active_phantoms   :: [PhantomModule],
+                           zombie_phantoms   :: [PhantomModule]}
 
-defaultConf :: InterpreterConf
-defaultConf = Conf {all_mods_in_scope = True}
+initialState :: InterpreterState
+initialState = St {all_mods_in_scope = True,
+                   active_phantoms   = [],
+                   zombie_phantoms   = []}
 
 -- I'm assuming operations on a ghcSession are not thread-safe. Besides, we need
 -- to be sure that messages captured by the log handler correspond to a single
@@ -59,10 +63,7 @@ defaultConf = Conf {all_mods_in_scope = True}
 newtype InterpreterSession =
     InterpreterSession {sessionState :: MVar SessionState}
 
-data SessionState = SessionState{configuration   :: IORef InterpreterConf,
-                                 --
-                                 active_phantoms :: IORef [PhantomModule],
-                                 zombie_phantoms :: IORef [PhantomModule],
+data SessionState = SessionState{internalState   :: IORef InterpreterState,
                                  --
                                  ghcSession      :: GHC.Session,
                                  ghcErrListRef   :: IORef [GhcError],
@@ -114,16 +115,11 @@ newSessionUsing ghc_root =
     do
         ghc_session      <- Compat.newSession ghc_root
         --
-        default_conf     <- newIORef defaultConf
-        act_phantoms_ref <- newIORef []
-        zom_phantoms_ref <- newIORef []
+        initial_state    <- newIORef initialState
         ghc_err_list_ref <- newIORef []
         let log_handler  =  mkLogHandler ghc_err_list_ref
         --
-        let session_state = SessionState{configuration   = default_conf,
-                                         --
-                                         active_phantoms = act_phantoms_ref,
-                                         zombie_phantoms = zom_phantoms_ref,
+        let session_state = SessionState{internalState   = initial_state,
                                          --
                                          ghcSession      = ghc_session,
                                          ghcErrListRef   = ghc_err_list_ref,
@@ -166,9 +162,6 @@ rethrowGhcException = throwDyn . GhcException
 fromSessionState :: (SessionState -> a) -> Interpreter a
 fromSessionState f = Interpreter $ fmap f ask
 
-readSessionStateRef ::(SessionState -> IORef a) -> Interpreter a
-readSessionStateRef target = (liftIO . readIORef) =<< fromSessionState target
-
 -- modifies a ref in the session state and returns the old value
 modifySessionStateRef :: (SessionState -> IORef a) -> (a -> a) -> Interpreter a
 modifySessionStateRef target f =
@@ -176,12 +169,12 @@ modifySessionStateRef target f =
        old_val <- liftIO $ atomicModifyIORef ref (\a -> (f a, a))
        return old_val
 
-fromConf :: (InterpreterConf -> a) -> Interpreter a
-fromConf f = do ref_conf <- fromSessionState configuration
-                liftIO $ f `fmap` readIORef ref_conf
+fromState :: (InterpreterState -> a) -> Interpreter a
+fromState f = do ref_st <- fromSessionState internalState
+                 liftIO $ f `fmap` readIORef ref_st
 
-onConf :: (InterpreterConf -> InterpreterConf) -> Interpreter ()
-onConf f = modifySessionStateRef configuration f >> return ()
+onState :: (InterpreterState -> InterpreterState) -> Interpreter ()
+onState f = modifySessionStateRef internalState f >> return ()
 
 -- =============== Error handling ==============================
 
