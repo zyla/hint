@@ -69,7 +69,7 @@ addPhantomModule mod_text =
        --
        liftIO $ UTF8.writeFile (pm_file pm) (mod_text $ pm_name pm)
        --
-       modifySessionStateRef active_phantoms (pm :)
+       onState (\s -> s{active_phantoms = pm:active_phantoms s})
        mayFail (do GHC.addTarget ghc_session t
                    res <- GHC.load ghc_session (GHC.LoadUpTo m)
                    return $ guard (isSucceeded res) >> Just ())
@@ -101,7 +101,7 @@ removePhantomModule pm =
            GHC.removeTarget ghc_session (targetId . fileTarget $ pm_file pm)
            return mods'
        --
-       modifySessionStateRef active_phantoms $ filter (pm /=)
+       onState (\s -> s{active_phantoms = filter (pm /=) $ active_phantoms s})
        --
        let isNotPhantom = isPhantomModule . fromGhcRep_  >=> return . not
        non_phantoms <- filterM isNotPhantom mods'
@@ -109,7 +109,7 @@ removePhantomModule pm =
          then do mayFail $ do res <- GHC.load ghc_session GHC.LoadAllTargets
                               return $ guard (isSucceeded res) >> Just ()
                  liftIO $ removeFile (pm_file pm)
-         else do modifySessionStateRef zombie_phantoms $ (pm :)
+         else do onState (\s -> s{zombie_phantoms = pm:zombie_phantoms s})
                  return ()
 
 fileTarget :: FilePath -> GHC.Target
@@ -121,8 +121,8 @@ targetId (GHC.Target _id _) = _id
 
 -- Returns a tuple with the active and zombie phantom modules respectively
 getPhantomModules :: Interpreter ([PhantomModule], [PhantomModule])
-getPhantomModules = do active <- readSessionStateRef active_phantoms
-                       zombie <- readSessionStateRef zombie_phantoms
+getPhantomModules = do active <- fromState active_phantoms
+                       zombie <- fromState zombie_phantoms
                        return (active, zombie)
 
 isPhantomModule :: ModuleName -> Interpreter Bool
@@ -181,7 +181,7 @@ setTopLevelModules ms =
             throwError $ NotAllowed ("These modules have not been loaded:\n" ++
                                      unlines not_loaded)
         --
-        active_pms <- readSessionStateRef active_phantoms
+        active_pms <- fromState active_phantoms
         ms_mods <- mapM findModule (nub $ ms ++ map pm_name active_pms)
         --
         let mod_is_interpr = GHC.moduleIsInterpreted ghc_session
@@ -229,8 +229,10 @@ reset =
         -- liftIO $ rts_revertCAFs
         --
         -- We now remove every phantom module
-        old_active <- modifySessionStateRef active_phantoms (const [])
-        old_zombie <- modifySessionStateRef zombie_phantoms (const [])
+        old_active <- fromState active_phantoms
+        old_zombie <- fromState zombie_phantoms
+        onState (\s -> s{active_phantoms = [],
+                         zombie_phantoms = []})
         liftIO $ mapM_ (removeFile . pm_file) (old_active ++ old_zombie)
 
 -- SHOULD WE CALL THIS WHEN MODULES ARE LOADED / UNLOADED?
