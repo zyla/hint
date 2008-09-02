@@ -59,10 +59,14 @@ defaultConf = Conf {all_mods_in_scope = True}
 newtype InterpreterSession =
     InterpreterSession {sessionState :: MVar SessionState}
 
-data SessionState = SessionState{configuration :: IORef InterpreterConf,
-                                 ghcSession    :: GHC.Session,
-                                 ghcErrListRef :: IORef [GhcError],
-                                 ghcErrLogger  :: GhcErrLogger}
+data SessionState = SessionState{configuration   :: IORef InterpreterConf,
+                                 --
+                                 active_phantoms :: IORef [PhantomModule],
+                                 zombie_phantoms :: IORef [PhantomModule],
+                                 --
+                                 ghcSession      :: GHC.Session,
+                                 ghcErrListRef   :: IORef [GhcError],
+                                 ghcErrLogger    :: GhcErrLogger}
 
 -- When intercepting errors reported by GHC, we only get a GHC.E.Message
 -- and a GHC.S.SrcSpan. The latter holds the file name and the location
@@ -111,13 +115,19 @@ newSessionUsing ghc_root =
         ghc_session      <- Compat.newSession ghc_root
         --
         default_conf     <- newIORef defaultConf
+        act_phantoms_ref <- newIORef []
+        zom_phantoms_ref <- newIORef []
         ghc_err_list_ref <- newIORef []
         let log_handler  =  mkLogHandler ghc_err_list_ref
         --
-        let session_state = SessionState{configuration = default_conf,
-                                         ghcSession    = ghc_session,
-                                         ghcErrListRef = ghc_err_list_ref,
-                                         ghcErrLogger  = log_handler}
+        let session_state = SessionState{configuration   = default_conf,
+                                         --
+                                         active_phantoms = act_phantoms_ref,
+                                         zombie_phantoms = zom_phantoms_ref,
+                                         --
+                                         ghcSession      = ghc_session,
+                                         ghcErrListRef   = ghc_err_list_ref,
+                                         ghcErrLogger    = log_handler}
         --
         -- Set a custom log handler, to intercept error messages :S
         -- Observe that, setSessionDynFlags loads info on packages available;
@@ -155,6 +165,9 @@ rethrowGhcException = throwDyn . GhcException
 
 fromSessionState :: (SessionState -> a) -> Interpreter a
 fromSessionState f = Interpreter $ fmap f ask
+
+readSessionStateRef ::(SessionState -> IORef a) -> Interpreter a
+readSessionStateRef target = (liftIO . readIORef) =<< fromSessionState target
 
 -- modifies a ref in the session state and returns the old value
 modifySessionStateRef :: (SessionState -> IORef a) -> (a -> a) -> Interpreter a
@@ -197,6 +210,10 @@ finally action clean_up = do r <- protected_action
                                        throwError e)
 
 -- ================ Misc ===================================
+
+-- this type ought to go in Hint.Context, but ghc dislikes cyclic imports...
+data PhantomModule = PhantomModule{pm_name :: ModuleName, pm_file :: FilePath}
+                   deriving (Eq, Show)
 
 findModule :: ModuleName -> Interpreter GHC.Module
 findModule mn =
