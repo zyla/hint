@@ -25,7 +25,7 @@ module Language.Haskell.Interpreter.GHC(
     -- ** Context handling
      ModuleName,
      loadModules, getLoadedModules, setTopLevelModules,
-     setImports,
+     setImports, setImportsQ,
      reset,
     -- ** Module querying
      ModuleElem(..), Id, name, children,

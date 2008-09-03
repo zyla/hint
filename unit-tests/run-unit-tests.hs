@@ -97,11 +97,22 @@ test_comments_in_expr s = testCase "comments_in_expr" [] $ do
                                  H.interpret expr (H.as :: Int)
                                  return ()
 
+test_qual_import :: H.InterpreterSession -> HUnit.Test
+test_qual_import s = testCase "qual_import" [] $ do
+                         H.withSession s $ do
+                           H.reset
+                           H.setImportsQ [("Prelude", Nothing),
+                                          ("Data.Map", Just "M")]
+                           H.typeChecks "null []" @@? "Unqual null"
+                           H.typeChecks "M.null M.empty" @@? "Qual null"
+                           return ()
+
 common_tests :: H.InterpreterSession -> [HUnit.Test]
 common_tests s = [test_reload_modified s,
                   test_lang_exts s,
                   test_work_in_main s,
-                  test_comments_in_expr s]
+                  test_comments_in_expr s,
+                  test_qual_import s]
 
 
 non_sb_tests :: H.InterpreterSession -> HUnit.Test
