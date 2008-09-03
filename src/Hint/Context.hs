@@ -2,13 +2,13 @@ module Hint.Context (
 
       ModuleName,
       loadModules, getLoadedModules, setTopLevelModules,
-      setImports,
+      setImports, setImportsQ,
       reset,
 
       PhantomModule(..), ModuleText,
       addPhantomModule, removePhantomModule, getPhantomModules,
 
-      allModulesInContext
+      allModulesInContext, onAnEmptyContext
 )
 
 where
@@ -25,6 +25,7 @@ import Control.Monad.Error ( catchError, throwError, liftIO )
 import Hint.Base
 import Hint.Util ( (>=>) ) -- compat version
 import Hint.Conversions
+import qualified Hint.Util as Util
 
 import qualified GHC
 import qualified DriverPhases as DP
@@ -194,17 +195,56 @@ setTopLevelModules ms =
             (_, old_imports) <- GHC.getContext ghc_session
             GHC.setContext ghc_session ms_mods old_imports
 
+onAnEmptyContext :: Interpreter a -> Interpreter a
+onAnEmptyContext action =
+    do ghc_session <- fromSessionState ghcSession
+       (old_mods, old_imps) <- liftIO $ GHC.getContext ghc_session
+       liftIO $ GHC.setContext ghc_session [] []
+       let restore = liftIO $ GHC.setContext ghc_session old_mods old_imps
+       a <- action `catchError` (\e -> do restore; throwError e)
+       restore
+       return a
+
 -- | Sets the modules whose exports must be in context.
 setImports :: [ModuleName] -> Interpreter ()
-setImports ms =
-    do
-        ghc_session <- fromSessionState ghcSession
-        --
-        ms_mods <- mapM findModule ms
-        --
-        liftIO $ do
-            (old_top_level, _) <- GHC.getContext ghc_session
-            GHC.setContext ghc_session old_top_level ms_mods
+setImports ms = setImportsQ $ zip ms (repeat Nothing)
+
+-- | Sets the modules whose exports must be in context; some
+--   of them may be qualified. E.g.:
+--
+--   @setImports [("Prelude", Nothing), ("Data.Map", Just "M")]@.
+--
+--   Here, "map" will refer to Prelude.map and "M.map" to Data.Map.map.
+setImportsQ :: [(ModuleName, Maybe String)] -> Interpreter ()
+setImportsQ ms =
+    do ghc_session <- fromSessionState ghcSession
+       --
+       let (q,     u) = Util.partition (isJust . snd) ms
+           (quals, unquals) = (map (\(a, Just b) -> (a,b)) q, map fst u)
+       --
+       unqual_mods <- mapM findModule unquals
+       mapM_ (findModule . fst) quals -- just to be sure they exist
+       --
+       old_qual_hack_mod <- fromState import_qual_hack_mod
+       maybe (return ()) removePhantomModule old_qual_hack_mod
+       --
+       new_pm <- if ( not $ null quals )
+                   then do
+                     new_pm <- addPhantomModule $ \mod_name -> unlines $
+                                ("module " ++ mod_name ++ " where ") :
+                                ["import qualified " ++ m ++ " as " ++ n |
+                                   (m,n) <- quals]
+                     onState (\s -> s{import_qual_hack_mod = Just new_pm})
+                     return $ Just new_pm
+                   else return Nothing
+       --
+       pm <- maybe (return []) (findModule . pm_name >=> return . return) new_pm
+       liftIO $ do
+           (old_top_level, _) <- GHC.getContext ghc_session
+           let new_top_level = pm ++ old_top_level
+           GHC.setContext ghc_session new_top_level unqual_mods
+       --
+       onState (\s ->s{qual_imports = quals})
 
 -- | All imported modules are cleared from the context, and
 --   loaded modules are unloaded. It is similar to a @:load@ in
@@ -228,11 +268,13 @@ reset =
         --
         -- liftIO $ rts_revertCAFs
         --
-        -- We now remove every phantom module
+        -- We now remove every phantom module and forget about qual imports
         old_active <- fromState active_phantoms
         old_zombie <- fromState zombie_phantoms
-        onState (\s -> s{active_phantoms = [],
-                         zombie_phantoms = []})
+        onState (\s -> s{active_phantoms      = [],
+                         zombie_phantoms      = [],
+                         import_qual_hack_mod = Nothing,
+                         qual_imports         = []})
         liftIO $ mapM_ (removeFile . pm_file) (old_active ++ old_zombie)
 
 -- SHOULD WE CALL THIS WHEN MODULES ARE LOADED / UNLOADED?

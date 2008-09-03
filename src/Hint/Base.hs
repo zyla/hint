@@ -48,14 +48,18 @@ instance Error InterpreterError where
     noMsg  = UnknownError ""
     strMsg = UnknownError
 
-data InterpreterState = St{all_mods_in_scope :: Bool,
-                           active_phantoms   :: [PhantomModule],
-                           zombie_phantoms   :: [PhantomModule]}
+data InterpreterState = St{all_mods_in_scope    :: Bool,
+                           active_phantoms      :: [PhantomModule],
+                           zombie_phantoms      :: [PhantomModule],
+                           import_qual_hack_mod :: Maybe PhantomModule,
+                           qual_imports         :: [(ModuleName, String)]}
 
 initialState :: InterpreterState
-initialState = St {all_mods_in_scope = True,
-                   active_phantoms   = [],
-                   zombie_phantoms   = []}
+initialState = St {all_mods_in_scope    = True,
+                   active_phantoms      = [],
+                   zombie_phantoms      = [],
+                   import_qual_hack_mod = Nothing,
+                   qual_imports         = []}
 
 -- I'm assuming operations on a ghcSession are not thread-safe. Besides, we need
 -- to be sure that messages captured by the log handler correspond to a single

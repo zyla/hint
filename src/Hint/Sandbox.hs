@@ -30,20 +30,20 @@ usingAModule do_stuff_on = \expr ->
          False -> do_stuff_on expr -- fail as you wish...
          True  ->
              do (loaded, imports) <- allModulesInContext
-                (active, zombies) <- getPhantomModules
+                zombies           <- fromState zombie_phantoms
+                quals             <- fromState qual_imports
                 --
                 let e = safeBndFor expr
                 let mod_text no_prel mod_name = textify [
-                        ["{-# OPTIONS_GHC -fno-monomorphism-restriction #-}"],
-                        ["{-# OPTIONS_GHC -fno-implicit-prelude #-}" | no_prel],
-                        ["module " ++ mod_name],
-                        ["where"],
-                        ["import " ++ m | m <- loaded ++ imports,
-                                          not $ m `elem` (map pm_name zombies)],
-                        [e ++ " = " ++ expr] ]
+                     ["{-# OPTIONS_GHC -fno-monomorphism-restriction #-}"],
+                     ["{-# OPTIONS_GHC -fno-implicit-prelude #-}" | no_prel],
+                     ["module " ++ mod_name],
+                     ["where"],
+                     ["import " ++ m | m <- loaded ++ imports,
+                                       not $ m `elem` (map pm_name zombies)],
+                     ["import qualified " ++ m ++ " as " ++ q | (m,q) <- quals],
+                     [e ++ " = " ++ expr] ]
                 --
-                setTopLevelModules []
-                setImports []
                 let go no_prel = do pm <- addPhantomModule (mod_text no_prel)
                                     setTopLevelModules [pm_name pm]
                                     r <- do_stuff_on e
@@ -61,13 +61,10 @@ usingAModule do_stuff_on = \expr ->
                 -- we will import the Prelude if the operation fails...
                 -- I guess this may lead to even more obscure errors, but
                 -- hopefully in much less frequent situations...
-                r <- go True
+                r <- onAnEmptyContext $ go True
                       `catchError` (\err -> case err of
                                              WontCompile _ -> go False
                                              _             -> throwError err)
-                --
-                setTopLevelModules $ loaded \\ map pm_name active
-                setImports imports
                 --
                 return r
            --
