@@ -20,6 +20,11 @@ testHint =
       setTopLevelModules ["SomeModule"]
       setImports         ["Prelude"]
       --
+      say "Test qualified imports."
+      setImportsQ [("Data.Map", Just "M")]
+      e <- eval "M.map (+1) $ M.fromList [(1,2), (3,4)]"
+      say (show e)
+      --
       say "Now we can query the type of an expression"
       let expr1 = "(f, g, h, 42)"
       say $ "e.g. typeOf " ++ expr1
