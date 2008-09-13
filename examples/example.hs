@@ -16,17 +16,13 @@ testHint =
       say "Load SomeModule.hs"
       loadModules ["SomeModule.hs"]
       --
-      say "Put the Prelude and *SomeModule in scope"
+      say "Put the Prelude, Data.Map and *SomeModule in scope"
+      say "Data.Map is qualified as M!"
       setTopLevelModules ["SomeModule"]
-      setImports         ["Prelude"]
-      --
-      say "Test qualified imports."
-      setImportsQ [("Data.Map", Just "M")]
-      e <- eval "M.map (+1) $ M.fromList [(1,2), (3,4)]"
-      say (show e)
+      setImportsQ [("Prelude", Nothing), ("Data.Map", Just "M")]
       --
       say "Now we can query the type of an expression"
-      let expr1 = "(f, g, h, 42)"
+      let expr1 = "M.singleton (f, g, h, 42)"
       say $ "e.g. typeOf " ++ expr1
       say =<< typeOf expr1
       --
