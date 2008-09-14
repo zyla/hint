@@ -71,9 +71,17 @@ addPhantomModule mod_text =
        liftIO $ UTF8.writeFile (pm_file pm) (mod_text $ pm_name pm)
        --
        onState (\s -> s{active_phantoms = pm:active_phantoms s})
-       mayFail (do GHC.addTarget ghc_session t
+       mayFail (do -- GHC.load will remove all the modules from scope, so first
+                   -- we save the context...
+                   (old_top, old_imps) <- GHC.getContext ghc_session
+                   --
+                   GHC.addTarget ghc_session t
                    res <- GHC.load ghc_session (GHC.LoadUpTo m)
-                   return $ guard (isSucceeded res) >> Just ())
+                   --
+                   if isSucceeded res
+                     then do GHC.setContext ghc_session old_top old_imps
+                             return $ Just ()
+                     else return Nothing)
         `catchError` (\err -> case err of
                                 WontCompile _ -> do removePhantomModule pm
                                                     throwError err
