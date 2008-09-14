@@ -68,10 +68,11 @@ test_work_in_main s = testCase "work_in_main" [mod_file] $ do
                         H.withSession s $ do
                           H.loadModules [mod_file]
                           H.setTopLevelModules ["Main"]
-                          H.setImports ["Prelude"]
+                          H.setImportsQ [("Prelude",Nothing),
+                                         ("Data.Maybe", Just "Mb")]
                           --
                           H.typeOf "f $ 1+1" @@?= "(Num a) => a"
-                          H.eval "f $ filter odd [1,2]" @@?= "[1]"
+                          H.eval "f . Mb.fromJust $ Just [1,2]" @@?= "[1,2]"
                           H.interpret "f $ 1 == 2" H.infer @@?= False
     --
     where mod_file     = "TEST_WorkInMain.hs"
