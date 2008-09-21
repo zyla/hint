@@ -108,12 +108,19 @@ test_qual_import s = testCase "qual_import" [] $ do
                            H.typeChecks "M.null M.empty" @@? "Qual null"
                            return ()
 
+test_basic_eval :: H.InterpreterSession -> HUnit.Test
+test_basic_eval s = testCase "basic_eval" [] $ do
+                        H.withSession s $ do
+                           H.reset
+                           H.eval "()" @@?= "()"
+
 common_tests :: H.InterpreterSession -> [HUnit.Test]
 common_tests s = [test_reload_modified s,
                   test_lang_exts s,
                   test_work_in_main s,
                   test_comments_in_expr s,
-                  test_qual_import s]
+                  test_qual_import s,
+                  test_basic_eval s]
 
 
 non_sb_tests :: H.InterpreterSession -> HUnit.Test
