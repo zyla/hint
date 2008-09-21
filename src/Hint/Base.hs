@@ -222,6 +222,12 @@ findModule mn =
                                                      mod_name
                                                      Nothing
 
+moduleIsLoaded :: ModuleName -> Interpreter Bool
+moduleIsLoaded mn = (findModule mn >> return True)
+                   `catchError` (\e -> case e of
+                                        NotAllowed{} -> return False
+                                        _            -> throwError e)
+
 failOnParseError :: (GHC.Session -> String -> IO ParseResult)
                  -> String
                  -> Interpreter ()

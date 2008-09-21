@@ -101,20 +101,28 @@ removePhantomModule pm =
        -- and mark it as "delete me when possible" (i.e., next time the
        -- @loadModules@ function is called).
        --
-       mod <- findModule (pm_name pm)
-       mods' <- liftIO $ do
-           (mods, imps) <- GHC.getContext ghc_session
-           let mods' = filter (mod /=) mods
-           GHC.setContext ghc_session mods' imps
-           --
-           GHC.removeTarget ghc_session (targetId . fileTarget $ pm_file pm)
-           return mods'
+       isLoaded <- moduleIsLoaded $ pm_name pm
+       safeToRemove <-
+           if isLoaded
+             then do -- take it out of scope
+                     mod <- findModule (pm_name pm)
+                     mods' <- liftIO $ do
+                       (mods, imps) <- GHC.getContext ghc_session
+                       let mods' = filter (mod /=) mods
+                       GHC.setContext ghc_session mods' imps
+                       return mods'
+                     --
+                     let isNotPhantom = isPhantomModule . fromGhcRep_  >=>
+                                          return . not
+                     null `liftM` filterM isNotPhantom mods'
+             else return True
+       --
+       let file_name = pm_file pm
+       liftIO $ GHC.removeTarget ghc_session (targetId . fileTarget $ file_name)
        --
        onState (\s -> s{active_phantoms = filter (pm /=) $ active_phantoms s})
        --
-       let isNotPhantom = isPhantomModule . fromGhcRep_  >=> return . not
-       non_phantoms <- filterM isNotPhantom mods'
-       if null non_phantoms
+       if safeToRemove
          then do mayFail $ do res <- GHC.load ghc_session GHC.LoadAllTargets
                               return $ guard (isSucceeded res) >> Just ()
                  liftIO $ removeFile (pm_file pm)
