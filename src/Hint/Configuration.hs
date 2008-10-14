@@ -13,7 +13,7 @@ import Hint.Base
 
 setGhcOptions :: [String] -> Interpreter ()
 setGhcOptions opts =
-    do ghc_session <- fromSessionState ghcSession
+    do ghc_session <- fromSession ghcSession
        old_flags   <- liftIO $ GHC.getSessionDynFlags ghc_session
        (new_flags, not_parsed) <- liftIO $ GHC.parseDynamicFlags old_flags opts
        when (not . null $ not_parsed) $

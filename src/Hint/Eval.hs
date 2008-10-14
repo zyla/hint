@@ -31,7 +31,7 @@ infer = undefined
 interpret :: Typeable a => String -> a -> Interpreter a
 interpret expr witness = sandboxed go expr
   where go e =
-         do ghc_session <- fromSessionState ghcSession
+         do ghc_session <- fromSession ghcSession
             --
             -- First, make sure the expression has no syntax errors,
             -- for this is the only way we have to "intercept" this
