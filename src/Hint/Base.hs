@@ -23,13 +23,26 @@ import qualified ErrUtils   as GHC.E
 import qualified Hint.Compat as Compat
 import Hint.Parsers
 
+-- this requires FlexibleContexts
+class (MonadIO m, MonadError InterpreterError m) => MonadInterpreter m where
+    fromSession      :: (InterpreterSession -> a) -> m a
+    modifySessionRef :: (InterpreterSession -> IORef a) -> (a -> a) -> m a
+
 newtype InterpreterT m a = InterpreterT{
                              unInterpreterT :: ReaderT InterpreterSession
                                                (ErrorT InterpreterError m) a}
     deriving (Functor, Monad, MonadIO)
 
 
-type Interpreter = InterpreterT IO
+-- type Interpreter = InterpreterT IO
+
+instance MonadIO m => MonadInterpreter (InterpreterT m) where
+    fromSession f = InterpreterT $ fmap f ask
+    --
+    modifySessionRef target f =
+        do ref     <- fromSession target
+           old_val <- liftIO $ atomicModifyIORef ref (\a -> (f a, a))
+           return old_val
 
 instance MonadTrans InterpreterT where
     lift = InterpreterT . lift . lift
@@ -85,10 +98,10 @@ mkGhcError src_span style msg = GhcError{errMsg = niceErrMsg}
     where niceErrMsg = GHC.O.showSDoc . GHC.O.withPprStyle style $
                          GHC.E.mkLocMessage src_span msg
 
-mapGhcExceptions :: MonadIO m
+mapGhcExceptions :: MonadInterpreter m
                  => (String -> InterpreterError)
                  -> IO a
-                 -> InterpreterT m a
+                 -> m a
 mapGhcExceptions buildEx action =
     do  r <- liftIO $ tryJust ghcExceptions action
         either (throwError . buildEx . flip GHC.showGhcException []) return r
@@ -155,31 +168,16 @@ rethrowGhcException = throwDyn . GhcException
 
 -- ================ Handling the interpreter state =================
 
-fromSession :: Monad m => (InterpreterSession -> a) -> InterpreterT m a
-fromSession f = InterpreterT $ fmap f ask
-
--- modifies a ref in the session state and returns the old value
-modifySessionRef :: MonadIO m
-                 => (InterpreterSession -> IORef a)
-                 -> (a -> a)
-                 -> InterpreterT m a
-modifySessionRef target f =
-    do ref     <- fromSession target
-       old_val <- liftIO $ atomicModifyIORef ref (\a -> (f a, a))
-       return old_val
-
-fromState :: MonadIO m => (InterpreterState -> a) -> InterpreterT m a
+fromState :: MonadInterpreter m => (InterpreterState -> a) -> m a
 fromState f = do ref_st <- fromSession internalState
                  liftIO $ f `fmap` readIORef ref_st
 
-onState :: MonadIO m
-        => (InterpreterState -> InterpreterState)
-        -> InterpreterT m ()
+onState :: MonadInterpreter m => (InterpreterState -> InterpreterState) -> m ()
 onState f = modifySessionRef internalState f >> return ()
 
 -- =============== Error handling ==============================
 
-mayFail :: MonadIO m => IO (Maybe a) -> InterpreterT m a
+mayFail :: MonadInterpreter m => IO (Maybe a) -> m a
 mayFail ghc_action =
     do
         maybe_res <- liftIO ghc_action
@@ -194,7 +192,7 @@ mayFail ghc_action =
                          then return a
                          else fail "GHC reported errors and also gave a result!"
 
-finally :: Monad m => InterpreterT m a -> InterpreterT m () -> InterpreterT m a
+finally :: MonadInterpreter m => m a -> m () -> m a
 finally action clean_up = do r <- protected_action
                              clean_up
                              return r
@@ -209,49 +207,46 @@ finally action clean_up = do r <- protected_action
 data PhantomModule = PhantomModule{pm_name :: ModuleName, pm_file :: FilePath}
                    deriving (Eq, Show)
 
-findModule :: MonadIO m => ModuleName -> InterpreterT m GHC.Module
+findModule :: MonadInterpreter m => ModuleName -> m GHC.Module
 findModule mn =
-    do
-        ghc_session <- fromSession ghcSession
-        --
-        let mod_name = GHC.mkModuleName mn
-        mapGhcExceptions NotAllowed $ GHC.findModule ghc_session
-                                                     mod_name
-                                                     Nothing
+    do ghc_session <- fromSession ghcSession
+       --
+       let mod_name = GHC.mkModuleName mn
+       mapGhcExceptions NotAllowed $ GHC.findModule ghc_session
+                                                    mod_name
+                                                    Nothing
 
-moduleIsLoaded :: MonadIO m => ModuleName -> InterpreterT m Bool
+moduleIsLoaded :: MonadInterpreter m => ModuleName -> m Bool
 moduleIsLoaded mn = (findModule mn >> return True)
                    `catchError` (\e -> case e of
                                         NotAllowed{} -> return False
                                         _            -> throwError e)
 
-failOnParseError :: MonadIO m
+failOnParseError :: MonadInterpreter m
                  => (GHC.Session -> String -> IO ParseResult)
                  -> String
-                 -> InterpreterT m ()
+                 -> m ()
 failOnParseError parser expr =
-    do
-        ghc_session <- fromSession ghcSession
-        --
-        parsed <- liftIO $ parser ghc_session expr
-        --
-        -- If there was a parsing error, do the "standard" error reporting
-        res <- case parsed of
-                   ParseOk             -> return (Just ())
-                   --
-                   ParseError span err ->
-                       do
-                           -- parsing failed, so we report it just as all
-                           -- other errors get reported....
-                           logger <- fromSession ghcErrLogger
-                           liftIO $ logger GHC.SevError
-                                           span
-                                           GHC.O.defaultErrStyle
-                                           err
-                           --
-                           -- behave like the rest of the GHC API functions
-                           -- do on error...
-                           return Nothing
-        --
-        -- "may Have Already Failed", actually :)
-        mayFail (return res)
+    do ghc_session <- fromSession ghcSession
+       --
+       parsed <- liftIO $ parser ghc_session expr
+       --
+       -- If there was a parsing error, do the "standard" error reporting
+       res <- case parsed of
+                  ParseOk             -> return (Just ())
+                  --
+                  ParseError span err ->
+                      do -- parsing failed, so we report it just as all
+                         -- other errors get reported....
+                         logger <- fromSession ghcErrLogger
+                         liftIO $ logger GHC.SevError
+                                         span
+                                         GHC.O.defaultErrStyle
+                                         err
+                         --
+                         -- behave like the rest of the GHC API functions
+                         -- do on error...
+                         return Nothing
+       --
+       -- "may Have Already Failed", actually :)
+       mayFail (return res)
