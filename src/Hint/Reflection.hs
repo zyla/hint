@@ -39,7 +39,7 @@ children (Data  _ dcs) = dcs
 getModuleExports :: ModuleName -> Interpreter [ModuleElem]
 getModuleExports mn =
     do
-        ghc_session <- fromSessionState ghcSession
+        ghc_session <- fromSession ghcSession
         --
         module_  <- findModule mn
         mod_info <- mayFail $ GHC.getModuleInfo ghc_session module_

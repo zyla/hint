@@ -35,7 +35,7 @@ instance FromGhcRep GHC.Type HsQualType where
 
 
 instance FromGhcRep GHC.Type String where
-    fromGhcRep t = do ghc_session <- fromSessionState ghcSession
+    fromGhcRep t = do ghc_session <- fromSession ghcSession
                       -- Unqualify necessary types
                       -- (i.e., do not expose internals)
                       unqual <- liftIO $ GHC.getPrintUnqual ghc_session
