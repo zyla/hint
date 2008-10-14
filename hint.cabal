@@ -72,3 +72,4 @@ Library
                       MagicHash
                       TypeSynonymInstances
                       FlexibleInstances
+                      FlexibleContexts
