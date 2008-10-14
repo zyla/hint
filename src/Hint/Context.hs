@@ -43,24 +43,26 @@ type ModuleText = String
 -- mind we want to avoid easy-to-guess names. Thus, we do a trick similar
 -- to the one in safeBndFor, but including a random number instead of an
 -- additional digit
-newPhantomModule :: Interpreter PhantomModule
+newPhantomModule :: MonadInterpreter m => m PhantomModule
 newPhantomModule =
-    do n <- liftIO randomIO :: Interpreter Int
+    do n <- liftIO randomIO
        (ls,is) <- allModulesInContext
-       let nums = concat [show (abs n), filter isDigit $ concat (ls ++ is)]
+       let nums = concat [show (abs n::Int), filter isDigit $ concat (ls ++ is)]
        let mod_name = 'M':nums
        --
        tmp_dir <- liftIO getTemporaryDirectory
        --
        return PhantomModule{pm_name = mod_name, pm_file = tmp_dir </> nums}
 
-allModulesInContext :: Interpreter ([ModuleName], [ModuleName])
+allModulesInContext :: MonadInterpreter m => m ([ModuleName], [ModuleName])
 allModulesInContext =
     do ghc_session <- fromSession ghcSession
        (l, i) <- liftIO $ GHC.getContext ghc_session
        return (map fromGhcRep_ l, map fromGhcRep_ i)
 
-addPhantomModule :: (ModuleName -> ModuleText) -> Interpreter PhantomModule
+addPhantomModule :: MonadInterpreter m
+                 => (ModuleName -> ModuleText)
+                 -> m PhantomModule
 addPhantomModule mod_text =
     do ghc_session <- fromSession ghcSession
        --
@@ -89,7 +91,7 @@ addPhantomModule mod_text =
        --
        return pm
 
-removePhantomModule :: PhantomModule -> Interpreter ()
+removePhantomModule :: MonadInterpreter m => PhantomModule -> m ()
 removePhantomModule pm =
     do ghc_session <- fromSession ghcSession
        --
@@ -137,12 +139,12 @@ targetId :: GHC.Target -> GHC.TargetId
 targetId (GHC.Target _id _) = _id
 
 -- Returns a tuple with the active and zombie phantom modules respectively
-getPhantomModules :: Interpreter ([PhantomModule], [PhantomModule])
+getPhantomModules :: MonadInterpreter m => m ([PhantomModule], [PhantomModule])
 getPhantomModules = do active <- fromState active_phantoms
                        zombie <- fromState zombie_phantoms
                        return (active, zombie)
 
-isPhantomModule :: ModuleName -> Interpreter Bool
+isPhantomModule :: MonadInterpreter m => ModuleName -> m Bool
 isPhantomModule mn = do (as,zs) <- getPhantomModules
                         return $ mn `elem` (map pm_name $ as ++ zs)
 
@@ -152,12 +154,12 @@ isPhantomModule mn = do (as,zs) <- getPhantomModules
 --
 -- The interpreter is 'reset' both before loading the modules and in the event
 -- of an error.
-loadModules :: [String] -> Interpreter ()
+loadModules :: MonadInterpreter m => [String] -> m ()
 loadModules fs = do -- first, unload everything, and do some clean-up
                     reset
                     doLoad fs `catchError` (\e -> reset >> throwError e)
 
-doLoad :: [String] -> Interpreter ()
+doLoad :: MonadInterpreter m => [String] -> m ()
 doLoad fs = do ghc_session <- fromSession ghcSession
                mayFail $ do
                    targets <- mapM (\f -> GHC.guessTarget f Nothing) fs
@@ -167,7 +169,7 @@ doLoad fs = do ghc_session <- fromSession ghcSession
                    return $ guard (isSucceeded res) >> Just ()
 
 -- | Returns the list of modules loaded with 'loadModules'.
-getLoadedModules :: Interpreter [ModuleName]
+getLoadedModules :: MonadInterpreter m => m [ModuleName]
 getLoadedModules = do (active_pms, zombie_pms) <- getPhantomModules
                       ms <- map modNameFromSummary `liftM` getLoadedModSummaries
                       return $ ms \\ (map pm_name $ active_pms ++ zombie_pms)
@@ -175,7 +177,7 @@ getLoadedModules = do (active_pms, zombie_pms) <- getPhantomModules
 modNameFromSummary :: GHC.ModSummary -> ModuleName
 modNameFromSummary =  fromGhcRep_ . GHC.ms_mod
 
-getLoadedModSummaries :: Interpreter [GHC.ModSummary]
+getLoadedModSummaries :: MonadInterpreter m => m [GHC.ModSummary]
 getLoadedModSummaries =
   do ghc_session  <- fromSession ghcSession
      --
@@ -186,7 +188,7 @@ getLoadedModSummaries =
 --   of these modules are in scope, not only those exported.
 --
 --   Modules must be interpreted to use this function.
-setTopLevelModules :: [ModuleName] -> Interpreter ()
+setTopLevelModules :: MonadInterpreter m => [ModuleName] -> m ()
 setTopLevelModules ms =
     do
         ghc_session <- fromSession ghcSession
@@ -211,7 +213,7 @@ setTopLevelModules ms =
             (_, old_imports) <- GHC.getContext ghc_session
             GHC.setContext ghc_session ms_mods old_imports
 
-onAnEmptyContext :: Interpreter a -> Interpreter a
+onAnEmptyContext :: MonadInterpreter m => m a -> m a
 onAnEmptyContext action =
     do ghc_session <- fromSession ghcSession
        (old_mods, old_imps) <- liftIO $ GHC.getContext ghc_session
@@ -222,7 +224,7 @@ onAnEmptyContext action =
        return a
 
 -- | Sets the modules whose exports must be in context.
-setImports :: [ModuleName] -> Interpreter ()
+setImports :: MonadInterpreter m => [ModuleName] -> m ()
 setImports ms = setImportsQ $ zip ms (repeat Nothing)
 
 -- | Sets the modules whose exports must be in context; some
@@ -231,7 +233,7 @@ setImports ms = setImportsQ $ zip ms (repeat Nothing)
 --   @setImports [("Prelude", Nothing), ("Data.Map", Just "M")]@.
 --
 --   Here, "map" will refer to Prelude.map and "M.map" to Data.Map.map.
-setImportsQ :: [(ModuleName, Maybe String)] -> Interpreter ()
+setImportsQ :: MonadInterpreter m => [(ModuleName, Maybe String)] -> m ()
 setImportsQ ms =
     do ghc_session <- fromSession ghcSession
        --
@@ -266,7 +268,7 @@ setImportsQ ms =
 --   loaded modules are unloaded. It is similar to a @:load@ in
 --   GHCi, but observe that not even the Prelude will be in
 --   context after a reset.
-reset :: Interpreter ()
+reset :: MonadInterpreter m => m ()
 reset =
     do
         ghc_session <- fromSession ghcSession

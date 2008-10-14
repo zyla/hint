@@ -1,5 +1,5 @@
 module Hint.Typecheck where
 
-import Hint.Base (Interpreter)
+import Hint.Base (MonadInterpreter)
 
-typeChecks_unsandboxed :: String -> Interpreter Bool
+typeChecks_unsandboxed :: MonadInterpreter m => String -> m Bool

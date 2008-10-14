@@ -36,7 +36,7 @@ children (Data  _ dcs) = dcs
 
 -- | Gets an abstract representation of all the entities exported by the module.
 --   It is similar to the @:browse@ command in GHCi.
-getModuleExports :: ModuleName -> Interpreter [ModuleElem]
+getModuleExports :: MonadInterpreter m => ModuleName -> m [ModuleElem]
 getModuleExports mn =
     do
         ghc_session <- fromSession ghcSession

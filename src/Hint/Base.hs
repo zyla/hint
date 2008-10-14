@@ -34,7 +34,7 @@ newtype InterpreterT m a = InterpreterT{
     deriving (Functor, Monad, MonadIO)
 
 
--- type Interpreter = InterpreterT IO
+type Interpreter = InterpreterT IO
 
 instance MonadIO m => MonadInterpreter (InterpreterT m) where
     fromSession f = InterpreterT $ fmap f ask

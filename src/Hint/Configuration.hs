@@ -11,7 +11,7 @@ import Control.Monad.Error
 import qualified GHC
 import Hint.Base
 
-setGhcOptions :: [String] -> Interpreter ()
+setGhcOptions :: MonadInterpreter m => [String] -> m ()
 setGhcOptions opts =
     do ghc_session <- fromSession ghcSession
        old_flags   <- liftIO $ GHC.getSessionDynFlags ghc_session
@@ -22,11 +22,11 @@ setGhcOptions opts =
        liftIO $ GHC.setSessionDynFlags ghc_session new_flags
        return ()
 
-setGhcOption :: String -> Interpreter ()
+setGhcOption :: MonadInterpreter m => String -> m ()
 setGhcOption opt = setGhcOptions [opt]
 
 -- | Set to true to allow GHC's extensions to Haskell 98.
-setUseLanguageExtensions :: Bool -> Interpreter ()
+setUseLanguageExtensions :: MonadInterpreter m => Bool -> m ()
 setUseLanguageExtensions True  = do setGhcOption "-fglasgow-exts"
                                     setGhcOption "-fextended-default-rules"
 setUseLanguageExtensions False = do setGhcOption "-fno-glasgow-exts"
@@ -35,7 +35,7 @@ setUseLanguageExtensions False = do setGhcOption "-fno-glasgow-exts"
 data Optimizations = None | Some | All deriving (Eq, Read, Show)
 
 -- | Set the optimization level (none, some, all)
-setOptimizations :: Optimizations -> Interpreter ()
+setOptimizations :: MonadInterpreter m => Optimizations -> m ()
 setOptimizations None = setGhcOption "-O0"
 setOptimizations Some = setGhcOption "-O1"
 setOptimizations All  = setGhcOption "-O2"
@@ -49,5 +49,5 @@ setOptimizations All  = setGhcOption "-O2"
 --
 --   Observe that due to limitations in the GHC-API, when set to @False@, the
 --   private symbols in interpreted modules will not be in scope.
-setInstalledModsAreInScopeQualified :: Bool -> Interpreter ()
+setInstalledModsAreInScopeQualified :: MonadInterpreter m => Bool -> m ()
 setInstalledModsAreInScopeQualified b = onState $ \s -> s{all_mods_in_scope = b}
