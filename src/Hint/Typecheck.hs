@@ -20,10 +20,10 @@ import qualified Hint.Compat as Compat
 import qualified GHC
 
 -- | Returns a string representation of the type of the expression.
-typeOf :: String -> Interpreter String
+typeOf :: MonadInterpreter m => String -> m String
 typeOf = sandboxed typeOf_unsandboxed
 
-typeOf_unsandboxed :: String -> Interpreter String
+typeOf_unsandboxed :: MonadInterpreter m => String -> m String
 typeOf_unsandboxed expr =
     do
         ghc_session <- fromSession ghcSession
@@ -38,16 +38,16 @@ typeOf_unsandboxed expr =
         fromGhcRep ty
 
 -- | Tests if the expression type checks.
-typeChecks :: String -> Interpreter Bool
+typeChecks :: MonadInterpreter m => String -> m Bool
 typeChecks = sandboxed typeChecks_unsandboxed
 
-typeChecks_unsandboxed :: String -> Interpreter Bool
+typeChecks_unsandboxed :: MonadInterpreter m => String -> m Bool
 typeChecks_unsandboxed expr = (typeOf_unsandboxed expr >> return True)
                               `catchError`
                               onCompilationError (\_ -> return False)
 
 -- | Returns a string representation of the kind of the type expression.
-kindOf :: String -> Interpreter String
+kindOf :: MonadInterpreter m => String -> m String
 kindOf = sandboxed go
     where go type_expr =
               do ghc_session <- fromSession ghcSession
@@ -61,8 +61,9 @@ kindOf = sandboxed go
                  --
                  return $ fromGhcRep_ (Compat.Kind kind)
 
-onCompilationError :: ([GhcError] -> Interpreter a)
-                   -> (InterpreterError -> Interpreter a)
+onCompilationError :: MonadInterpreter m
+                   => ([GhcError] -> m a)
+                   -> (InterpreterError -> m a)
 onCompilationError recover =
     \interp_error -> case interp_error of
                        WontCompile errs -> recover errs

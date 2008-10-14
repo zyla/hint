@@ -9,13 +9,13 @@ import {-# SOURCE #-} Hint.Typecheck ( typeChecks_unsandboxed )
 import Data.List
 import Control.Monad.Error
 
-sandboxed :: (Expr -> Interpreter a) -> (Expr -> Interpreter a)
+sandboxed :: MonadInterpreter m => (Expr -> m a) -> (Expr -> m a)
 sandboxed do_stuff = \expr -> do no_sandbox <- fromState all_mods_in_scope
                                  if no_sandbox
                                    then do_stuff expr
                                    else usingAModule do_stuff expr
 
-usingAModule :: (Expr -> Interpreter a) -> (Expr -> Interpreter a)
+usingAModule :: MonadInterpreter m => (Expr -> m a) -> (Expr -> m a)
 usingAModule do_stuff_on = \expr ->
        --
        -- To avoid defaulting, we will evaluate this expression without the

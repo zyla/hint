@@ -28,7 +28,7 @@ as    = undefined
 infer = undefined
 
 -- | Evaluates an expression, given a witness for its monomorphic type.
-interpret :: Typeable a => String -> a -> Interpreter a
+interpret :: (MonadInterpreter m, Typeable a) => String -> a -> m a
 interpret expr witness = sandboxed go expr
   where go e =
          do ghc_session <- fromSession ghcSession
@@ -57,7 +57,7 @@ myTypeOf a
 -- | @eval expr@ will evaluate @show expr@.
 --  It will succeed only if @expr@ has type t and there is a 'Show'
 --  instance for t.
-eval :: String -> Interpreter String
+eval :: MonadInterpreter m => String -> m String
 eval expr = interpret show_expr (as :: String)
     where show_expr =  "Prelude.show" ++ (parens expr)
 

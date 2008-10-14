@@ -10,14 +10,10 @@
 -- A Haskell interpreter built on top of the GHC API
 -----------------------------------------------------------------------------
 module Language.Haskell.Interpreter.GHC(
-    -- * Session handling
-     InterpreterSession, newSession, newSessionUsing,
-    -- * Error handling
-     InterpreterError(..), GhcError(..),
-    -- * The interpreter type
-     Interpreter,
+    -- * The interpreter monad transformer
+     MonadInterpreter(..), InterpreterT, Interpreter,
     -- ** Running the interpreter
-     withSession,
+     runInterpreter,
     -- ** Interpreter options
      setUseLanguageExtensions,
      Optimizations(..), setOptimizations,
@@ -33,8 +29,9 @@ module Language.Haskell.Interpreter.GHC(
     -- ** Type inference
      typeOf, typeChecks, kindOf,
     -- ** Evaluation
-     interpret, as, infer,
-     eval)
+     interpret, as, infer, eval,
+    -- * Error handling
+     InterpreterError(..), GhcError(..))
 
 where
 

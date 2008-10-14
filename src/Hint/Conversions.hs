@@ -15,7 +15,7 @@ import Language.Haskell.Parser ( parseModule, ParseResult(ParseOk) )
 
 -- | Conversions from GHC representation to standard representations
 class FromGhcRep ghc target where
-    fromGhcRep :: ghc -> Interpreter target
+    fromGhcRep :: MonadInterpreter m => ghc -> m target
 
 class FromGhcRep_ ghc target where
     fromGhcRep_ :: ghc -> target

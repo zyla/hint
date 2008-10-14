@@ -9,5 +9,5 @@ import Hint.Configuration
 --   eg. @unsafeSetGhcOption \"-fno-monomorphism-restriction\"@.
 --
 --   Warning: Some options may interact badly with the Interpreter.
-unsafeSetGhcOption :: String -> Interpreter ()
+unsafeSetGhcOption :: MonadInterpreter m => String -> m ()
 unsafeSetGhcOption = setGhcOption
