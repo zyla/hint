@@ -16,15 +16,15 @@ import qualified Test.HUnit as HUnit
 
 import qualified Language.Haskell.Interpreter.GHC as H
 
-test_reload_modified :: H.InterpreterSession -> HUnit.Test
-test_reload_modified s = testCase "reload_modified" [mod_file] $ do
-                            writeFile mod_file mod_v1
-                            f_v1 <- H.withSession s get_f
+test_reload_modified :: TestCase
+test_reload_modified = TestCase "reload_modified" [mod_file] $ do
+                            liftIO $ writeFile mod_file mod_v1
+                            f_v1 <- get_f
                             --
-                            writeFile mod_file mod_v2
-                            f_v2 <- H.withSession s get_f
+                            liftIO $ writeFile mod_file mod_v2
+                            f_v2 <- get_f
                             --
-                            (f_v1 5, f_v2 5) @?= (5, 6)
+                            liftIO $ (f_v1 5, f_v2 5) @?= (5, 6)
     --
     where mod_name = "TEST_ReloadModified"
           mod_file = mod_name ++ ".hs"
@@ -42,17 +42,16 @@ test_reload_modified s = testCase "reload_modified" [mod_file] $ do
                          H.setTopLevelModules [mod_name]
                          H.interpret "f" (H.as :: Int -> Int)
 
-test_lang_exts :: H.InterpreterSession -> HUnit.Test
-test_lang_exts s = testCase "lang_exts" [mod_file] $ do
-                      writeFile mod_file "data T where T :: T"
-                      H.withSession s $ do
-                        loadFails @@? "first time, it shouldn't load"
-                        --
-                        H.setUseLanguageExtensions True
-                        loadSucceeds @@? "now, it should load"
-                        --
-                        H.setUseLanguageExtensions False
-                        loadFails @@? "it shouldn't load, again"
+test_lang_exts :: TestCase
+test_lang_exts = TestCase "lang_exts" [mod_file] $ do
+                      liftIO $ writeFile mod_file "data T where T :: T"
+                      loadFails @@? "first time, it shouldn't load"
+                      --
+                      H.setUseLanguageExtensions True
+                      loadSucceeds @@? "now, it should load"
+                      --
+                      H.setUseLanguageExtensions False
+                      loadFails @@? "it shouldn't load, again"
     --
     where mod_name     = "TEST_LangExts"
           mod_file     = mod_name ++ ".hs"
@@ -62,45 +61,41 @@ test_lang_exts s = testCase "lang_exts" [mod_file] $ do
                             return True
                          `catchError` (\_ -> return False)
 
-test_work_in_main :: H.InterpreterSession -> HUnit.Test
-test_work_in_main s = testCase "work_in_main" [mod_file] $ do
-                        writeFile mod_file "f = id"
-                        H.withSession s $ do
-                          H.loadModules [mod_file]
-                          H.setTopLevelModules ["Main"]
-                          H.setImportsQ [("Prelude",Nothing),
-                                         ("Data.Maybe", Just "Mb")]
-                          --
-                          H.typeOf "f $ 1+1" @@?= "(Num a) => a"
-                          H.eval "f . Mb.fromJust $ Just [1,2]" @@?= "[1,2]"
-                          H.interpret "f $ 1 == 2" H.infer @@?= False
+test_work_in_main :: TestCase
+test_work_in_main = TestCase "work_in_main" [mod_file] $ do
+                        liftIO $ writeFile mod_file "f = id"
+                        H.loadModules [mod_file]
+                        H.setTopLevelModules ["Main"]
+                        H.setImportsQ [("Prelude",Nothing),
+                                       ("Data.Maybe", Just "Mb")]
+                        --
+                        H.typeOf "f $ 1+1" @@?= "(Num a) => a"
+                        H.eval "f . Mb.fromJust $ Just [1,2]" @@?= "[1,2]"
+                        H.interpret "f $ 1 == 2" H.infer @@?= False
     --
     where mod_file     = "TEST_WorkInMain.hs"
 
-test_priv_syms_in_scope :: H.InterpreterSession -> HUnit.Test
-test_priv_syms_in_scope s = testCase "private_syms_in_scope" [mod_file] $ do
-                               writeFile mod_file mod_text
-                               H.withSession s $ do
-                                 H.loadModules [mod_file]
-                                 H.setTopLevelModules ["T"]
-                                 H.typeChecks "g" @@? "g is hidden"
+test_priv_syms_in_scope :: TestCase
+test_priv_syms_in_scope = TestCase "private_syms_in_scope" [mod_file] $ do
+                               liftIO $ writeFile mod_file mod_text
+                               H.loadModules [mod_file]
+                               H.setTopLevelModules ["T"]
+                               H.typeChecks "g" @@? "g is hidden"
     where mod_text = unlines ["module T(f) where", "f = g", "g = id"]
           mod_file = "TEST_PrivateSymbolsInScope.hs"
 
-test_comments_in_expr :: H.InterpreterSession -> HUnit.Test
-test_comments_in_expr s = testCase "comments_in_expr" [] $ do
-                               H.withSession s $ do
-                                 H.reset
-                                 H.setImports ["Prelude"]
-                                 let expr = "length $ concat [[1,2],[3]] -- bla"
-                                 H.typeChecks expr @@? "comment on expression"
-                                 H.eval expr
-                                 H.interpret expr (H.as :: Int)
-                                 return ()
+test_comments_in_expr :: TestCase
+test_comments_in_expr = TestCase "comments_in_expr" [] $ do
+                            H.reset
+                            H.setImports ["Prelude"]
+                            let expr = "length $ concat [[1,2],[3]] -- bla"
+                            H.typeChecks expr @@? "comment on expression"
+                            H.eval expr
+                            H.interpret expr (H.as :: Int)
+                            return ()
 
-test_qual_import :: H.InterpreterSession -> HUnit.Test
-test_qual_import s = testCase "qual_import" [] $ do
-                         H.withSession s $ do
+test_qual_import :: TestCase
+test_qual_import = TestCase "qual_import" [] $ do
                            H.reset
                            H.setImportsQ [("Prelude", Nothing),
                                           ("Data.Map", Just "M")]
@@ -108,35 +103,30 @@ test_qual_import s = testCase "qual_import" [] $ do
                            H.typeChecks "M.null M.empty" @@? "Qual null"
                            return ()
 
-test_basic_eval :: H.InterpreterSession -> HUnit.Test
-test_basic_eval s = testCase "basic_eval" [] $ do
-                        H.withSession s $ do
+test_basic_eval :: TestCase
+test_basic_eval = TestCase "basic_eval" [] $ do
                            H.reset
                            H.eval "()" @@?= "()"
 
-common_tests :: H.InterpreterSession -> [HUnit.Test]
-common_tests s = [test_reload_modified s,
-                  test_lang_exts s,
-                  test_work_in_main s,
-                  test_comments_in_expr s,
-                  test_qual_import s,
-                  test_basic_eval s]
+common_tests :: [TestCase]
+common_tests = [test_reload_modified,
+                test_lang_exts,
+                test_work_in_main,
+                test_comments_in_expr,
+                test_qual_import,
+                test_basic_eval]
 
+non_sb_tests :: [TestCase]
+non_sb_tests = common_tests ++ [test_priv_syms_in_scope]
 
-non_sb_tests :: H.InterpreterSession -> HUnit.Test
-non_sb_tests s = HUnit.TestList $ common_tests s ++ [test_priv_syms_in_scope s]
-
-sb_tests :: H.InterpreterSession -> HUnit.Test
-sb_tests s = HUnit.TestList $ common_tests s
+sb_tests :: [TestCase]
+sb_tests = common_tests
 
 main :: IO ()
-main = do s <- H.newSession
-          --
-          -- run the tests...
-          c <- HUnit.runTestTT $ non_sb_tests s
+main = do -- run the tests...
+          c  <- runTests False non_sb_tests
           -- then run again, but with sandboxing on...
-          setSandbox s
-          c' <- HUnit.runTestTT $ sb_tests s
+          c' <- runTests True sb_tests
           --
           let failures  = HUnit.errors c  + HUnit.failures c +
                           HUnit.errors c' + HUnit.failures c'
@@ -149,8 +139,8 @@ main = do s <- H.newSession
 printInterpreterError :: H.InterpreterError -> IO ()
 printInterpreterError = hPutStrLn stderr . show
 
-setSandbox :: H.InterpreterSession -> IO ()
-setSandbox s = H.withSession s $ H.setInstalledModsAreInScopeQualified False
+setSandbox :: H.Interpreter ()
+setSandbox = H.setInstalledModsAreInScopeQualified False
 
 (>=>) :: Monad m => (a -> m b) -> (b -> m c) -> (a -> m c)
 f >=> g = \a -> f a >>= g
@@ -161,11 +151,18 @@ p @@? msg = do b <- p; liftIO (b @? msg)
 (@@?=) :: (Eq a, Show a, MonadIO m) => m a -> a -> m ()
 m_a @@?= b = do a <- m_a; liftIO (a @?= b)
 
-testCase :: String -> [FilePath] -> HUnit.Assertion -> HUnit.Test
-testCase title tmps test = HUnit.TestLabel title $
-                               HUnit.TestCase (test' `finally` clean_up)
-    where test' = test `catchDyn` (printInterpreterError >=> throwDyn)
-          clean_up = mapM_ removeIfExists tmps
-          removeIfExists f = do exists <- doesFileExist f
-                                when exists $
-                                     removeFile f
+
+data TestCase = TestCase String [FilePath] (H.Interpreter ())
+
+runTests :: Bool -> [TestCase] -> IO HUnit.Counts
+runTests sandboxed = HUnit.runTestTT . HUnit.TestList . map build
+    where build (TestCase title tmps test) = HUnit.TestLabel title $
+                                                 HUnit.TestCase test_case
+            where test_case = go `finally` clean_up
+                  clean_up = mapM_ removeIfExists tmps
+                  go        = H.runInterpreter
+                                  (when sandboxed setSandbox >> test)
+                               `catchDyn` (printInterpreterError >=> throwDyn)
+                  removeIfExists f = do exists <- doesFileExist f
+                                        when exists $
+                                          removeFile f
