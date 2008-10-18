@@ -5,11 +5,11 @@ import Language.Haskell.Interpreter.GHC
 import Control.Exception ( catchDyn )
 
 main :: IO ()
-main = do s <- newSession
-          withSession s testHint
+main = do runInterpreter testHint
           putStrLn "that's all folks"
      `catchDyn` printInterpreterError
 
+-- observe that Interpreter () is an alias for InterpreterT IO ()
 testHint :: Interpreter ()
 testHint =
     do
