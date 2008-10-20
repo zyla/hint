@@ -13,9 +13,7 @@ import Data.Maybe
 import Control.Monad.Trans
 
 import Hint.Base
-
-import qualified GHC
-import qualified Outputable as GHC.O
+import qualified Hint.GHC as GHC
 
 -- | An Id for a class, a type constructor, a data constructor, a binding, etc
 type Id = String
@@ -71,4 +69,4 @@ asModElem (GHC.AClass c)    = Class (getUnqualName c)
                                     (map getUnqualName $ GHC.classMethods c)
 
 getUnqualName :: GHC.NamedThing a => a -> String
-getUnqualName = GHC.O.showSDocUnqual . GHC.pprParenSymName
+getUnqualName = GHC.showSDocUnqual . GHC.pprParenSymName

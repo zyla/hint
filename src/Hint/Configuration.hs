@@ -8,7 +8,7 @@ module Hint.Configuration (
       setInstalledModsAreInScopeQualified ) where
 
 import Control.Monad.Error
-import qualified GHC
+import qualified Hint.GHC as GHC
 import Hint.Base
 
 setGhcOptions :: MonadInterpreter m => [String] -> m ()

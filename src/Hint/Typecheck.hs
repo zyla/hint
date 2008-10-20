@@ -15,9 +15,8 @@ import Hint.Parsers
 import Hint.Conversions
 import Hint.Sandbox
 
+import qualified Hint.GHC as GHC
 import qualified Hint.Compat as Compat
-
-import qualified GHC
 
 -- | Returns a string representation of the type of the expression.
 typeOf :: MonadInterpreter m => String -> m String
