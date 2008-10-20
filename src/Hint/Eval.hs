@@ -5,7 +5,6 @@ module Hint.Eval (
 
 where
 
-import qualified GHC
 import qualified GHC.Exts ( unsafeCoerce# )
 
 import Data.Typeable hiding ( typeOf )
@@ -15,6 +14,8 @@ import Hint.Base
 import Hint.Parsers
 import Hint.Sandbox
 import Hint.Util
+
+import qualified Hint.GHC as GHC
 
 
 -- | Convenience functions to be used with @interpret@ to provide witnesses.

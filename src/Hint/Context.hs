@@ -27,8 +27,7 @@ import Hint.Util ( (>=>) ) -- compat version
 import Hint.Conversions
 import qualified Hint.Util as Util
 
-import qualified GHC
-import qualified DriverPhases as DP
+import qualified Hint.GHC as GHC
 
 import System.Random
 import System.FilePath
@@ -133,7 +132,7 @@ removePhantomModule pm =
 
 fileTarget :: FilePath -> GHC.Target
 fileTarget f = GHC.Target (GHC.TargetFile f $ Just next_phase) Nothing
-    where next_phase = DP.Cpp DP.HsSrcFile
+    where next_phase = GHC.Cpp GHC.HsSrcFile
 
 targetId :: GHC.Target -> GHC.TargetId
 targetId (GHC.Target _id _) = _id

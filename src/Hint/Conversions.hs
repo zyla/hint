@@ -4,8 +4,7 @@ where
 
 import Control.Monad.Trans ( liftIO )
 
-import qualified GHC        as GHC
-import qualified Outputable as GHC.O
+import qualified Hint.GHC as GHC
 
 import Hint.Base
 import qualified Hint.Compat as Compat
@@ -39,7 +38,7 @@ instance FromGhcRep GHC.Type String where
                       -- Unqualify necessary types
                       -- (i.e., do not expose internals)
                       unqual <- liftIO $ GHC.getPrintUnqual ghc_session
-                      return $ GHC.O.showSDocForUser unqual (Compat.pprType t)
+                      return $ GHC.showSDocForUser unqual (Compat.pprType t)
 
 parseModule' :: String -> HsModule
 parseModule' s = case parseModule s of
@@ -49,7 +48,7 @@ parseModule' s = case parseModule s of
                                                   show failed]
 
 instance FromGhcRep_ Compat.Kind String where
-    fromGhcRep_ (Compat.Kind k) = GHC.O.showSDoc (Compat.pprKind k)
+    fromGhcRep_ (Compat.Kind k) = GHC.showSDoc (Compat.pprKind k)
 
 
 -- ---------------- Modules --------------------------

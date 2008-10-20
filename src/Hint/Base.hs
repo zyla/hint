@@ -13,12 +13,8 @@ import Data.IORef
 
 import Data.Dynamic
 
-import qualified GHC
+import qualified Hint.GHC as GHC
 import qualified GHC.Paths
-import qualified Outputable as GHC.O
-import qualified SrcLoc     as GHC.S
-import qualified ErrUtils   as GHC.E
-
 
 import qualified Hint.Compat as Compat
 import Hint.Parsers
@@ -85,18 +81,18 @@ data InterpreterSession = InterpreterSession {
                               ghcErrListRef   :: IORef [GhcError],
                               ghcErrLogger    :: GhcErrLogger}
 
--- When intercepting errors reported by GHC, we only get a GHC.E.Message
--- and a GHC.S.SrcSpan. The latter holds the file name and the location
+-- When intercepting errors reported by GHC, we only get a ErrUtils.Message
+-- and a SrcLoc.SrcSpan. The latter holds the file name and the location
 -- of the error. However, SrcSpan is abstract and it doesn't provide
 -- functions to retrieve the line and column of the error... we can only
 -- generate a string with this information. Maybe I can parse this string
 -- later.... (sigh)
 data GhcError = GhcError{errMsg :: String} deriving Show
 
-mkGhcError :: GHC.S.SrcSpan -> GHC.O.PprStyle -> GHC.E.Message -> GhcError
+mkGhcError :: GHC.SrcSpan -> GHC.PprStyle -> GHC.Message -> GhcError
 mkGhcError src_span style msg = GhcError{errMsg = niceErrMsg}
-    where niceErrMsg = GHC.O.showSDoc . GHC.O.withPprStyle style $
-                         GHC.E.mkLocMessage src_span msg
+    where niceErrMsg = GHC.showSDoc . GHC.withPprStyle style $
+                         GHC.mkLocMessage src_span msg
 
 mapGhcExceptions :: MonadInterpreter m
                  => (String -> InterpreterError)
@@ -112,9 +108,9 @@ ghcExceptions  _               = Nothing
 
 
 type GhcErrLogger = GHC.Severity
-                 -> GHC.S.SrcSpan
-                 -> GHC.O.PprStyle
-                 -> GHC.E.Message
+                 -> GHC.SrcSpan
+                 -> GHC.PprStyle
+                 -> GHC.Message
                  -> IO ()
 
 -- | Module names are _not_ filepaths.
@@ -241,7 +237,7 @@ failOnParseError parser expr =
                          logger <- fromSession ghcErrLogger
                          liftIO $ logger GHC.SevError
                                          span
-                                         GHC.O.defaultErrStyle
+                                         GHC.defaultErrStyle
                                          err
                          --
                          -- behave like the rest of the GHC API functions

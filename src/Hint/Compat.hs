@@ -2,15 +2,7 @@ module Hint.Compat
 
 where
 
-import qualified GHC
-import qualified Pretty
-import qualified Outputable
-
-#if __GLASGOW_HASKELL__ >= 608
-
-import qualified PprTyThing
-
-#endif
+import qualified Hint.GHC as GHC
 
 -- Kinds became a synonym for Type in GHC 6.8. We define this wrapper
 -- to be able to define a FromGhcRep instance for both versions
@@ -18,6 +10,7 @@ newtype Kind = Kind GHC.Kind
 
 #if __GLASGOW_HASKELL__ >= 608
 
+#if __GLASGOW_HASKELL__ < 610
 newSession :: FilePath -> IO GHC.Session
 newSession ghc_root =
     do s <- GHC.newSession (Just ghc_root)
@@ -26,11 +19,12 @@ newSession ghc_root =
                                        GHC.hscTarget  = GHC.HscInterpreted,
                                        GHC.ghcLink    = GHC.LinkInMemory}
        return s
+#endif
 
-pprType :: GHC.Type -> (Outputable.PprStyle -> Pretty.Doc)
-pprType = PprTyThing.pprTypeForUser False -- False means drop explicit foralls
+pprType :: GHC.Type -> (GHC.PprStyle -> GHC.Doc)
+pprType = GHC.pprTypeForUser False -- False means drop explicit foralls
 
-pprKind :: GHC.Kind -> (Outputable.PprStyle -> Pretty.Doc)
+pprKind :: GHC.Kind -> (GHC.PprStyle -> GHC.Doc)
 pprKind = pprType
 
 #elif __GLASGOW_HASKELL__ >= 606
@@ -42,11 +36,11 @@ newSession ghc_root =
        GHC.setSessionDynFlags s dflags{GHC.hscTarget  = GHC.HscInterpreted}
        return s
 
-pprType :: GHC.Type -> (Outputable.PprStyle -> Pretty.Doc)
-pprType = Outputable.ppr . GHC.dropForAlls
+pprType :: GHC.Type -> (GHC.PprStyle -> GHC.Doc)
+pprType = GHC.ppr . GHC.dropForAlls
 
-pprKind :: GHC.Kind -> (Outputable.PprStyle -> Pretty.Doc)
-pprKind = Outputable.ppr
+pprKind :: GHC.Kind -> (GHC.PprStyle -> GHC.Doc)
+pprKind = GHC.ppr
 
 #endif
 
