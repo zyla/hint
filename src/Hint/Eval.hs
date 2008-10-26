@@ -32,7 +32,7 @@ infer = undefined
 interpret :: (MonadInterpreter m, Typeable a) => String -> a -> m a
 interpret expr witness = sandboxed go expr
   where go e =
-         do ghc_session <- fromSession ghcSession
+         do ghc_session <- getGhcSession
             --
             -- First, make sure the expression has no syntax errors,
             -- for this is the only way we have to "intercept" this

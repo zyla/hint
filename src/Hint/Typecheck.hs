@@ -25,7 +25,7 @@ typeOf = sandboxed typeOf_unsandboxed
 typeOf_unsandboxed :: MonadInterpreter m => String -> m String
 typeOf_unsandboxed expr =
     do
-        ghc_session <- fromSession ghcSession
+        ghc_session <- getGhcSession
         --
         -- First, make sure the expression has no syntax errors,
         -- for this is the only way we have to "intercept" this
@@ -49,7 +49,7 @@ typeChecks_unsandboxed expr = (typeOf_unsandboxed expr >> return True)
 kindOf :: MonadInterpreter m => String -> m String
 kindOf = sandboxed go
     where go type_expr =
-              do ghc_session <- fromSession ghcSession
+              do ghc_session <- getGhcSession
                  --
                  -- First, make sure the expression has no syntax errors,
                  -- for this is the only way we have to "intercept" this
