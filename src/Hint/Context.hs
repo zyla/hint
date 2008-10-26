@@ -55,7 +55,7 @@ newPhantomModule =
 
 allModulesInContext :: MonadInterpreter m => m ([ModuleName], [ModuleName])
 allModulesInContext =
-    do ghc_session <- fromSession ghcSession
+    do ghc_session <- getGhcSession
        (l, i) <- liftIO $ GHC.getContext ghc_session
        return (map fromGhcRep_ l, map fromGhcRep_ i)
 
@@ -63,7 +63,7 @@ addPhantomModule :: MonadInterpreter m
                  => (ModuleName -> ModuleText)
                  -> m PhantomModule
 addPhantomModule mod_text =
-    do ghc_session <- fromSession ghcSession
+    do ghc_session <- getGhcSession
        --
        pm <- newPhantomModule
        let t  = fileTarget (pm_file pm)
@@ -92,7 +92,7 @@ addPhantomModule mod_text =
 
 removePhantomModule :: MonadInterpreter m => PhantomModule -> m ()
 removePhantomModule pm =
-    do ghc_session <- fromSession ghcSession
+    do ghc_session <- getGhcSession
        --
        -- We don't want to actually unload this module, because that
        -- would mean that all the real modules might get reloaded and the
@@ -159,7 +159,7 @@ loadModules fs = do -- first, unload everything, and do some clean-up
                     doLoad fs `catchError` (\e -> reset >> throwError e)
 
 doLoad :: MonadInterpreter m => [String] -> m ()
-doLoad fs = do ghc_session <- fromSession ghcSession
+doLoad fs = do ghc_session <- getGhcSession
                mayFail $ do
                    targets <- mapM (\f -> GHC.guessTarget f Nothing) fs
                    --
@@ -178,7 +178,7 @@ modNameFromSummary =  fromGhcRep_ . GHC.ms_mod
 
 getLoadedModSummaries :: MonadInterpreter m => m [GHC.ModSummary]
 getLoadedModSummaries =
-  do ghc_session  <- fromSession ghcSession
+  do ghc_session  <- getGhcSession
      --
      all_mod_summ <- liftIO $ GHC.getModuleGraph ghc_session
      filterM (liftIO . GHC.isLoaded ghc_session . GHC.ms_mod_name) all_mod_summ
@@ -190,7 +190,7 @@ getLoadedModSummaries =
 setTopLevelModules :: MonadInterpreter m => [ModuleName] -> m ()
 setTopLevelModules ms =
     do
-        ghc_session <- fromSession ghcSession
+        ghc_session <- getGhcSession
         --
         loaded_mods_ghc <- getLoadedModSummaries
         --
@@ -214,7 +214,7 @@ setTopLevelModules ms =
 
 onAnEmptyContext :: MonadInterpreter m => m a -> m a
 onAnEmptyContext action =
-    do ghc_session <- fromSession ghcSession
+    do ghc_session <- getGhcSession
        (old_mods, old_imps) <- liftIO $ GHC.getContext ghc_session
        liftIO $ GHC.setContext ghc_session [] []
        let restore = liftIO $ GHC.setContext ghc_session old_mods old_imps
@@ -234,7 +234,7 @@ setImports ms = setImportsQ $ zip ms (repeat Nothing)
 --   Here, "map" will refer to Prelude.map and "M.map" to Data.Map.map.
 setImportsQ :: MonadInterpreter m => [(ModuleName, Maybe String)] -> m ()
 setImportsQ ms =
-    do ghc_session <- fromSession ghcSession
+    do ghc_session <- getGhcSession
        --
        let (q,     u) = Util.partition (isJust . snd) ms
            (quals, unquals) = (map (\(a, Just b) -> (a,b)) q, map fst u)
@@ -270,7 +270,7 @@ setImportsQ ms =
 reset :: MonadInterpreter m => m ()
 reset =
     do
-        ghc_session <- fromSession ghcSession
+        ghc_session <- getGhcSession
         --
         -- Remove all modules from context
         liftIO $ GHC.setContext ghc_session [] []

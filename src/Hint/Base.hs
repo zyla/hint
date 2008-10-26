@@ -21,6 +21,7 @@ import Hint.Parsers
 
 -- this requires FlexibleContexts
 class (MonadIO m, MonadError InterpreterError m) => MonadInterpreter m where
+    getGhcSession    :: m GHC.Session
     fromSession      :: (InterpreterSession -> a) -> m a
     modifySessionRef :: (InterpreterSession -> IORef a) -> (a -> a) -> m a
 
@@ -33,6 +34,7 @@ newtype InterpreterT m a = InterpreterT{
 type Interpreter = InterpreterT IO
 
 instance MonadIO m => MonadInterpreter (InterpreterT m) where
+    getGhcSession = fromSession ghcSession
     fromSession f = InterpreterT $ fmap f ask
     --
     modifySessionRef target f =
@@ -205,7 +207,7 @@ data PhantomModule = PhantomModule{pm_name :: ModuleName, pm_file :: FilePath}
 
 findModule :: MonadInterpreter m => ModuleName -> m GHC.Module
 findModule mn =
-    do ghc_session <- fromSession ghcSession
+    do ghc_session <- getGhcSession
        --
        let mod_name = GHC.mkModuleName mn
        mapGhcExceptions NotAllowed $ GHC.findModule ghc_session
@@ -223,7 +225,7 @@ failOnParseError :: MonadInterpreter m
                  -> String
                  -> m ()
 failOnParseError parser expr =
-    do ghc_session <- fromSession ghcSession
+    do ghc_session <- getGhcSession
        --
        parsed <- liftIO $ parser ghc_session expr
        --
