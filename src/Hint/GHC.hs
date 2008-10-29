@@ -7,8 +7,10 @@ module Hint.GHC (
     module StringBuffer,
 
 #if   __GLASGOW_HASKELL__ >= 610
-    module HscTypes
-#elif __GLASGOW_HASKELL__ >= 608
+    module HscTypes,
+#endif
+
+#if __GLASGOW_HASKELL__ >= 608
     module PprTyThing,
 #elif __GLASGOW_HASKELL__ < 608
     module SrcLoc,
@@ -27,8 +29,10 @@ import DriverPhases ( Phase(Cpp), HscSource(HsSrcFile) )
 import StringBuffer (stringToStringBuffer)
 
 #if   __GLASGOW_HASKELL__ >= 610
-import HscTypes ( Session )
-#elif __GLASGOW_HASKELL__ >= 608
+import HscTypes   ( Session )
+#endif
+
+#if __GLASGOW_HASKELL__ >= 608
 import PprTyThing( pprTypeForUser )
 #elif __GLASGOW_HASKELL__ < 608
 import SrcLoc ( SrcSpan, noSrcLoc )
