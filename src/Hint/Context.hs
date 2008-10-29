@@ -206,7 +206,7 @@ onAnEmptyContext action =
        return a
 
 -- | Sets the modules whose exports must be in context.
-setImports :: MonadInterpreter m => [ModuleName] -> m ()
+setImports :: [ModuleName] -> Interpreter ()
 setImports ms = setImportsQ $ zip ms (repeat Nothing)
 
 -- | Sets the modules whose exports must be in context; some
