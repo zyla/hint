@@ -17,7 +17,6 @@ import qualified Hint.GHC as GHC
 import qualified GHC.Paths
 
 import qualified Hint.Compat as Compat
-import Hint.Parsers
 
 -- this requires FlexibleContexts
 class (MonadIO m, MonadError InterpreterError m) => MonadInterpreter m where
@@ -231,27 +230,3 @@ moduleIsLoaded mn = (findModule mn >> return True)
                                         NotAllowed{} -> return False
                                         _            -> throwError e)
 
-failOnParseError :: MonadInterpreter m
-                 => (GHC.Session -> String -> IO ParseResult)
-                 -> String
-                 -> m ()
-failOnParseError parser expr = mayFail go
-    where go = do parsed <- runGhc parser expr
-                  --
-                  -- If there was a parsing error,
-                  -- do the "standard" error reporting
-                  case parsed of
-                      ParseOk             -> return (Just ())
-                      --
-                      ParseError span err ->
-                          do -- parsing failed, so we report it just as all
-                             -- other errors get reported....
-                             logger <- fromSession ghcErrLogger
-                             liftIO $ logger GHC.SevError
-                                             span
-                                             GHC.defaultErrStyle
-                                             err
-                             --
-                             -- behave like the rest of the GHC API functions
-                             -- do on error...
-                             return Nothing
