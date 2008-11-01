@@ -24,17 +24,14 @@ typeOf = sandboxed typeOf_unsandboxed
 
 typeOf_unsandboxed :: MonadInterpreter m => String -> m String
 typeOf_unsandboxed expr =
-    do
-        ghc_session <- getGhcSession
-        --
-        -- First, make sure the expression has no syntax errors,
-        -- for this is the only way we have to "intercept" this
-        -- kind of errors
-        failOnParseError parseExpr expr
-        --
-        ty <- mayFail $ GHC.exprType ghc_session expr
-        --
-        fromGhcRep ty
+    do -- First, make sure the expression has no syntax errors,
+       -- for this is the only way we have to "intercept" this
+       -- kind of errors
+       failOnParseError parseExpr expr
+       --
+       ty <- mayFail $ runGhc GHC.exprType expr
+       --
+       fromGhcRep ty
 
 -- | Tests if the expression type checks.
 typeChecks :: MonadInterpreter m => String -> m Bool
@@ -49,14 +46,12 @@ typeChecks_unsandboxed expr = (typeOf_unsandboxed expr >> return True)
 kindOf :: MonadInterpreter m => String -> m String
 kindOf = sandboxed go
     where go type_expr =
-              do ghc_session <- getGhcSession
-                 --
-                 -- First, make sure the expression has no syntax errors,
+              do -- First, make sure the expression has no syntax errors,
                  -- for this is the only way we have to "intercept" this
                  -- kind of errors
                  failOnParseError parseType type_expr
                  --
-                 kind <- mayFail $ GHC.typeKind ghc_session type_expr
+                 kind <- mayFail $ runGhc GHC.typeKind type_expr
                  --
                  return $ fromGhcRep_ (Compat.Kind kind)
 

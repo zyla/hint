@@ -32,15 +32,13 @@ infer = undefined
 interpret :: (MonadInterpreter m, Typeable a) => String -> a -> m a
 interpret expr witness = sandboxed go expr
   where go e =
-         do ghc_session <- getGhcSession
-            --
-            -- First, make sure the expression has no syntax errors,
+         do -- First, make sure the expression has no syntax errors,
             -- for this is the only way we have to "intercept" this
             -- kind of errors
             failOnParseError parseExpr e
             --
             let expr_typesig = concat [parens e," :: ",show $ myTypeOf witness]
-            expr_val <- mayFail $ GHC.compileExpr ghc_session expr_typesig
+            expr_val <- mayFail $ runGhc GHC.compileExpr expr_typesig
             --
             return (GHC.Exts.unsafeCoerce# expr_val :: a)
 

@@ -10,8 +10,6 @@ where
 import Data.List
 import Data.Maybe
 
-import Control.Monad.Trans
-
 import Hint.Base
 import qualified Hint.GHC as GHC
 
@@ -36,15 +34,11 @@ children (Data  _ dcs) = dcs
 --   It is similar to the @:browse@ command in GHCi.
 getModuleExports :: MonadInterpreter m => ModuleName -> m [ModuleElem]
 getModuleExports mn =
-    do
-        ghc_session <- getGhcSession
-        --
-        module_  <- findModule mn
-        mod_info <- mayFail $ GHC.getModuleInfo ghc_session module_
-        exports  <- liftIO $ mapM (GHC.lookupName ghc_session)
-                                  (GHC.modInfoExports mod_info)
-        --
-        return (asModElemList $ catMaybes exports)
+    do module_  <- findModule mn
+       mod_info <- mayFail $ runGhc GHC.getModuleInfo module_
+       exports  <- mapM (runGhc GHC.lookupName) (GHC.modInfoExports mod_info)
+       --
+       return (asModElemList $ catMaybes exports)
 
 asModElemList :: [GHC.TyThing] -> [ModuleElem]
 asModElemList xs = concat [cs',

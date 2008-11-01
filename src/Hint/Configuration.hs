@@ -13,13 +13,12 @@ import Hint.Base
 
 setGhcOptions :: MonadInterpreter m => [String] -> m ()
 setGhcOptions opts =
-    do ghc_session <- getGhcSession
-       old_flags   <- liftIO $ GHC.getSessionDynFlags ghc_session
+    do old_flags   <- runGhc GHC.getSessionDynFlags
        (new_flags, not_parsed) <- liftIO $ GHC.parseDynamicFlags old_flags opts
        when (not . null $ not_parsed) $
             throwError $ UnknownError (concat ["flag: '", unwords opts,
                                                "' not recognized"])
-       liftIO $ GHC.setSessionDynFlags ghc_session new_flags
+       runGhc GHC.setSessionDynFlags new_flags
        return ()
 
 setGhcOption :: MonadInterpreter m => String -> m ()
