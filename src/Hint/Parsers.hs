@@ -4,29 +4,54 @@ where
 
 import Prelude hiding(span)
 
-import qualified Hint.GHC as GHC
+import Hint.Base
 
-import qualified Lexer        as GHC.L (P(..), ParseResult(..), mkPState)
-import qualified Parser       as GHC.P (parseStmt, parseType)
+import Control.Monad.Trans ( liftIO )
+
+import qualified Hint.GHC as GHC
 
 data ParseResult = ParseOk | ParseError GHC.SrcSpan GHC.Message
 
-parseExpr :: GHC.Session -> String -> IO ParseResult
-parseExpr = runParser GHC.P.parseStmt
+parseExpr :: MonadInterpreter m => String -> m ParseResult
+parseExpr = runParser GHC.parseStmt
 
-parseType :: GHC.Session -> String -> IO ParseResult
-parseType = runParser GHC.P.parseType
+parseType :: MonadInterpreter m => String -> m ParseResult
+parseType = runParser GHC.parseType
 
-runParser :: GHC.L.P a -> GHC.Session -> String -> IO ParseResult
-runParser parser ghc_session expr =
-    do
-        dyn_fl <- GHC.getSessionDynFlags ghc_session
-        --
-        buf <- GHC.stringToStringBuffer expr
-        --
-        let parse_res = GHC.L.unP parser (GHC.L.mkPState buf GHC.noSrcLoc dyn_fl)
-        --
-        case parse_res of
-            GHC.L.POk{}            -> return ParseOk
-            --
-            GHC.L.PFailed span err -> return (ParseError span err)
+runParser :: MonadInterpreter m => GHC.P a -> String -> m ParseResult
+runParser parser expr =
+    do dyn_fl <- runGhc GHC.getSessionDynFlags
+       --
+       buf <- liftIO $ GHC.stringToStringBuffer expr
+       --
+       let parse_res = GHC.unP parser (GHC.mkPState buf GHC.noSrcLoc dyn_fl)
+       --
+       case parse_res of
+           GHC.POk{}            -> return ParseOk
+           --
+           GHC.PFailed span err -> return (ParseError span err)
+
+failOnParseError :: MonadInterpreter m
+                 => (String -> m ParseResult)
+                 -> String
+                 -> m ()
+failOnParseError parser expr = mayFail go
+    where go = do parsed <- parser expr
+                  --
+                  -- If there was a parsing error,
+                  -- do the "standard" error reporting
+                  case parsed of
+                      ParseOk             -> return (Just ())
+                      --
+                      ParseError span err ->
+                          do -- parsing failed, so we report it just as all
+                             -- other errors get reported....
+                             logger <- fromSession ghcErrLogger
+                             liftIO $ logger GHC.SevError
+                                             span
+                                             GHC.defaultErrStyle
+                                             err
+                             --
+                             -- behave like the rest of the GHC API functions
+                             -- do on error...
+                             return Nothing
