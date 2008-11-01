@@ -2,8 +2,6 @@ module Hint.Conversions( FromGhcRep(..), FromGhcRep_(..), isSucceeded )
 
 where
 
-import Control.Monad.Trans ( liftIO )
-
 import qualified Hint.GHC as GHC
 
 import Hint.Base
@@ -34,10 +32,9 @@ instance FromGhcRep GHC.Type HsQualType where
 
 
 instance FromGhcRep GHC.Type String where
-    fromGhcRep t = do ghc_session <- getGhcSession
-                      -- Unqualify necessary types
+    fromGhcRep t = do -- Unqualify necessary types
                       -- (i.e., do not expose internals)
-                      unqual <- liftIO $ GHC.getPrintUnqual ghc_session
+                      unqual <- runGhc GHC.getPrintUnqual
                       return $ GHC.showSDocForUser unqual (Compat.pprType t)
 
 parseModule' :: String -> HsModule

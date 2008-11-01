@@ -74,3 +74,6 @@ Library
                       TypeSynonymInstances
                       FlexibleInstances
                       FlexibleContexts
+                      UndecidableInstances
+                      FunctionalDependencies
+                      KindSignatures
