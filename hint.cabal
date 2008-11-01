@@ -50,7 +50,8 @@ Library
 
   exposed-modules:    Language.Haskell.Interpreter.GHC
                       Language.Haskell.Interpreter.GHC.Unsafe
-  other-modules:      Hint.Base
+  other-modules:      Hint.GHC
+                      Hint.Base
                       Hint.Compat
                       Hint.Configuration
                       Hint.Context
