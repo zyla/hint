@@ -15,7 +15,7 @@ import Hint.Parsers
 import Hint.Sandbox
 import Hint.Util
 
-import qualified Hint.GHC as GHC
+import qualified Hint.Compat as Compat
 
 
 -- | Convenience functions to be used with @interpret@ to provide witnesses.
@@ -38,7 +38,7 @@ interpret expr witness = sandboxed go expr
             failOnParseError parseExpr e
             --
             let expr_typesig = concat [parens e," :: ",show $ myTypeOf witness]
-            expr_val <- mayFail $ runGhc GHC.compileExpr expr_typesig
+            expr_val <- mayFail $ runGhc1 Compat.compileExpr expr_typesig
             --
             return (GHC.Exts.unsafeCoerce# expr_val :: a)
 
