@@ -15,7 +15,6 @@ import Hint.Parsers
 import Hint.Conversions
 import Hint.Sandbox
 
-import qualified Hint.GHC as GHC
 import qualified Hint.Compat as Compat
 
 -- | Returns a string representation of the type of the expression.
@@ -29,7 +28,7 @@ typeOf_unsandboxed expr =
        -- kind of errors
        failOnParseError parseExpr expr
        --
-       ty <- mayFail $ runGhc GHC.exprType expr
+       ty <- mayFail $ runGhc1 Compat.exprType expr
        --
        fromGhcRep ty
 
@@ -51,7 +50,7 @@ kindOf = sandboxed go
                  -- kind of errors
                  failOnParseError parseType type_expr
                  --
-                 kind <- mayFail $ runGhc GHC.typeKind type_expr
+                 kind <- mayFail $ runGhc1 Compat.typeKind type_expr
                  --
                  return $ fromGhcRep_ (Compat.Kind kind)
 

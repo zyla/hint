@@ -24,6 +24,17 @@ targetId = GHC.targetId
 guessTarget :: GHC.GhcMonad m => String -> Maybe GHC.Phase -> m GHC.Target
 guessTarget = GHC.guessTarget
 
+-- add a bogus Maybe, in order to use it with mayFail
+compileExpr :: GHC.GhcMonad m => String -> m (Maybe GHC.HValue)
+compileExpr = fmap Just . GHC.compileExpr
+
+-- add a bogus Maybe, in order to use it with mayFail
+exprType :: GHC.GhcMonad m => String -> m (Maybe GHC.Type)
+exprType = fmap Just . GHC.exprType
+
+-- add a bogus Maybe, in order to use it with mayFail
+typeKind :: GHC.GhcMonad m => String -> m (Maybe GHC.Kind)
+typeKind = fmap Just . GHC.typeKind
 #else
 -- add a bogus session parameter, in order to use it with runGhc2
 parseDynamicFlags :: GHC.Session
@@ -41,6 +52,16 @@ targetId (GHC.Target _id _) = _id
 -- add a bogus session parameter, in order to use it with runGhc2
 guessTarget :: GHC.Session -> String -> Maybe GHC.Phase -> IO GHC.Target
 guessTarget = const GHC.guessTarget
+
+compileExpr :: GHC.Session -> String -> IO (Maybe GHC.HValue)
+compileExpr = GHC.compileExpr
+
+exprType :: GHC.Session -> String -> IO (Maybe GHC.Type)
+exprType = GHC.exprType
+
+typeKind :: GHC.Session -> String -> IO (Maybe GHC.Kind)
+typeKind = GHC.typeKind
+
 #endif
 
 #if __GLASGOW_HASKELL__ >= 608
