@@ -25,7 +25,8 @@ import Control.Monad.Error ( catchError, throwError, liftIO )
 import Hint.Base
 import Hint.Util ( (>=>) ) -- compat version
 import Hint.Conversions
-import qualified Hint.Util as Util
+import qualified Hint.Util   as Util
+import qualified Hint.Compat as Compat
 
 import qualified Hint.GHC as GHC
 
@@ -63,7 +64,7 @@ addPhantomModule :: MonadInterpreter m
                  -> m PhantomModule
 addPhantomModule mod_text =
     do pm <- newPhantomModule
-       let t  = fileTarget (pm_file pm)
+       let t  = Compat.fileTarget (pm_file pm)
            m  = GHC.mkModuleName (pm_name pm)
        --
        liftIO $ UTF8.writeFile (pm_file pm) (mod_text $ pm_name pm)
@@ -73,11 +74,11 @@ addPhantomModule mod_text =
                    -- we save the context...
                    (old_top, old_imps) <- runGhc GHC.getContext
                    --
-                   runGhc GHC.addTarget t
-                   res <- runGhc GHC.load (GHC.LoadUpTo m)
+                   runGhc1 GHC.addTarget t
+                   res <- runGhc1 GHC.load (GHC.LoadUpTo m)
                    --
                    if isSucceeded res
-                     then do runGhc GHC.setContext old_top old_imps
+                     then do runGhc2 GHC.setContext old_top old_imps
                              return $ Just ()
                      else return Nothing)
         `catchError` (\err -> case err of
@@ -104,7 +105,7 @@ removePhantomModule pm =
                      mod <- findModule (pm_name pm)
                      (mods, imps) <- runGhc GHC.getContext
                      let mods' = filter (mod /=) mods
-                     runGhc GHC.setContext mods' imps
+                     runGhc2 GHC.setContext mods' imps
                      --
                      let isNotPhantom = isPhantomModule . fromGhcRep_  >=>
                                           return . not
@@ -112,23 +113,16 @@ removePhantomModule pm =
              else return True
        --
        let file_name = pm_file pm
-       runGhc GHC.removeTarget (targetId . fileTarget $ file_name)
+       runGhc1 GHC.removeTarget (Compat.targetId $ Compat.fileTarget file_name)
        --
        onState (\s -> s{active_phantoms = filter (pm /=) $ active_phantoms s})
        --
        if safeToRemove
-         then do mayFail $ do res <- runGhc GHC.load GHC.LoadAllTargets
+         then do mayFail $ do res <- runGhc1 GHC.load GHC.LoadAllTargets
                               return $ guard (isSucceeded res) >> Just ()
                  liftIO $ removeFile (pm_file pm)
          else do onState (\s -> s{zombie_phantoms = pm:zombie_phantoms s})
                  return ()
-
-fileTarget :: FilePath -> GHC.Target
-fileTarget f = GHC.Target (GHC.TargetFile f $ Just next_phase) Nothing
-    where next_phase = GHC.Cpp GHC.HsSrcFile
-
-targetId :: GHC.Target -> GHC.TargetId
-targetId (GHC.Target _id _) = _id
 
 -- Returns a tuple with the active and zombie phantom modules respectively
 getPhantomModules :: MonadInterpreter m => m ([PhantomModule], [PhantomModule])
@@ -153,10 +147,10 @@ loadModules fs = do -- first, unload everything, and do some clean-up
 
 doLoad :: MonadInterpreter m => [String] -> m ()
 doLoad fs = do mayFail $ do
-                   targets <- mapM (\f -> liftIO $ GHC.guessTarget f Nothing) fs
+                   targets <- mapM (\f->runGhc2 Compat.guessTarget f Nothing) fs
                    --
-                   runGhc GHC.setTargets targets
-                   res <- runGhc GHC.load GHC.LoadAllTargets
+                   runGhc1 GHC.setTargets targets
+                   res <- runGhc1 GHC.load GHC.LoadAllTargets
                    return $ guard (isSucceeded res) >> Just ()
 
 -- | Returns the list of modules loaded with 'loadModules'.
@@ -171,7 +165,7 @@ modNameFromSummary =  fromGhcRep_ . GHC.ms_mod
 getLoadedModSummaries :: MonadInterpreter m => m [GHC.ModSummary]
 getLoadedModSummaries =
   do all_mod_summ <- runGhc GHC.getModuleGraph
-     filterM (runGhc GHC.isLoaded . GHC.ms_mod_name) all_mod_summ
+     filterM (runGhc1 GHC.isLoaded . GHC.ms_mod_name) all_mod_summ
 
 -- | Sets the modules whose context is used during evaluation. All bindings
 --   of these modules are in scope, not only those exported.
@@ -189,20 +183,20 @@ setTopLevelModules ms =
        active_pms <- fromState active_phantoms
        ms_mods <- mapM findModule (nub $ ms ++ map pm_name active_pms)
        --
-       let mod_is_interpr = runGhc GHC.moduleIsInterpreted
+       let mod_is_interpr = runGhc1 GHC.moduleIsInterpreted
        not_interpreted <- filterM (liftM not . mod_is_interpr) ms_mods
        when (not . null $ not_interpreted) $
          throwError $ NotAllowed ("These modules are not interpreted:\n" ++
                                   unlines (map fromGhcRep_ not_interpreted))
        --
        (_, old_imports) <- runGhc GHC.getContext
-       runGhc GHC.setContext ms_mods old_imports
+       runGhc2 GHC.setContext ms_mods old_imports
 
 onAnEmptyContext :: MonadInterpreter m => m a -> m a
 onAnEmptyContext action =
     do (old_mods, old_imps) <- runGhc GHC.getContext
-       runGhc GHC.setContext [] []
-       let restore = runGhc GHC.setContext old_mods old_imps
+       runGhc2 GHC.setContext [] []
+       let restore = runGhc2 GHC.setContext old_mods old_imps
        a <- action `catchError` (\e -> do restore; throwError e)
        restore
        return a
@@ -241,7 +235,7 @@ setImportsQ ms =
        pm <- maybe (return []) (findModule . pm_name >=> return . return) new_pm
        (old_top_level, _) <- runGhc GHC.getContext
        let new_top_level = pm ++ old_top_level
-       runGhc GHC.setContext new_top_level unqual_mods
+       runGhc2 GHC.setContext new_top_level unqual_mods
        --
        onState (\s ->s{qual_imports = quals})
 
@@ -252,11 +246,11 @@ setImportsQ ms =
 reset :: MonadInterpreter m => m ()
 reset =
     do -- Remove all modules from context
-       runGhc GHC.setContext [] []
+       runGhc2 GHC.setContext [] []
        --
        -- Unload all previously loaded modules
-       runGhc GHC.setTargets []
-       runGhc GHC.load GHC.LoadAllTargets
+       runGhc1 GHC.setTargets []
+       runGhc1 GHC.load GHC.LoadAllTargets
        --
        -- At this point, GHCi would call rts_revertCAFs and
        -- reset the buffering of stdin, stdout and stderr.

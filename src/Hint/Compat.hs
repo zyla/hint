@@ -13,12 +13,34 @@ parseDynamicFlags :: GHC.GhcMonad m
                    => GHC.DynFlags -> [String] -> m (GHC.DynFlags, [String])
 parseDynamicFlags d = fmap firstTwo . GHC.parseDynamicFlags d . map GHC.noLoc
     where firstTwo (a,b,_) = (a, map GHC.unLoc b)
+
+fileTarget :: FilePath -> GHC.Target
+fileTarget f = GHC.Target (GHC.TargetFile f $ Just next_phase) True Nothing
+    where next_phase = GHC.Cpp GHC.HsSrcFile
+
+targetId :: GHC.Target -> GHC.TargetId
+targetId = GHC.targetId
+
+guessTarget :: GHC.GhcMonad m => String -> Maybe GHC.Phase -> m GHC.Target
+guessTarget = GHC.guessTarget
+
 #else
 -- add a bogus session parameter, in order to use it with runGhc2
 parseDynamicFlags :: GHC.Session
                   -> GHC.DynFlags
                   -> [String] -> IO (GHC.DynFlags, [String])
 parseDynamicFlags = const GHC.parseDynamicFlags
+
+fileTarget :: FilePath -> GHC.Target
+fileTarget f = GHC.Target (GHC.TargetFile f $ Just next_phase) Nothing
+    where next_phase = GHC.Cpp GHC.HsSrcFile
+
+targetId :: GHC.Target -> GHC.TargetId
+targetId (GHC.Target _id _) = _id
+
+-- add a bogus session parameter, in order to use it with runGhc2
+guessTarget :: GHC.Session -> String -> Maybe GHC.Phase -> IO GHC.Target
+guessTarget = const GHC.guessTarget
 #endif
 
 #if __GLASGOW_HASKELL__ >= 608
