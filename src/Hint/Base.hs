@@ -271,16 +271,15 @@ initialize =
        runGhc1 GHC.setSessionDynFlags dflags{GHC.log_action = log_handler}
        return ()
 
--- | Executes the interpreter.
+-- | Executes the interpreter. Returns @Left InterpreterError@ in case of error.
 --
---   In case of error, it will throw a dynamic InterpreterError exception.
-runInterpreter :: (MonadCatchIO m, Functor m) => InterpreterT m a -> m a
+runInterpreter :: (MonadCatchIO m, Functor m)
+               => InterpreterT m a
+               -> m (Either InterpreterError a)
 runInterpreter action =
     do s <- newInterpreterSession `catch` rethrowGhcException
-       err_or_res <- execute s interpreter
-       either throw return err_or_res
-    where interpreter           = initialize >> action
-          rethrowGhcException   = throw . GhcException
+       execute s (initialize >> action)
+    where rethrowGhcException   = throw . GhcException
 #if __GLASGOW_HASKELL__ < 610
           newInterpreterSession =  do s <- liftIO $
                                              Compat.newSession GHC.Paths.libdir
