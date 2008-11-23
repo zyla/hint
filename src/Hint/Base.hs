@@ -34,10 +34,14 @@ import qualified Hint.Compat as Compat
 #endif
 
 -- this requires FlexibleContexts
-class (MonadIO m, MonadError InterpreterError m) => MonadInterpreter m where
-    fromSession      :: (InterpreterSession -> a) -> m a
-    modifySessionRef :: (InterpreterSession -> IORef a) -> (a -> a) -> m a
+class (MonadCatchIO m,MonadError InterpreterError m) => MonadInterpreter m where
+    fromSession      :: FromSession m a
+    modifySessionRef :: ModifySessionRef m a
     runGhc           :: RunGhc m a
+
+-- this is for hiding the actual types in haddock
+type FromSession      m a = (InterpreterSession -> a) -> m a
+type ModifySessionRef m a = (InterpreterSession -> IORef a) -> (a -> a) -> m a
 
 type Interpreter = InterpreterT IO
 
