@@ -9,16 +9,17 @@ module Hint.Configuration (
 
 import Control.Monad.Error
 import qualified Hint.GHC as GHC
+import qualified Hint.Compat as Compat
 import Hint.Base
 
 setGhcOptions :: MonadInterpreter m => [String] -> m ()
 setGhcOptions opts =
-    do old_flags   <- runGhc GHC.getSessionDynFlags
-       (new_flags, not_parsed) <- liftIO $ GHC.parseDynamicFlags old_flags opts
+    do old_flags <- runGhc GHC.getSessionDynFlags
+       (new_flags,not_parsed) <- runGhc2 Compat.parseDynamicFlags old_flags opts
        when (not . null $ not_parsed) $
             throwError $ UnknownError (concat ["flag: '", unwords opts,
                                                "' not recognized"])
-       runGhc GHC.setSessionDynFlags new_flags
+       runGhc1 GHC.setSessionDynFlags new_flags
        return ()
 
 setGhcOption :: MonadInterpreter m => String -> m ()

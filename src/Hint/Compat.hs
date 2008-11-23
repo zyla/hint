@@ -8,9 +8,22 @@ import qualified Hint.GHC as GHC
 -- to be able to define a FromGhcRep instance for both versions
 newtype Kind = Kind GHC.Kind
 
-#if __GLASGOW_HASKELL__ >= 608
+#if __GLASGOW_HASKELL__ >= 610
+parseDynamicFlags :: GHC.GhcMonad m
+                   => GHC.DynFlags -> [String] -> m (GHC.DynFlags, [String])
+parseDynamicFlags d = fmap firstTwo . GHC.parseDynamicFlags d . map GHC.noLoc
+    where firstTwo (a,b,_) = (a, map GHC.unLoc b)
+#else
+-- add a bogus session parameter, in order to use it with runGhc2
+parseDynamicFlags :: GHC.Session
+                  -> GHC.DynFlags
+                  -> [String] -> IO (GHC.DynFlags, [String])
+parseDynamicFlags = const GHC.parseDynamicFlags
+#endif
 
+#if __GLASGOW_HASKELL__ >= 608
 #if __GLASGOW_HASKELL__ < 610
+  -- 6.08 only
 newSession :: FilePath -> IO GHC.Session
 newSession ghc_root =
     do s <- GHC.newSession (Just ghc_root)
@@ -21,6 +34,7 @@ newSession ghc_root =
        return s
 #endif
 
+  -- 6.08 and above
 pprType :: GHC.Type -> (GHC.PprStyle -> GHC.Doc)
 pprType = GHC.pprTypeForUser False -- False means drop explicit foralls
 
@@ -28,6 +42,7 @@ pprKind :: GHC.Kind -> (GHC.PprStyle -> GHC.Doc)
 pprKind = pprType
 
 #elif __GLASGOW_HASKELL__ >= 606
+  -- 6.6 only
 
 newSession :: FilePath -> IO GHC.Session
 newSession ghc_root =
