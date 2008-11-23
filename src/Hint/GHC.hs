@@ -7,7 +7,9 @@ module Hint.GHC (
     module StringBuffer,
     module Lexer,
     module Parser,
-
+#if __GLASGOW_HASKELL__ >= 610
+    module Control.Monad.Ghc,
+#endif
 #if __GLASGOW_HASKELL__ >= 608
     module PprTyThing,
 #elif __GLASGOW_HASKELL__ < 608
@@ -16,8 +18,13 @@ module Hint.GHC (
 )
 
 where
-
+#if __GLASGOW_HASKELL__ >= 610
+import GHC hiding ( Phase, GhcT, runGhcT )
+import Control.Monad.Ghc ( GhcT, runGhcT )
+#else
 import GHC hiding ( Phase )
+#endif
+
 import Outputable   ( PprStyle, ppr,
                       showSDoc, showSDocForUser, showSDocUnqual,
                       withPprStyle, defaultErrStyle )
