@@ -35,8 +35,8 @@ usingAModule do_stuff_on = \expr ->
                 --
                 let e = safeBndFor expr
                 let mod_text no_prel mod_name = textify [
-                     ["{-# OPTIONS_GHC -fno-monomorphism-restriction #-}"],
-                     ["{-# OPTIONS_GHC -fno-implicit-prelude #-}" | no_prel],
+                     ["{-# LANGUAGE NoMonomorphismRestriction #-}"],
+                     ["{-# LANGUAGE NoImplicitPrelude #-}" | no_prel],
                      ["module " ++ mod_name],
                      ["where"],
                      ["import " ++ m | m <- loaded ++ imports,
