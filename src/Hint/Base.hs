@@ -308,7 +308,8 @@ mayFail action =
             (Nothing,True)  -> throwError $ UnknownError "Got no error message"
             (Nothing,False) -> throwError $ WontCompile (reverse es)
             (Just a, True)  -> return a
-            (Just _, False) -> fail "GHC reported errors but returned a result!"
+            (Just _, False) -> fail $ "GHC returned a result but said: " ++
+                                      show es
 
 finally :: MonadInterpreter m => m a -> m () -> m a
 finally action clean_up = do r <- protected_action
