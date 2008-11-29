@@ -6,7 +6,7 @@ import Hint.Base
 import Hint.Configuration
 
 -- | Set a GHC option for the current session,
---   eg. @unsafeSetGhcOption \"-fno-monomorphism-restriction\"@.
+--   eg. @unsafeSetGhcOption \"-XNoMonomorphismRestriction\"@.
 --
 --   Warning: Some options may interact badly with the Interpreter.
 unsafeSetGhcOption :: MonadInterpreter m => String -> m ()
