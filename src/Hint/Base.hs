@@ -28,10 +28,7 @@ import qualified Hint.GHC as GHC
 import qualified GHC.Paths
 
 import Hint.Compat.Exceptions
-
-#if __GLASGOW_HASKELL__ < 610
 import qualified Hint.Compat as Compat
-#endif
 
 -- this requires FlexibleContexts
 class (MonadCatchIO m,MonadError InterpreterError m) => MonadInterpreter m where
@@ -268,7 +265,8 @@ initialize =
        -- Observe that, setSessionDynFlags loads info on packages
        -- available; calling this function once is mandatory!
        dflags <- runGhc GHC.getSessionDynFlags
-       runGhc1 GHC.setSessionDynFlags dflags{GHC.log_action = log_handler}
+       let dflags' = Compat.configureDynFlags dflags
+       runGhc1 GHC.setSessionDynFlags dflags'{GHC.log_action = log_handler}
        return ()
 
 -- | Executes the interpreter. Returns @Left InterpreterError@ in case of error.
