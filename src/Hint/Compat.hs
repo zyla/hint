@@ -9,6 +9,12 @@ import qualified Hint.GHC as GHC
 newtype Kind = Kind GHC.Kind
 
 #if __GLASGOW_HASKELL__ >= 610
+configureDynFlags :: GHC.DynFlags -> GHC.DynFlags
+configureDynFlags dflags = dflags{GHC.ghcMode    = GHC.CompManager,
+                                  GHC.hscTarget  = GHC.HscInterpreted,
+                                  GHC.ghcLink    = GHC.LinkInMemory,
+                                  GHC.verbosity  = 0}
+
 parseDynamicFlags :: GHC.GhcMonad m
                    => GHC.DynFlags -> [String] -> m (GHC.DynFlags, [String])
 parseDynamicFlags d = fmap firstTwo . GHC.parseDynamicFlags d . map GHC.noLoc
@@ -68,13 +74,12 @@ typeKind = GHC.typeKind
 #if __GLASGOW_HASKELL__ < 610
   -- 6.08 only
 newSession :: FilePath -> IO GHC.Session
-newSession ghc_root =
-    do s <- GHC.newSession (Just ghc_root)
-       dflags <- GHC.getSessionDynFlags s
-       GHC.setSessionDynFlags s dflags{GHC.ghcMode    = GHC.CompManager,
-                                       GHC.hscTarget  = GHC.HscInterpreted,
-                                       GHC.ghcLink    = GHC.LinkInMemory}
-       return s
+newSession ghc_root = GHC.newSession (Just ghc_root)
+
+configureDynFlags :: GHC.DynFlags -> GHC.DynFlags
+configureDynFlags dflags = dflags{GHC.ghcMode    = GHC.CompManager,
+                                  GHC.hscTarget  = GHC.HscInterpreted,
+                                  GHC.ghcLink    = GHC.LinkInMemory}
 #endif
 
   -- 6.08 and above
@@ -88,11 +93,10 @@ pprKind = pprType
   -- 6.6 only
 
 newSession :: FilePath -> IO GHC.Session
-newSession ghc_root =
-    do s <- GHC.newSession GHC.Interactive (Just ghc_root)
-       dflags <- GHC.getSessionDynFlags s
-       GHC.setSessionDynFlags s dflags{GHC.hscTarget  = GHC.HscInterpreted}
-       return s
+newSession ghc_root = GHC.newSession GHC.Interactive (Just ghc_root)
+
+configureDynFlags :: GHC.DynFlags -> GHC.DynFlags
+configureDynFlags dflags = dflags{GHC.hscTarget  = GHC.HscInterpreted}
 
 pprType :: GHC.Type -> (GHC.PprStyle -> GHC.Doc)
 pprType = GHC.ppr . GHC.dropForAlls
