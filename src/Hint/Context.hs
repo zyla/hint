@@ -206,7 +206,13 @@ onAnEmptyContext action =
        return a
 
 -- | Sets the modules whose exports must be in context.
-setImports :: [ModuleName] -> Interpreter ()
+--
+--   Warning: 'setImports' and 'setImportsQ' are mutually exclusive.
+--   If you have a list of modules to be used qualified and another list
+--   unqualified, then you need to do something like
+--
+--   >  setImportsQ ((zip unqualified $ repeat Nothing) ++ qualifieds)
+setImports :: MonadInterpreter m => [ModuleName] -> m ()
 setImports ms = setImportsQ $ zip ms (repeat Nothing)
 
 -- | Sets the modules whose exports must be in context; some
