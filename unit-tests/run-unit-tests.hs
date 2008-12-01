@@ -1,5 +1,7 @@
 module Main ( main ) where
 
+import Prelude hiding (catch)
+
 import Control.Exception
 
 import Control.Monad       ( liftM, when )
@@ -134,7 +136,7 @@ main = do -- run the tests...
                   | failures > 0 = ExitFailure failures
                   | otherwise    = ExitSuccess
           exitWith exit_code
-       `catchDyn` (printInterpreterError >=> \_ -> exitWith (ExitFailure $ -1))
+       -- `catch` (\_ -> exitWith (ExitFailure $ -1))
 
 printInterpreterError :: H.InterpreterError -> IO ()
 printInterpreterError = hPutStrLn stderr . show
@@ -160,9 +162,10 @@ runTests sandboxed = HUnit.runTestTT . HUnit.TestList . map build
                                                  HUnit.TestCase test_case
             where test_case = go `finally` clean_up
                   clean_up = mapM_ removeIfExists tmps
-                  go        = H.runInterpreter
-                                  (when sandboxed setSandbox >> test)
-                               `catchDyn` (printInterpreterError >=> throwDyn)
+                  go       = do r <- H.runInterpreter
+                                            (when sandboxed setSandbox >> test)
+                                either (printInterpreterError >=> (fail . show))
+                                       return r
                   removeIfExists f = do exists <- doesFileExist f
                                         when exists $
                                           removeFile f
