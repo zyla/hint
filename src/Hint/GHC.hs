@@ -9,6 +9,8 @@ module Hint.GHC (
     module Parser,
 #if __GLASGOW_HASKELL__ >= 610
     module Control.Monad.Ghc,
+    module HscTypes,
+    module Bag,
 #endif
 #if __GLASGOW_HASKELL__ >= 608
     module PprTyThing,
@@ -21,6 +23,9 @@ where
 #if __GLASGOW_HASKELL__ >= 610
 import GHC hiding ( Phase, GhcT, runGhcT )
 import Control.Monad.Ghc ( GhcT, runGhcT )
+
+import HscTypes ( SourceError, srcErrorMessages, GhcApiError )
+import Bag ( bagToList )
 #else
 import GHC hiding ( Phase )
 #endif

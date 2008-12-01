@@ -12,6 +12,9 @@ import Control.Monad.Reader
 import Control.Monad.Error
 
 import Data.IORef
+#if __GLASGOW_HASKELL__ < 610
+import Data.Dynamic
+#endif
 
 import qualified GHC.Paths
 
@@ -41,7 +44,7 @@ runGhc_impl :: (MonadCatchIO m, Functor m) => RunGhc (InterpreterT m) a
 runGhc_impl f = do s <- fromSession versionSpecific -- i.e. the ghc session
                    r <- liftIO $ f' s
                    either throwError return r
-    where f' = tryJust (fmap GhcException . ghcExceptions) . f
+    where f' = tryJust (fmap (GhcException . showGhcEx) . ghcExceptions) . f
           ghcExceptions (DynException e) = fromDynamic e
           ghcExceptions  _               = Nothing
 
@@ -66,10 +69,21 @@ instance MonadTrans InterpreterT where
     lift = InterpreterT . lift . lift . lift
 
 runGhc_impl :: (MonadCatchIO m, Functor m) => RunGhc (InterpreterT m) a
-runGhc_impl a = do r <- InterpreterT (lift (lift a'))
-                   either throwError return r
-    where a' = tryJust (Just . GhcException) a
+runGhc_impl a = InterpreterT (lift (lift a))
+                `catches`
+                 [Handler (\(e :: GHC.SourceError)  -> rethrowWC e),
+                  Handler (\(e :: GHC.GhcApiError)  -> rethrowGE $ show e),
+                  Handler (\(e :: GHC.GhcException) -> rethrowGE $ showGhcEx e)]
+    where rethrowGE = throwError . GhcException
+          rethrowWC = throwError
+                    . WontCompile
+                    . map (GhcError . show)
+                    . GHC.bagToList
+                    . GHC.srcErrorMessages
 #endif
+
+showGhcEx :: GHC.GhcException -> String
+showGhcEx = flip GHC.showGhcException ""
 
 -- ================= Executing the interpreter ==================
 
@@ -93,7 +107,7 @@ runInterpreter :: (MonadCatchIO m, Functor m)
 runInterpreter action =
     do s <- newInterpreterSession `catch` rethrowGhcException
        execute s (initialize >> action)
-    where rethrowGhcException   = throw . GhcException
+    where rethrowGhcException   = throw . GhcException . showGhcEx
 #if __GLASGOW_HASKELL__ < 610
           newInterpreterSession =  do s <- liftIO $
                                              Compat.newSession GHC.Paths.libdir
