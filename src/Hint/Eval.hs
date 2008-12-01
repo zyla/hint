@@ -11,6 +11,7 @@ import Data.Typeable hiding ( typeOf )
 import qualified Data.Typeable ( typeOf )
 
 import Hint.Base
+import Hint.Context
 import Hint.Parsers
 import Hint.Sandbox
 import Hint.Util
@@ -30,36 +31,30 @@ infer = undefined
 
 -- | Evaluates an expression, given a witness for its monomorphic type.
 interpret :: (MonadInterpreter m, Typeable a) => String -> a -> m a
-interpret expr witness = sandboxed go expr
+interpret expr wit = unsafeInterpret expr (show $ Data.Typeable.typeOf wit)
+
+
+unsafeInterpret :: (MonadInterpreter m) => String -> String -> m a
+unsafeInterpret expr type_str = sandboxed go expr
   where go e =
          do -- First, make sure the expression has no syntax errors,
             -- for this is the only way we have to "intercept" this
             -- kind of errors
             failOnParseError parseExpr e
             --
-            let expr_typesig = concat [parens e," :: ",show $ myTypeOf witness]
+            let expr_typesig = concat [parens e, " :: ", type_str]
             expr_val <- mayFail $ runGhc1 Compat.compileExpr expr_typesig
             --
             return (GHC.Exts.unsafeCoerce# expr_val :: a)
-
--- HACK! Allows evaluations even when the Prelude is not in scope
-myTypeOf :: Typeable a => a -> TypeRep
-myTypeOf a
-    | type_of_a == type_of_string = qual_type_of_string
-    | otherwise                   = type_of_a
-    where type_of_a           = Data.Typeable.typeOf a
-          type_of_string      = Data.Typeable.typeOf (undefined :: [Char])
-          (list_ty_con, _)    = splitTyConApp type_of_string
-          qual_type_of_string = mkTyConApp list_ty_con
-                                        [mkTyConApp (mkTyCon "Prelude.Char") []]
 
 -- | @eval expr@ will evaluate @show expr@.
 --  It will succeed only if @expr@ has type t and there is a 'Show'
 --  instance for t.
 eval :: MonadInterpreter m => String -> m String
-eval expr = interpret show_expr (as :: String)
-    where show_expr =  "Prelude.show" ++ (parens expr)
-
+eval expr = do in_scope_show   <- support_show
+               in_scope_String <- support_String
+               let show_expr = unwords [in_scope_show, parens expr]
+               unsafeInterpret show_expr in_scope_String
 
 -- Conceptually, @parens s = "(" ++ s ++ ")"@, where s is some valid haskell
 -- expression. In practice, it is harder than this.
