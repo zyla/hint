@@ -39,7 +39,7 @@ data InterpreterError = UnknownError String
                       | NotAllowed  String
                       -- | GhcExceptions from the underlying GHC API are caught
                       -- and rethrown as this.
-                      | GhcException GHC.GhcException
+                      | GhcException String
                       deriving (Show, Typeable)
 
 instance Error InterpreterError where
@@ -128,10 +128,8 @@ mapGhcExceptions :: MonadInterpreter m
 mapGhcExceptions buildEx action =
     do  action
           `catchError` (\err -> case err of
-                                    GhcException e -> throwError (remap e)
+                                    GhcException s -> throwError (buildEx s)
                                     _              -> throwError err)
-    where remap =  buildEx . flip GHC.showGhcException []
-
 
 type GhcErrLogger = GHC.Severity
                  -> GHC.SrcSpan
