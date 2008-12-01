@@ -120,6 +120,7 @@ initialState :: InterpreterState
 initialState = St {all_mods_in_scope    = True,
                    active_phantoms      = [],
                    zombie_phantoms      = [],
+                   hint_support_module  = error "No support module loaded!",
                    import_qual_hack_mod = Nothing,
                    qual_imports         = []}
 

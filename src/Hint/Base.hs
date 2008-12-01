@@ -49,6 +49,7 @@ instance Error InterpreterError where
 data InterpreterState = St{all_mods_in_scope    :: Bool,
                            active_phantoms      :: [PhantomModule],
                            zombie_phantoms      :: [PhantomModule],
+                           hint_support_module  :: PhantomModule,
                            import_qual_hack_mod :: Maybe PhantomModule,
                            qual_imports         :: [(ModuleName, String)]}
 

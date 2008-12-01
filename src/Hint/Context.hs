@@ -8,7 +8,9 @@ module Hint.Context (
       PhantomModule(..), ModuleText,
       addPhantomModule, removePhantomModule, getPhantomModules,
 
-      allModulesInContext, onAnEmptyContext
+      allModulesInContext, onAnEmptyContext,
+
+      support_String, support_show
 )
 
 where
@@ -151,6 +153,8 @@ doLoad fs = do mayFail $ do
                    --
                    runGhc1 GHC.setTargets targets
                    res <- runGhc1 GHC.load GHC.LoadAllTargets
+                   -- loading the targets removes the support module
+                   reinstallSupportModule
                    return $ guard (isSucceeded res) >> Just ()
 
 -- | Returns the list of modules loaded with 'loadModules'.
@@ -266,6 +270,44 @@ reset =
                         import_qual_hack_mod = Nothing,
                         qual_imports         = []})
        liftIO $ mapM_ (removeFile . pm_file) (old_active ++ old_zombie)
+       --
+       -- Now, install a support module
+       installSupportModule
+
+-- Load a phantom module with all the symbols from the prelude we need
+installSupportModule :: MonadInterpreter m => m ()
+installSupportModule = do mod <- addPhantomModule support_module
+                          onState (\st -> st{hint_support_module = mod})
+                          mod' <- findModule (pm_name mod)
+                          runGhc2 GHC.setContext [mod'] []
+    --
+    where support_module m = unlines [
+                               "module " ++ m ++ "( String, show )",
+                               "where",
+                               "",
+                               "import qualified Prelude as P",
+                               "",
+                               "type String = P.String",
+                               "",
+                               "show :: P.Show a => a -> String",
+                               "show = P.show"
+                             ]
+
+-- Call it when the support module is an active phantom module but has been
+-- unloaded as a side effect by GHC (e.g. by calling GHC.loadTargets)
+reinstallSupportModule :: MonadInterpreter m => m ()
+reinstallSupportModule = do pm <- fromState hint_support_module
+                            removePhantomModule pm
+                            installSupportModule
+
+
+support_String :: MonadInterpreter m => m String
+support_String = fromState (\st -> mod_name st ++ ".String")
+    where mod_name = pm_name . hint_support_module
+
+support_show :: MonadInterpreter m => m String
+support_show = fromState (\st -> mod_name st ++ ".show")
+    where mod_name = pm_name . hint_support_module
 
 -- SHOULD WE CALL THIS WHEN MODULES ARE LOADED / UNLOADED?
 -- foreign import ccall "revertCAFs" rts_revertCAFs  :: IO ()
