@@ -8,7 +8,8 @@ description:
         values).
 
         It is, esentially, a huge subset of the GHC API wrapped in a simpler
-        API. Works with GHC 6.6.x and 6.8.x.
+        API. Works with GHC 6.10.x and 6.8.x
+        (this version was not tested with GHC 6.6).
 synopsis:           Runtime Haskell interpreter (GHC API wrapper)
 category:           Language, Compilers/Interpreters
 license:            BSD3
@@ -18,7 +19,7 @@ maintainer:         jcpetruzza@gmail.com
 
 cabal-version:      >= 1.2
 build-type:         Simple
-tested-with:        GHC==6.6.1, GHC==6.8.2
+tested-with:        GHC==6.8.3, GHC==6.10
 
 extra-source-files: README
                     AUTHORS
@@ -28,31 +29,35 @@ extra-source-files: README
                     unit-tests/run-unit-tests.hs
 
 Library
+  build-depends:      haskell-src,
+                      ghc > 6.6,
+                      ghc-paths,
+                      mtl,
+                      filepath,
+                      utf8-string,
+                      MonadCatchIO-mtl
   if impl(ghc >= 6.8) {
-    build-depends:      base >= 3,
-                        haskell-src,
-                        ghc,
-                        ghc-paths,
-                        mtl,
-                        random,
-                        filepath,
-                        directory,
-                        utf8-string
-  } else {
-    build-depends:      base < 3,
-                        haskell-src,
-                        ghc > 6.6,
-                        ghc-paths,
-                        mtl,
-                        filepath,
-                        utf8-string < 0.3
+    build-depends:    random,
+                      directory
+
+    if impl(ghc >= 6.10) {
+      build-depends:  base >= 4, base < 5,
+                      ghc-mtl
+    } else {
+      build-depends:  base >= 3, base < 4
+    }
+  }
+  else { -- ghc < 6.8
+      build-depends:    utf8-string < 0.3
   }
 
   exposed-modules:    Language.Haskell.Interpreter.GHC
                       Language.Haskell.Interpreter.GHC.Unsafe
   other-modules:      Hint.GHC
                       Hint.Base
+                      Hint.InterpreterT
                       Hint.Compat
+                      Hint.Compat.Exceptions
                       Hint.Configuration
                       Hint.Context
                       Hint.Conversions
@@ -74,6 +79,6 @@ Library
                       TypeSynonymInstances
                       FlexibleInstances
                       FlexibleContexts
-                      UndecidableInstances
                       FunctionalDependencies
                       KindSignatures
+                      Rank2Types
