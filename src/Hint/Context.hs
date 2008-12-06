@@ -288,16 +288,20 @@ installSupportModule = do mod <- addPhantomModule support_module
                           runGhc2 GHC.setContext [mod'] []
     --
     where support_module m = unlines [
-                               "module " ++ m ++ "( String, show )",
+                               "module " ++ m ++ "( ",
+                               "    " ++ _String ++ ",",
+                               "    " ++ _show   ++ ")",
                                "where",
                                "",
                                "import qualified Prelude as P",
                                "",
-                               "type String = P.String",
+                               "type " ++ _String ++ " = P.String",
                                "",
-                               "show :: P.Show a => a -> String",
-                               "show = P.show"
+                               _show ++ " :: P.Show a => a -> P.String",
+                               _show ++ " = P.show"
                              ]
+            where _String = altStringName m
+                  _show   = altShowName m
 
 -- Call it when the support module is an active phantom module but has been
 -- unloaded as a side effect by GHC (e.g. by calling GHC.loadTargets)
@@ -306,14 +310,19 @@ reinstallSupportModule = do pm <- fromState hint_support_module
                             removePhantomModule pm
                             installSupportModule
 
+altStringName :: ModuleName -> String
+altStringName mod_name = "String_" ++ mod_name
+
+altShowName :: ModuleName -> String
+altShowName mod_name = "show_" ++ mod_name
 
 support_String :: MonadInterpreter m => m String
-support_String = fromState (\st -> mod_name st ++ ".String")
-    where mod_name = pm_name . hint_support_module
+support_String = do mod_name <- fromState (pm_name . hint_support_module)
+                    return $ concat [mod_name, ".", altStringName mod_name]
 
 support_show :: MonadInterpreter m => m String
-support_show = fromState (\st -> mod_name st ++ ".show")
-    where mod_name = pm_name . hint_support_module
+support_show = do mod_name <- fromState (pm_name . hint_support_module)
+                  return $ concat [mod_name, ".", altShowName mod_name]
 
 -- SHOULD WE CALL THIS WHEN MODULES ARE LOADED / UNLOADED?
 -- foreign import ccall "revertCAFs" rts_revertCAFs  :: IO ()

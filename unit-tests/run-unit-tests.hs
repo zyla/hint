@@ -107,13 +107,19 @@ test_basic_eval :: TestCase
 test_basic_eval = TestCase "basic_eval" [] $ do
                            H.eval "()" @@?= "()"
 
+test_show_in_scope :: TestCase
+test_show_in_scope = TestCase "show_in_scope" [] $ do
+                       H.setImports ["Prelude"]
+                       H.eval "show ([] :: String)" @@?= show (show "")
+
 common_tests :: [TestCase]
 common_tests = [test_reload_modified,
                 test_lang_exts,
                 test_work_in_main,
                 test_comments_in_expr,
                 test_qual_import,
-                test_basic_eval]
+                test_basic_eval,
+                test_show_in_scope]
 
 non_sb_tests :: [TestCase]
 non_sb_tests = common_tests ++ [test_priv_syms_in_scope]
