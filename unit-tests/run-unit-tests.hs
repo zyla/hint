@@ -88,7 +88,6 @@ test_priv_syms_in_scope = TestCase "private_syms_in_scope" [mod_file] $ do
 
 test_comments_in_expr :: TestCase
 test_comments_in_expr = TestCase "comments_in_expr" [] $ do
-                            H.reset
                             H.setImports ["Prelude"]
                             let expr = "length $ concat [[1,2],[3]] -- bla"
                             H.typeChecks expr @@? "comment on expression"
@@ -98,7 +97,6 @@ test_comments_in_expr = TestCase "comments_in_expr" [] $ do
 
 test_qual_import :: TestCase
 test_qual_import = TestCase "qual_import" [] $ do
-                           H.reset
                            H.setImportsQ [("Prelude", Nothing),
                                           ("Data.Map", Just "M")]
                            H.typeChecks "null []" @@? "Unqual null"
@@ -107,7 +105,6 @@ test_qual_import = TestCase "qual_import" [] $ do
 
 test_basic_eval :: TestCase
 test_basic_eval = TestCase "basic_eval" [] $ do
-                           H.reset
                            H.eval "()" @@?= "()"
 
 common_tests :: [TestCase]
