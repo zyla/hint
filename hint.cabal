@@ -82,3 +82,4 @@ Library
                       FunctionalDependencies
                       KindSignatures
                       Rank2Types
+                      ScopedTypeVariables
