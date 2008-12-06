@@ -7,6 +7,7 @@ where
 import Prelude hiding ( catch )
 
 import Hint.Base
+import Hint.Context
 
 import Control.Monad.Reader
 import Control.Monad.Error
@@ -97,7 +98,8 @@ initialize =
        dflags <- runGhc GHC.getSessionDynFlags
        let dflags' = Compat.configureDynFlags dflags
        runGhc1 GHC.setSessionDynFlags dflags'{GHC.log_action = log_handler}
-       return ()
+       --
+       reset
 
 -- | Executes the interpreter. Returns @Left InterpreterError@ in case of error.
 --
