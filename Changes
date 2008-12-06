@@ -1,3 +1,12 @@
+- ver 0.3.0.0
+ * Updated API:
+   + InterpreterT monad transformer (Interpreter = InterpreterT IO)
+   + No more Sessions, use runInterpreter only once
+ * Works with GHC 6.10 and 6.8 (untested with 6.6)
+
+- ver 0.2.5
+ * setImportsQ added (modules can be imported both qualified and unqualified)
+
 - ver 0.2.4.1
  * BUGFIX: No longer fails on expressions ending in a -- comment
 
