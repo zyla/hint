@@ -2,12 +2,11 @@ import Control.Monad
 import Control.Monad.Trans ( liftIO )
 import Language.Haskell.Interpreter.GHC
 
-import Control.Exception ( catchDyn )
-
 main :: IO ()
-main = do runInterpreter testHint
-          putStrLn "that's all folks"
-     `catchDyn` printInterpreterError
+main = do r <- runInterpreter testHint
+          case r of
+            Left err -> printInterpreterError err
+            Right () -> putStrLn "that's all folks"
 
 -- observe that Interpreter () is an alias for InterpreterT IO ()
 testHint :: Interpreter ()
