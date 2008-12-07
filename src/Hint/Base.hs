@@ -74,7 +74,8 @@ type RunGhc4 m a b c d e   = (GHC.Session -> a -> b -> c -> d -> IO e)
 type RunGhc5 m a b c d e f = (GHC.Session -> a -> b -> c -> d -> e -> IO f)
                           -> (a -> b -> c -> d -> e -> m f)
 
-#else -- ghc >= 6.10
+#else
+      -- ghc >= 6.10
 type InterpreterSession = SessionData ()
 
 instance Exception InterpreterError

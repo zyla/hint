@@ -49,8 +49,8 @@ runGhc_impl f = do s <- fromSession versionSpecific -- i.e. the ghc session
           ghcExceptions (DynException e) = fromDynamic e
           ghcExceptions  _               = Nothing
 
-#else -- ghc >= 6.10
-
+#else
+      -- ghc >= 6.10
 newtype InterpreterT m a = InterpreterT{
                              unInterpreterT :: ReaderT  InterpreterSession
                                               (ErrorT   InterpreterError
@@ -114,7 +114,8 @@ runInterpreter action =
           newInterpreterSession =  do s <- liftIO $
                                              Compat.newSession GHC.Paths.libdir
                                       newSessionData s
-#else -- GHC >= 610
+#else
+          -- GHC >= 610
           newInterpreterSession = newSessionData ()
 #endif
 
