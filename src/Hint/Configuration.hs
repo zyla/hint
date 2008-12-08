@@ -40,7 +40,7 @@ setGhcOption opt = setGhcOptions [opt]
 defaultConf :: InterpreterConfiguration
 defaultConf = Conf {
                 language_exts     = [],
-                all_mods_in_scope = True
+                all_mods_in_scope = False
               }
 
 
@@ -143,7 +143,12 @@ glasgowExtensions = intersect availableExtensions exts610 -- works also for 608
 installedModulesInScope :: MonadInterpreter m => Option m Bool
 installedModulesInScope = Option setter getter
     where getter = fromConf all_mods_in_scope
-          setter b = onConf $ \c -> c{all_mods_in_scope = b}
+          setter b = do onConf $ \c -> c{all_mods_in_scope = b}
+# if __GLASGOW_HASKELL__ >= 610
+                        setGhcOption $ "-f"                   ++
+                                       concat ["no-" | not b] ++
+                                       "implicit-import-qualified"
+#endif
 
 fromConf :: MonadInterpreter m => (InterpreterConfiguration -> a) -> m a
 fromConf f = fromState (f . configuration)
