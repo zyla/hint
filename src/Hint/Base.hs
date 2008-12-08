@@ -5,6 +5,7 @@ module Hint.Base (
     --
     InterpreterSession, SessionData(..), GhcErrLogger,
     InterpreterState(..), fromState, onState,
+    InterpreterConfiguration(..),
     --
     runGhc1, runGhc2, runGhc3, runGhc4, runGhc5,
     --
@@ -22,6 +23,8 @@ import Data.Dynamic
 import qualified Hint.GHC as GHC
 
 import Hint.Compat.Exceptions
+
+import Language.Haskell.Extension
 
 -- this requires FlexibleContexts
 class (MonadCatchIO m,MonadError InterpreterError m) => MonadInterpreter m where
@@ -46,12 +49,17 @@ instance Error InterpreterError where
     noMsg  = UnknownError ""
     strMsg = UnknownError
 
-data InterpreterState = St{all_mods_in_scope    :: Bool,
-                           active_phantoms      :: [PhantomModule],
+data InterpreterState = St{active_phantoms      :: [PhantomModule],
                            zombie_phantoms      :: [PhantomModule],
                            hint_support_module  :: PhantomModule,
                            import_qual_hack_mod :: Maybe PhantomModule,
-                           qual_imports         :: [(ModuleName, String)]}
+                           qual_imports         :: [(ModuleName, String)],
+                           configuration        :: InterpreterConfiguration}
+
+data InterpreterConfiguration = Conf {
+                                  language_exts     :: [Extension],
+                                  all_mods_in_scope :: Bool
+                                }
 
 #if __GLASGOW_HASKELL__ < 610
 type InterpreterSession = SessionData GHC.Session

@@ -17,6 +17,7 @@ import Test.HUnit ( (@?=), (@?) )
 import qualified Test.HUnit as HUnit
 
 import qualified Language.Haskell.Interpreter.GHC as H
+import Language.Haskell.Interpreter.GHC ( OptionVal((:=)) )
 
 test_reload_modified :: TestCase
 test_reload_modified = TestCase "reload_modified" [mod_file] $ do
@@ -49,10 +50,10 @@ test_lang_exts = TestCase "lang_exts" [mod_file] $ do
                       liftIO $ writeFile mod_file "data T where T :: T"
                       loadFails @@? "first time, it shouldn't load"
                       --
-                      H.setUseLanguageExtensions True
+                      H.set [H.languageExtensions := H.glasgowExtensions]
                       loadSucceeds @@? "now, it should load"
                       --
-                      H.setUseLanguageExtensions False
+                      H.set [H.languageExtensions := []]
                       loadFails @@? "it shouldn't load, again"
     --
     where mod_name     = "TEST_LangExts"
@@ -145,7 +146,7 @@ printInterpreterError :: H.InterpreterError -> IO ()
 printInterpreterError = hPutStrLn stderr . show
 
 setSandbox :: H.Interpreter ()
-setSandbox = H.setInstalledModsAreInScopeQualified False
+setSandbox = H.set [H.installedModulesInScope := False]
 
 (>=>) :: Monad m => (a -> m b) -> (b -> m c) -> (a -> m c)
 f >=> g = \a -> f a >>= g

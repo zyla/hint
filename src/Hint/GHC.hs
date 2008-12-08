@@ -7,6 +7,7 @@ module Hint.GHC (
     module StringBuffer,
     module Lexer,
     module Parser,
+    module DynFlags,
 #if __GLASGOW_HASKELL__ >= 610
     module Control.Monad.Ghc,
     module HscTypes,
@@ -39,6 +40,7 @@ import DriverPhases ( Phase(Cpp), HscSource(HsSrcFile) )
 import StringBuffer ( stringToStringBuffer )
 import Lexer        ( P(..), ParseResult(..), mkPState )
 import Parser       ( parseStmt, parseType )
+import DynFlags     ( supportedLanguages )
 
 #if __GLASGOW_HASKELL__ >= 608
 import PprTyThing   ( pprTypeForUser )

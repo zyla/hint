@@ -2,6 +2,7 @@ module Hint.Sandbox ( sandboxed ) where
 
 import Hint.Base
 import Hint.Context
+import Hint.Configuration
 import Hint.Util
 
 import {-# SOURCE #-} Hint.Typecheck ( typeChecks_unsandboxed )
@@ -10,7 +11,7 @@ import Data.List
 import Control.Monad.Error
 
 sandboxed :: MonadInterpreter m => (Expr -> m a) -> (Expr -> m a)
-sandboxed do_stuff = \expr -> do no_sandbox <- fromState all_mods_in_scope
+sandboxed do_stuff = \expr -> do no_sandbox <- fromConf all_mods_in_scope
                                  if no_sandbox
                                    then do_stuff expr
                                    else usingAModule do_stuff expr

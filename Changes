@@ -2,6 +2,10 @@
  * Updated API:
    + InterpreterT monad transformer (Interpreter = InterpreterT IO)
    + No more Sessions, use runInterpreter only once
+   + New options handling functions
+     - but observe that there is no setOptimizations equivalent;
+       since GHC does no optimization on interpreted code, this was actually
+       doing nothing
  * Works with GHC 6.10 and 6.8 (untested with 6.6)
 
 - ver 0.2.5
