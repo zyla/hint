@@ -52,7 +52,9 @@ Library
       build-depends:    utf8-string < 0.3
   }
 
-  exposed-modules:    Language.Haskell.Interpreter.GHC
+  exposed-modules:    Language.Haskell.Interpreter
+                      Language.Haskell.Interpreter.Unsafe
+                      Language.Haskell.Interpreter.GHC
                       Language.Haskell.Interpreter.GHC.Unsafe
   other-modules:      Hint.GHC
                       Hint.Base
