@@ -15,8 +15,12 @@ module Language.Haskell.Interpreter.GHC(
     -- ** Running the interpreter
      runInterpreter,
     -- ** Interpreter options
+     Option, OptionVal((:=)),
+     get, set,
+     languageExtensions, availableExtensions, glasgowExtensions, Extension(..),
+     installedModulesInScope,
+
      setUseLanguageExtensions,
-     Optimizations(..), setOptimizations,
      setInstalledModsAreInScopeQualified,
     -- ** Context handling
      ModuleName,

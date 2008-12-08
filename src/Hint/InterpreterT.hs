@@ -8,6 +8,7 @@ import Prelude hiding ( catch )
 
 import Hint.Base
 import Hint.Context
+import Hint.Configuration
 
 import Control.Monad.Reader
 import Control.Monad.Error
@@ -120,12 +121,12 @@ runInterpreter action =
 #endif
 
 initialState :: InterpreterState
-initialState = St {all_mods_in_scope    = True,
-                   active_phantoms      = [],
+initialState = St {active_phantoms      = [],
                    zombie_phantoms      = [],
                    hint_support_module  = error "No support module loaded!",
                    import_qual_hack_mod = Nothing,
-                   qual_imports         = []}
+                   qual_imports         = [],
+                   configuration        = defaultConf}
 
 
 newSessionData :: MonadIO m => a -> m (SessionData a)
