@@ -1,5 +1,4 @@
 import Control.Monad
-import Control.Monad.Trans ( liftIO )
 import Language.Haskell.Interpreter
 
 main :: IO ()

@@ -5,7 +5,6 @@ import Prelude hiding (catch)
 import Control.Exception
 
 import Control.Monad       ( liftM, when )
-import Control.Monad.Trans ( MonadIO(liftIO) )
 import Control.Monad.Error ( Error, MonadError(catchError) )
 
 import System.IO
@@ -16,8 +15,7 @@ import System.Exit
 import Test.HUnit ( (@?=), (@?) )
 import qualified Test.HUnit as HUnit
 
-import qualified Language.Haskell.Interpreter as H
-import Language.Haskell.Interpreter ( OptionVal((:=)) )
+import Language.Haskell.Interpreter
 
 test_reload_modified :: TestCase
 test_reload_modified = TestCase "reload_modified" [mod_file] $ do
@@ -41,37 +39,37 @@ test_reload_modified = TestCase "reload_modified" [mod_file] $ do
                               "f :: Int -> Int",
                               "f = (1 +)"]
           --
-          get_f    =  do H.loadModules [mod_file]
-                         H.setTopLevelModules [mod_name]
-                         H.interpret "f" (H.as :: Int -> Int)
+          get_f    =  do loadModules [mod_file]
+                         setTopLevelModules [mod_name]
+                         interpret "f" (as :: Int -> Int)
 
 test_lang_exts :: TestCase
 test_lang_exts = TestCase "lang_exts" [mod_file] $ do
                       liftIO $ writeFile mod_file "data T where T :: T"
                       fails do_load @@? "first time, it shouldn't load"
                       --
-                      H.set [H.languageExtensions := H.glasgowExtensions]
+                      set [languageExtensions := glasgowExtensions]
                       succeeds do_load @@? "now, it should load"
                       --
-                      H.set [H.languageExtensions := []]
+                      set [languageExtensions := []]
                       fails do_load @@? "it shouldn't load, again"
     --
     where mod_name = "TEST_LangExts"
           mod_file = mod_name ++ ".hs"
           --
-          do_load  = H.loadModules [mod_name]
+          do_load  = loadModules [mod_name]
 
 test_work_in_main :: TestCase
 test_work_in_main = TestCase "work_in_main" [mod_file] $ do
                         liftIO $ writeFile mod_file "f = id"
-                        H.loadModules [mod_file]
-                        H.setTopLevelModules ["Main"]
-                        H.setImportsQ [("Prelude",Nothing),
+                        loadModules [mod_file]
+                        setTopLevelModules ["Main"]
+                        setImportsQ [("Prelude",Nothing),
                                        ("Data.Maybe", Just "Mb")]
                         --
-                        H.typeOf "f $ 1+1" @@?= "(Num a) => a"
-                        H.eval "f . Mb.fromJust $ Just [1,2]" @@?= "[1,2]"
-                        H.interpret "f $ 1 == 2" H.infer @@?= False
+                        typeOf "f $ 1+1" @@?= "(Num a) => a"
+                        eval "f . Mb.fromJust $ Just [1,2]" @@?= "[1,2]"
+                        interpret "f $ 1 == 2" infer @@?= False
     --
     where mod_file     = "TEST_WorkInMain.hs"
 
@@ -79,49 +77,49 @@ test_priv_syms_in_scope :: TestCase
 test_priv_syms_in_scope = TestCase "private_syms_in_scope" [mod_file] $ do
                                -- must set to True, otherwise won't work with
                                -- ghc 6.8
-                               H.set [H.installedModulesInScope := True]
+                               set [installedModulesInScope := True]
                                liftIO $ writeFile mod_file mod_text
-                               H.loadModules [mod_file]
-                               H.setTopLevelModules ["T"]
-                               H.typeChecks "g" @@? "g is hidden"
+                               loadModules [mod_file]
+                               setTopLevelModules ["T"]
+                               typeChecks "g" @@? "g is hidden"
     where mod_text = unlines ["module T(f) where", "f = g", "g = id"]
           mod_file = "TEST_PrivateSymbolsInScope.hs"
 
 test_comments_in_expr :: TestCase
 test_comments_in_expr = TestCase "comments_in_expr" [] $ do
-                            H.setImports ["Prelude"]
+                            setImports ["Prelude"]
                             let expr = "length $ concat [[1,2],[3]] -- bla"
-                            H.typeChecks expr @@? "comment on expression"
-                            H.eval expr
-                            H.interpret expr (H.as :: Int)
+                            typeChecks expr @@? "comment on expression"
+                            eval expr
+                            interpret expr (as :: Int)
                             return ()
 
 test_qual_import :: TestCase
 test_qual_import = TestCase "qual_import" [] $ do
-                           H.setImportsQ [("Prelude", Nothing),
-                                          ("Data.Map", Just "M")]
-                           H.typeChecks "null []" @@? "Unqual null"
-                           H.typeChecks "M.null M.empty" @@? "Qual null"
+                           setImportsQ [("Prelude", Nothing),
+                                        ("Data.Map", Just "M")]
+                           typeChecks "null []" @@? "Unqual null"
+                           typeChecks "M.null M.empty" @@? "Qual null"
                            return ()
 
 test_basic_eval :: TestCase
 test_basic_eval = TestCase "basic_eval" [] $ do
-                           H.eval "()" @@?= "()"
+                           eval "()" @@?= "()"
 
 test_show_in_scope :: TestCase
 test_show_in_scope = TestCase "show_in_scope" [] $ do
-                       H.setImports ["Prelude"]
-                       H.eval "show ([] :: String)" @@?= show (show "")
+                       setImports ["Prelude"]
+                       eval "show ([] :: String)" @@?= show (show "")
 
 test_installed_not_in_scope :: TestCase
 test_installed_not_in_scope = TestCase "installed_not_in_scope" [] $ do
-                                b <- H.get H.installedModulesInScope
+                                b <- get installedModulesInScope
                                 succeeds action @@?= b
-                                H.set [H.installedModulesInScope := False]
+                                set [installedModulesInScope := False]
                                 fails action @@? "now must be out of scope"
-                                H.set [H.installedModulesInScope := True]
+                                set [installedModulesInScope := True]
                                 succeeds action @@? "must be in scope again"
-    where action = H.typeOf "Data.Map.singleton"
+    where action = typeOf "Data.Map.singleton"
 
 tests :: [TestCase]
 tests = [test_reload_modified,
@@ -148,11 +146,11 @@ main = do -- run the tests...
           exitWith exit_code
        -- `catch` (\_ -> exitWith (ExitFailure $ -1))
 
-printInterpreterError :: H.InterpreterError -> IO ()
+printInterpreterError :: InterpreterError -> IO ()
 printInterpreterError = hPutStrLn stderr . show
 
-setSandbox :: H.Interpreter ()
-setSandbox = H.set [H.installedModulesInScope := False]
+setSandbox :: Interpreter ()
+setSandbox = set [installedModulesInScope := False]
 
 (>=>) :: Monad m => (a -> m b) -> (b -> m c) -> (a -> m c)
 f >=> g = \a -> f a >>= g
@@ -170,7 +168,7 @@ succeeds :: (Error e, MonadError e m, MonadIO m) => m a -> m Bool
 succeeds = liftM not . fails
 
 
-data TestCase = TestCase String [FilePath] (H.Interpreter ())
+data TestCase = TestCase String [FilePath] (Interpreter ())
 
 runTests :: Bool -> [TestCase] -> IO HUnit.Counts
 runTests sandboxed = HUnit.runTestTT . HUnit.TestList . map build
@@ -178,7 +176,7 @@ runTests sandboxed = HUnit.runTestTT . HUnit.TestList . map build
                                                  HUnit.TestCase test_case
             where test_case = go `finally` clean_up
                   clean_up = mapM_ removeIfExists tmps
-                  go       = do r <- H.runInterpreter
+                  go       = do r <- runInterpreter
                                             (when sandboxed setSandbox >> test)
                                 either (printInterpreterError >=> (fail . show))
                                        return r
