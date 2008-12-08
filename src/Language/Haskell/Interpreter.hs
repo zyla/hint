@@ -37,7 +37,8 @@ module Language.Haskell.Interpreter(
     -- * Error handling
      InterpreterError(..), GhcError(..),
     -- * Miscellaneous
-     ghcVersion)
+     ghcVersion,
+     module Control.Monad.Trans)
 
 where
 
@@ -48,3 +49,5 @@ import Hint.Context
 import Hint.Reflection
 import Hint.Typecheck
 import Hint.Eval
+
+import Control.Monad.Trans
