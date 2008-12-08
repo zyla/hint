@@ -1,4 +1,4 @@
-module Hint.Sandbox ( sandboxed, sandboxed_608 ) where
+module Hint.Sandbox ( sandboxed ) where
 
 import Hint.Base
 import Hint.Context
@@ -10,18 +10,14 @@ import {-# SOURCE #-} Hint.Typecheck ( typeChecks_unsandboxed )
 import Data.List
 import Control.Monad.Error
 
-sandboxed, sandboxed_608 :: MonadInterpreter m => (Expr -> m a) -> (Expr -> m a)
-sandboxed_608 do_stuff = \expr -> do no_sandbox <- fromConf all_mods_in_scope
+sandboxed :: MonadInterpreter m => (Expr -> m a) -> (Expr -> m a)
+sandboxed = if ghcVersion >= 610 then id else old_sandboxed
+
+old_sandboxed :: MonadInterpreter m => (Expr -> m a) -> (Expr -> m a)
+old_sandboxed do_stuff = \expr -> do no_sandbox <- fromConf all_mods_in_scope
                                      if no_sandbox
                                        then do_stuff expr
                                        else usingAModule do_stuff expr
-
-#if __GLASGOW_HASKELL__ >= 610
-sandboxed = id
-#else
-sandboxed = sandboxed_608
-#endif
-
 
 usingAModule :: MonadInterpreter m => (Expr -> m a) -> (Expr -> m a)
 usingAModule do_stuff_on = \expr ->
