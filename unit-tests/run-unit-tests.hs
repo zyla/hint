@@ -6,7 +6,7 @@ import Control.Exception
 
 import Control.Monad       ( liftM, when )
 import Control.Monad.Trans ( MonadIO(liftIO) )
-import Control.Monad.Error ( catchError )
+import Control.Monad.Error ( Error, MonadError(catchError) )
 
 import System.IO
 import System.Directory
@@ -48,21 +48,18 @@ test_reload_modified = TestCase "reload_modified" [mod_file] $ do
 test_lang_exts :: TestCase
 test_lang_exts = TestCase "lang_exts" [mod_file] $ do
                       liftIO $ writeFile mod_file "data T where T :: T"
-                      loadFails @@? "first time, it shouldn't load"
+                      fails do_load @@? "first time, it shouldn't load"
                       --
                       H.set [H.languageExtensions := H.glasgowExtensions]
-                      loadSucceeds @@? "now, it should load"
+                      succeeds do_load @@? "now, it should load"
                       --
                       H.set [H.languageExtensions := []]
-                      loadFails @@? "it shouldn't load, again"
+                      fails do_load @@? "it shouldn't load, again"
     --
-    where mod_name     = "TEST_LangExts"
-          mod_file     = mod_name ++ ".hs"
+    where mod_name = "TEST_LangExts"
+          mod_file = mod_name ++ ".hs"
           --
-          loadFails    = not `liftM` loadSucceeds
-          loadSucceeds = do H.loadModules [mod_name]
-                            return True
-                         `catchError` (\_ -> return False)
+          do_load  = H.loadModules [mod_name]
 
 test_work_in_main :: TestCase
 test_work_in_main = TestCase "work_in_main" [mod_file] $ do
@@ -80,6 +77,9 @@ test_work_in_main = TestCase "work_in_main" [mod_file] $ do
 
 test_priv_syms_in_scope :: TestCase
 test_priv_syms_in_scope = TestCase "private_syms_in_scope" [mod_file] $ do
+                               -- must set to True, otherwise won't work with
+                               -- ghc 6.8
+                               H.set [H.installedModulesInScope := True]
                                liftIO $ writeFile mod_file mod_text
                                H.loadModules [mod_file]
                                H.setTopLevelModules ["T"]
@@ -113,26 +113,32 @@ test_show_in_scope = TestCase "show_in_scope" [] $ do
                        H.setImports ["Prelude"]
                        H.eval "show ([] :: String)" @@?= show (show "")
 
-common_tests :: [TestCase]
-common_tests = [test_reload_modified,
-                test_lang_exts,
-                test_work_in_main,
-                test_comments_in_expr,
-                test_qual_import,
-                test_basic_eval,
-                test_show_in_scope]
+test_installed_not_in_scope :: TestCase
+test_installed_not_in_scope = TestCase "installed_not_in_scope" [] $ do
+                                b <- H.get H.installedModulesInScope
+                                succeeds action @@?= b
+                                H.set [H.installedModulesInScope := False]
+                                fails action @@? "now must be out of scope"
+                                H.set [H.installedModulesInScope := True]
+                                succeeds action @@? "must be in scope again"
+    where action = H.typeOf "Data.Map.singleton"
 
-non_sb_tests :: [TestCase]
-non_sb_tests = common_tests ++ [test_priv_syms_in_scope]
-
-sb_tests :: [TestCase]
-sb_tests = common_tests
+tests :: [TestCase]
+tests = [test_reload_modified,
+         test_lang_exts,
+         test_work_in_main,
+         test_comments_in_expr,
+         test_qual_import,
+         test_basic_eval,
+         test_show_in_scope,
+         test_installed_not_in_scope,
+         test_priv_syms_in_scope]
 
 main :: IO ()
 main = do -- run the tests...
-          c  <- runTests False non_sb_tests
+          c  <- runTests False tests
           -- then run again, but with sandboxing on...
-          c' <- runTests True sb_tests
+          c' <- runTests True tests
           --
           let failures  = HUnit.errors c  + HUnit.failures c +
                           HUnit.errors c' + HUnit.failures c'
@@ -156,6 +162,12 @@ p @@? msg = do b <- p; liftIO (b @? msg)
 
 (@@?=) :: (Eq a, Show a, MonadIO m) => m a -> a -> m ()
 m_a @@?= b = do a <- m_a; liftIO (a @?= b)
+
+fails :: (Error e, MonadError e m, MonadIO m) => m a -> m Bool
+fails action = (action >> return False) `catchError` (\_ -> return True)
+
+succeeds :: (Error e, MonadError e m, MonadIO m) => m a -> m Bool
+succeeds = liftM not . fails
 
 
 data TestCase = TestCase String [FilePath] (H.Interpreter ())
