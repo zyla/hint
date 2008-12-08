@@ -35,7 +35,9 @@ module Language.Haskell.Interpreter.GHC(
     -- ** Evaluation
      interpret, as, infer, eval,
     -- * Error handling
-     InterpreterError(..), GhcError(..))
+     InterpreterError(..), GhcError(..),
+    -- * Miscellaneous
+     ghcVersion)
 
 where
 

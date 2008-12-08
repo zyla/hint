@@ -144,11 +144,10 @@ installedModulesInScope :: MonadInterpreter m => Option m Bool
 installedModulesInScope = Option setter getter
     where getter = fromConf all_mods_in_scope
           setter b = do onConf $ \c -> c{all_mods_in_scope = b}
-# if __GLASGOW_HASKELL__ >= 610
-                        setGhcOption $ "-f"                   ++
-                                       concat ["no-" | not b] ++
-                                       "implicit-import-qualified"
-#endif
+                        when ( ghcVersion >= 610 ) $
+                            setGhcOption $ "-f"                   ++
+                                           concat ["no-" | not b] ++
+                                           "implicit-import-qualified"
 
 fromConf :: MonadInterpreter m => (InterpreterConfiguration -> a) -> m a
 fromConf f = fromState (f . configuration)

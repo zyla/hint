@@ -11,6 +11,8 @@ module Hint.Base (
     --
     ModuleName, PhantomModule(..),
     findModule, moduleIsLoaded,
+    --
+    ghcVersion
 )
 
 where
@@ -25,6 +27,18 @@ import qualified Hint.GHC as GHC
 import Hint.Compat.Exceptions
 
 import Language.Haskell.Extension
+
+-- | Version of the underlying ghc api. Values are:
+--
+-- * @606@ for GHC 6.6.x
+--
+-- * @608@ for GHC 6.8.x
+--
+-- * @610@ for GHC 6.10.x
+--
+-- * etc...
+ghcVersion :: Int
+ghcVersion = __GLASGOW_HASKELL__
 
 -- this requires FlexibleContexts
 class (MonadCatchIO m,MonadError InterpreterError m) => MonadInterpreter m where
