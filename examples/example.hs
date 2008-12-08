@@ -1,6 +1,6 @@
 import Control.Monad
 import Control.Monad.Trans ( liftIO )
-import Language.Haskell.Interpreter.GHC
+import Language.Haskell.Interpreter
 
 main :: IO ()
 main = do r <- runInterpreter testHint

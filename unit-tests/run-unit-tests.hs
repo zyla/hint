@@ -16,8 +16,8 @@ import System.Exit
 import Test.HUnit ( (@?=), (@?) )
 import qualified Test.HUnit as HUnit
 
-import qualified Language.Haskell.Interpreter.GHC as H
-import Language.Haskell.Interpreter.GHC ( OptionVal((:=)) )
+import qualified Language.Haskell.Interpreter as H
+import Language.Haskell.Interpreter ( OptionVal((:=)) )
 
 test_reload_modified :: TestCase
 test_reload_modified = TestCase "reload_modified" [mod_file] $ do

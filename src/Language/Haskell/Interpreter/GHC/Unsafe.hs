@@ -1,13 +1,13 @@
-module Language.Haskell.Interpreter.GHC.Unsafe ( unsafeSetGhcOption )
+-----------------------------------------------------------------------------
+-- |
+-- DEPRECATED: use @Language.Haskell.Interpreter.Unsafe@ instead.
+-----------------------------------------------------------------------------
+module Language.Haskell.Interpreter.GHC.Unsafe
+{-# DEPRECATED "Import Language.Haskell.Interpreter.Unsafe instead." #-}
+(
+    module Language.Haskell.Interpreter.Unsafe
+)
 
 where
 
-import Hint.Base
-import Hint.Configuration
-
--- | Set a GHC option for the current session,
---   eg. @unsafeSetGhcOption \"-XNoMonomorphismRestriction\"@.
---
---   Warning: Some options may interact badly with the Interpreter.
-unsafeSetGhcOption :: MonadInterpreter m => String -> m ()
-unsafeSetGhcOption = setGhcOption
+import Language.Haskell.Interpreter.Unsafe
