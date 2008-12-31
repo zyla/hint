@@ -20,5 +20,5 @@ Bug-reports, questions, suggestions and patches are all welcome.
 
 To get a copy of the darcs repository:
 
-darcs get http://www.glyc.dc.uba.ar/daniel/repos/hint
+darcs get http://code.haskell.org/~jcpetruzza/hint
 
