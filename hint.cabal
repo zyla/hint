@@ -16,6 +16,7 @@ license:            BSD3
 license-file:       LICENSE
 author:             Daniel Gorin
 maintainer:         jcpetruzza@gmail.com
+homepage:           http://code.haskell.org/~jcpetruzza/hint
 
 cabal-version:      >= 1.2
 build-type:         Simple
