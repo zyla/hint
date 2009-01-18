@@ -26,7 +26,7 @@ import qualified Hint.GHC as GHC
 
 import Hint.Compat.Exceptions
 
-import Language.Haskell.Extension
+import Hint.Extension
 
 -- | Version of the underlying ghc api. Values are:
 --

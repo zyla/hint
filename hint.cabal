@@ -36,7 +36,6 @@ Library
                       mtl,
                       filepath,
                       utf8-string,
-                      Cabal >= 1.4,
                       MonadCatchIO-mtl
   if impl(ghc >= 6.8) {
     build-depends:    random,
@@ -54,6 +53,7 @@ Library
   }
 
   exposed-modules:    Language.Haskell.Interpreter
+                      Language.Haskell.Interpreter.Extension
                       Language.Haskell.Interpreter.Unsafe
                       Language.Haskell.Interpreter.GHC
                       Language.Haskell.Interpreter.GHC.Unsafe
@@ -63,6 +63,7 @@ Library
                       Hint.Compat
                       Hint.Compat.Exceptions
                       Hint.Configuration
+                      Hint.Extension
                       Hint.Context
                       Hint.Conversions
                       Hint.Eval

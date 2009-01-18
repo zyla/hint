@@ -22,7 +22,7 @@ import qualified Hint.Compat as Compat
 import Hint.Base
 import Hint.Util ( partition )
 
-import Language.Haskell.Extension
+import Hint.Extension
 
 setGhcOptions :: MonadInterpreter m => [String] -> m ()
 setGhcOptions opts =
