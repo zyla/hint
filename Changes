@@ -1,3 +1,7 @@
+- ver 0.3.1.0
+ * No longer uses Language.Haskell.Extension due to configuration problems with Cabal.
+   Instead, it uses its own Language.Haskell.Interpreter.Extension module.
+
 - ver 0.3.0.0
  * Updated API:
    + InterpreterT monad transformer (Interpreter = InterpreterT IO)
