@@ -71,6 +71,7 @@ data InterpreterState = St{active_phantoms      :: [PhantomModule],
                            configuration        :: InterpreterConfiguration}
 
 data InterpreterConfiguration = Conf {
+                                  search_path       :: [FilePath],
                                   language_exts     :: [Extension],
                                   all_mods_in_scope :: Bool
                                 }

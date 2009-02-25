@@ -18,7 +18,7 @@ module Language.Haskell.Interpreter(
      Option, OptionVal((:=)),
      get, set,
      languageExtensions, availableExtensions, glasgowExtensions, Extension(..),
-     installedModulesInScope,
+     installedModulesInScope, searchPath,
 
      setUseLanguageExtensions,
      setInstalledModsAreInScopeQualified,
