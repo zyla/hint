@@ -11,11 +11,13 @@ module Hint.Configuration (
 
       setUseLanguageExtensions,
 
-      setInstalledModsAreInScopeQualified ) where
+      setInstalledModsAreInScopeQualified,
+      searchPath
+      ) where
 
 import Control.Monad.Error
 import Data.Char
-import Data.List ( intersect )
+import Data.List ( intersect, intercalate )
 
 import qualified Hint.GHC as GHC
 import qualified Hint.Compat as Compat
@@ -40,7 +42,8 @@ setGhcOption opt = setGhcOptions [opt]
 defaultConf :: InterpreterConfiguration
 defaultConf = Conf {
                 language_exts     = [],
-                all_mods_in_scope = False
+                all_mods_in_scope = False,
+                search_path = ["."]
               }
 
 
@@ -148,6 +151,14 @@ installedModulesInScope = Option setter getter
                             setGhcOption $ "-f"                   ++
                                            concat ["no-" | not b] ++
                                            "implicit-import-qualified"
+
+searchPath :: MonadInterpreter m => Option m [FilePath]
+searchPath = Option setter getter
+    where getter = fromConf search_path
+          setter p = do onConf $ \c -> c{search_path = p}
+                        setGhcOption $ "-i" -- clear the old path
+                        setGhcOption $ "-i" ++ intercalate ":" p
+
 
 fromConf :: MonadInterpreter m => (InterpreterConfiguration -> a) -> m a
 fromConf f = fromState (f . configuration)
