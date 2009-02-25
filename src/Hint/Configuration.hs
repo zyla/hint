@@ -43,7 +43,7 @@ defaultConf :: InterpreterConfiguration
 defaultConf = Conf {
                 language_exts     = [],
                 all_mods_in_scope = False,
-                search_path = ["."]
+                search_path       = ["."]
               }
 
 
@@ -152,6 +152,9 @@ installedModulesInScope = Option setter getter
                                            concat ["no-" | not b] ++
                                            "implicit-import-qualified"
 
+-- | The search path for source files. Observe that every time it is set,
+--   it overrides the previous search path. Also, the current directory
+--   (@\".\"@) must be included explicitly if desired. The default is @[\".\"]@.
 searchPath :: MonadInterpreter m => Option m [FilePath]
 searchPath = Option setter getter
     where getter = fromConf search_path
