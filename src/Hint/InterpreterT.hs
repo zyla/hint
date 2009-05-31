@@ -12,6 +12,7 @@ import Hint.Configuration
 
 import Control.Monad.Reader
 import Control.Monad.Error
+import Control.Monad.CatchIO
 
 import Data.IORef
 #if __GLASGOW_HASKELL__ < 610
@@ -22,7 +23,6 @@ import qualified GHC.Paths
 
 import qualified Hint.GHC as GHC
 import qualified Hint.Compat as Compat
-import Hint.Compat.Exceptions
 
 type Interpreter = InterpreterT IO
 

@@ -18,13 +18,12 @@ module Hint.Base (
 where
 
 import Control.Monad.Error
+import Control.Monad.CatchIO
 
 import Data.IORef
 import Data.Dynamic
 
 import qualified Hint.GHC as GHC
-
-import Hint.Compat.Exceptions
 
 import Hint.Extension
 
