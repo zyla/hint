@@ -10,6 +10,7 @@ import Hint.Base
 import Hint.Context
 import Hint.Configuration
 
+import Control.Applicative
 import Control.Monad.Reader
 import Control.Monad.Error
 import Control.Monad.CatchIO
@@ -166,3 +167,7 @@ instance Monad m => MonadError InterpreterError (InterpreterT m) where
     catchError (InterpreterT m) catchE = InterpreterT $
                                              m `catchError`
                                               (\e -> unInterpreterT $ catchE e)
+
+instance Monad m => Applicative (InterpreterT m) where
+    pure  = return
+    (<*>) = ap
