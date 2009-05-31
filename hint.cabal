@@ -36,7 +36,8 @@ Library
                       mtl,
                       filepath,
                       utf8-string,
-                      MonadCatchIO-mtl
+                      extensible-exceptions,
+                      MonadCatchIO-mtl >= 0.2
   if impl(ghc >= 6.8) {
     build-depends:    random,
                       directory
@@ -61,7 +62,6 @@ Library
                       Hint.Base
                       Hint.InterpreterT
                       Hint.Compat
-                      Hint.Compat.Exceptions
                       Hint.Configuration
                       Hint.Extension
                       Hint.Context
