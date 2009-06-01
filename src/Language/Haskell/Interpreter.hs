@@ -30,6 +30,15 @@ module Language.Haskell.Interpreter(
     -- ** Module querying
      ModuleElem(..), Id, name, children,
      getModuleExports,
+#if __GLASGOW_HASKELL__ >= 611
+    -- ** Anotations
+    -- | Please note below that annotations are an experimental
+    -- feature in GHC HEAD.
+    -- In the snippets below we use \'LBRACE\' and \'RBRACE\'
+    -- to mean \'{\' and \'}\' respectively. We cannot put the
+    -- pragmas inline in the code since GHC scarfs them up.
+    getModuleAnnotations, getValAnnotations,
+#endif
     -- ** Type inference
      typeOf, typeChecks, kindOf,
     -- ** Evaluation
@@ -43,6 +52,9 @@ module Language.Haskell.Interpreter(
 where
 
 import Hint.Base
+#if __GLASGOW_HASKELL__ >= 611
+import Hint.Annotations
+#endif
 import Hint.InterpreterT
 import Hint.Configuration
 import Hint.Context
