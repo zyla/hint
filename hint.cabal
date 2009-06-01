@@ -59,6 +59,7 @@ Library
                       Language.Haskell.Interpreter.GHC
                       Language.Haskell.Interpreter.GHC.Unsafe
   other-modules:      Hint.GHC
+                      Hint.Annotations
                       Hint.Base
                       Hint.InterpreterT
                       Hint.Compat
