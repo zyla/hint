@@ -3,7 +3,6 @@
  -
  - austin seipp <as@nijoruj.org>
  -}
-#if __GLASGOW_HASKELL__ >= 611
 module Hint.Annotations
 ( getModuleAnnotations -- :: (Data a, MonadInterpreter m) => a -> String -> m [a]
 , getValAnnotations    -- :: (Data a, MonadInterpreter m) => a -> String -> m [a]
@@ -74,8 +73,3 @@ getValAnnotations _ x = do
 
 anns :: (MonadInterpreter m, Data a) => AnnTarget GHC.Name -> m [a]
 anns = runGhc1 (GHC.findGlobalAnns deserializeWithData)
-
-#else
-{-# WARNING this module requires GHC >= 6.11 for the annotations system #-}
-module Hint.Annotations () where
-#endif
