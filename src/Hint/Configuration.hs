@@ -153,8 +153,9 @@ installedModulesInScope = Option setter getter
                                            "implicit-import-qualified"
 
 -- | The search path for source files. Observe that every time it is set,
---   it overrides the previous search path. Also, the current directory
---   (@\".\"@) must be included explicitly if desired. The default is @[\".\"]@.
+--   it overrides the previous search path. The default is @[\".\"]@.
+--
+--   Keep in mind that by a limitation in ghc, @\".\"@ is always in scope.
 searchPath :: MonadInterpreter m => Option m [FilePath]
 searchPath = Option setter getter
     where getter = fromConf search_path

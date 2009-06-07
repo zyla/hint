@@ -8,6 +8,7 @@ import Control.Monad       ( liftM, when )
 import Control.Monad.Error ( Error, MonadError(catchError) )
 
 import System.IO
+import System.FilePath
 import System.Directory
 import System.Exit
 
@@ -121,6 +122,61 @@ test_installed_not_in_scope = TestCase "installed_not_in_scope" [] $ do
                                 succeeds action @@? "must be in scope again"
     where action = typeOf "Data.Map.singleton"
 
+test_search_path :: TestCase
+test_search_path =
+    TestCase "search_path" files $ do
+           liftIO setup
+           fails (loadModules [mod_1]) @@? "mod_1 should not be in path (1)"
+           fails (loadModules [mod_2]) @@? "mod_2 should not be in path (1)"
+           --
+           set [searchPath := [dir_1]]
+           succeeds (loadModules [mod_1]) @@? "mod_1 should be in path (2)"
+           fails    (loadModules [mod_2]) @@? "mod_2 should not be in path (2)"
+           --
+           set [searchPath := [dir_2]]
+           fails    (loadModules [mod_1]) @@? "mod_1 should not be in path (3)"
+           succeeds (loadModules [mod_2]) @@? "mod_2 should be in path (3)"
+           --
+           set [searchPath := [dir_1,dir_2]]
+           succeeds (loadModules [mod_1]) @@? "mod_1 should be in path (4)"
+           succeeds (loadModules [mod_2]) @@? "mod_2 should be in path (4)"
+    where dir_1  = "search_path_test_dir_1"
+          mod_1  = "M1"
+          file_1 = dir_1 </> mod_1 <.> "hs"
+          dir_2  = "search_path_test_dir_2"
+          mod_2  = "M2"
+          file_2 = dir_2 </> mod_2 <.> "hs"
+          files  = [file_1, file_2, dir_1, dir_2]
+          setup  = do createDirectory dir_1
+                      createDirectory dir_2
+                      writeFile file_1 $
+                         unlines ["module " ++ mod_1,
+                                  "where",
+                                  "x :: Int",
+                                  "x = 42"]
+                      writeFile file_2 $
+                         unlines ["module " ++ mod_2,
+                                  "where",
+                                  "y :: Bool",
+                                  "y = False"]
+
+
+test_search_path_dot :: TestCase
+test_search_path_dot =
+    TestCase "search_path_dot" [mod_file, dir] $ do
+           liftIO setup
+           succeeds (loadModules [mod1]) @@? "mod1 must be initially in path"
+           set [searchPath := [dir]]
+           succeeds (loadModules [mod1]) @@? "mod1 must be still in path"
+    --
+    where dir      = "search_path_dot_dir"
+          mod1     = "M1"
+          mod_file = mod1 <.> "hs"
+          setup    = do createDirectory dir
+                        writeFile mod_file $
+                           unlines ["x :: Int", "x = 42"]
+
+
 tests :: [TestCase]
 tests = [test_reload_modified,
          test_lang_exts,
@@ -130,7 +186,9 @@ tests = [test_reload_modified,
          test_basic_eval,
          test_show_in_scope,
          test_installed_not_in_scope,
-         test_priv_syms_in_scope]
+         test_priv_syms_in_scope,
+         test_search_path,
+         test_search_path_dot]
 
 main :: IO ()
 main = do -- run the tests...
@@ -180,6 +238,10 @@ runTests sandboxed = HUnit.runTestTT . HUnit.TestList . map build
                                             (when sandboxed setSandbox >> test)
                                 either (printInterpreterError >=> (fail . show))
                                        return r
-                  removeIfExists f = do exists <- doesFileExist f
-                                        when exists $
-                                          removeFile f
+                  removeIfExists f = do existsF <- doesFileExist f
+                                        if existsF
+                                          then removeFile f
+                                          else
+                                            do existsD <- doesDirectoryExist f
+                                               when existsD $
+                                                  removeDirectory f
