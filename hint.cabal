@@ -59,7 +59,6 @@ Library
                       Language.Haskell.Interpreter.GHC
                       Language.Haskell.Interpreter.GHC.Unsafe
   other-modules:      Hint.GHC
-                      Hint.Annotations
                       Hint.Base
                       Hint.InterpreterT
                       Hint.Compat
@@ -73,6 +72,10 @@ Library
                       Hint.Typecheck
                       Hint.Sandbox
                       Hint.Util
+
+  if impl(ghc >= 6.11) {
+      other-modules: Hint.Annotations
+  }
 
   hs-source-dirs:     src
 
