@@ -23,7 +23,7 @@ module Language.Haskell.Interpreter(
      setUseLanguageExtensions,
      setInstalledModsAreInScopeQualified,
     -- ** Context handling
-     ModuleName,
+     ModuleName, isModuleInterpreted,
      loadModules, getLoadedModules, setTopLevelModules,
      setImports, setImportsQ,
      reset,

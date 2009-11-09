@@ -1,6 +1,6 @@
 module Hint.Context (
 
-      ModuleName,
+      ModuleName, isModuleInterpreted,
       loadModules, getLoadedModules, setTopLevelModules,
       setImports, setImportsQ,
       reset,
@@ -156,6 +156,10 @@ doLoad fs = do mayFail $ do
                    -- loading the targets removes the support module
                    reinstallSupportModule
                    return $ guard (isSucceeded res) >> Just ()
+
+-- | Returns True if the module was interpreted.
+isModuleInterpreted :: MonadInterpreter m => ModuleName -> m Bool
+isModuleInterpreted m = findModule m >>= runGhc1 GHC.moduleIsInterpreted
 
 -- | Returns the list of modules loaded with 'loadModules'.
 getLoadedModules :: MonadInterpreter m => m [ModuleName]
