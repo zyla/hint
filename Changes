@@ -1,3 +1,14 @@
+- ver 0.3.2.0
+ * Exports functions parens and isInterpretedModule
+
+ * Uses extensible-exceptions in order to provide a uniform interface
+   accross different ghc versions
+
+ * Provides an Applicative instance for IntepreterT
+
+ * Adds an option to configurate the searchPath
+
+
 - ver 0.3.1.0
  * No longer uses Language.Haskell.Extension due to configuration problems with Cabal.
    Instead, it uses its own Language.Haskell.Interpreter.Extension module.
