@@ -56,15 +56,14 @@ eval expr = do in_scope_show   <- support_show
                let show_expr = unwords [in_scope_show, parens expr]
                unsafeInterpret show_expr in_scope_String
 
--- Conceptually, @parens s = "(" ++ s ++ ")"@, where s is some valid haskell
+-- | Conceptually, @parens s = \"(\" ++ s ++ \")\"@, where s is some valid haskell
 -- expression. In practice, it is harder than this.
 -- Observe that if @s@ ends with a trailing comment, then @parens s@ would
 -- be a malformed expression. The straightforward solution for this is to
 -- put the closing parenthesis in a different line. However, now we are
 -- messing with the layout rules and we don't know where @s@ is going to
 -- be used!
--- Solution: @parens s = "(let {foo = " ++ s ++
---                       "  ;} in foo)@ where foo does not occur in s
+-- Solution: @parens s = \"(let {foo = \" ++ s ++ \"\\n ;} in foo)\"@ where @foo@ does not occur in @s@
 parens :: String -> String
 parens s = concat ["(let {", foo, " = ", s, "\n",
                     "                     ;} in ", foo, ")"]
