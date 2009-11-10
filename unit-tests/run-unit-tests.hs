@@ -2,7 +2,8 @@ module Main ( main ) where
 
 import Prelude hiding (catch)
 
-import Control.Exception
+import Control.Exception.Extensible ( ArithException(..), finally )
+import Control.Monad.CatchIO ( catch, throw )
 
 import Control.Monad       ( liftM, when )
 import Control.Monad.Error ( Error, MonadError(catchError) )
@@ -177,6 +178,17 @@ test_search_path_dot =
                            unlines ["x :: Int", "x = 42"]
 
 
+test_catch :: TestCase
+test_catch = TestCase "catch" [] $ do
+        setImports ["Prelude"]
+        succeeds (action `catch` handler) @@? "catch failed"
+    where handler DivideByZero = return "catched"
+          handler e = throw e
+          action = do s <- eval "1 `div` 0 :: Int"
+                      return $! s
+
+
+
 tests :: [TestCase]
 tests = [test_reload_modified,
          test_lang_exts,
@@ -188,7 +200,8 @@ tests = [test_reload_modified,
          test_installed_not_in_scope,
          test_priv_syms_in_scope,
          test_search_path,
-         test_search_path_dot]
+         test_search_path_dot,
+         test_catch]
 
 main :: IO ()
 main = do -- run the tests...
