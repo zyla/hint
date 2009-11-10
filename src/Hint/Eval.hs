@@ -1,7 +1,7 @@
 module Hint.Eval (
 
       interpret, as, infer,
-      eval )
+      eval ,parens)
 
 where
 

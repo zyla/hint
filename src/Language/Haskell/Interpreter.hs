@@ -46,7 +46,7 @@ module Language.Haskell.Interpreter(
     -- * Error handling
      InterpreterError(..), GhcError(..),
     -- * Miscellaneous
-     ghcVersion,
+     ghcVersion,parens,
      module Control.Monad.Trans)
 
 where
