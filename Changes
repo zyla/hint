@@ -6,6 +6,8 @@
 - ver 0.3.2.0
  * Exports functions parens and isInterpretedModule
 
+ * Experimental support for module annotations
+
  * Uses extensible-exceptions in order to provide a uniform interface
    accross different ghc versions
 
