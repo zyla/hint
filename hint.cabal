@@ -44,7 +44,9 @@ Library
 
     if impl(ghc >= 6.10) {
       build-depends:  base >= 4, base < 5,
-                      ghc-mtl
+                      ghc-mtl >= 1.0.1.0, ghc-mtl < 1.1.0.0
+                        -- this is to protect against the accidental selection
+                        -- of the completely unrelated ghc'c ghc-mtl package
     } else {
       build-depends:  base >= 3, base < 4
     }
