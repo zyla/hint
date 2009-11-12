@@ -1,3 +1,8 @@
+- ver 0.3.2.1
+ * hint.cabal includes version bounds for package ghc-mtl. This is to
+   avoid the accidental selection of the completely unrelated ghc-mtl
+   internal to ghc and, apparently, installed in the hackage server
+
 - ver 0.3.2.0
  * Exports functions parens and isInterpretedModule
 
