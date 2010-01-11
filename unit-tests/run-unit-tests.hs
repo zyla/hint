@@ -108,6 +108,13 @@ test_basic_eval :: TestCase
 test_basic_eval = TestCase "basic_eval" [] $ do
                            eval "()" @@?= "()"
 
+test_eval_layout :: TestCase
+test_eval_layout = TestCase "eval_layout" [] $ do
+                           eval layout_expr @@?= "10"
+    where layout_expr = unlines $ ["let x = let y = 10",
+                                   "        in y",
+                                   "in x"]
+
 test_show_in_scope :: TestCase
 test_show_in_scope = TestCase "show_in_scope" [] $ do
                        setImports ["Prelude"]
@@ -188,7 +195,6 @@ test_catch = TestCase "catch" [] $ do
                       return $! s
 
 
-
 tests :: [TestCase]
 tests = [test_reload_modified,
          test_lang_exts,
@@ -196,6 +202,7 @@ tests = [test_reload_modified,
          test_comments_in_expr,
          test_qual_import,
          test_basic_eval,
+         test_eval_layout,
          test_show_in_scope,
          test_installed_not_in_scope,
          test_priv_syms_in_scope,
