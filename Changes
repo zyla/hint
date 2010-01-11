@@ -1,3 +1,7 @@
+-ver 0.3.2.2
+ * Fixed a bug that would make expressions using heavy use of the layout
+   rule to fail to be interpreted (see parens)
+
 - ver 0.3.2.1
  * hint.cabal includes version bounds for package ghc-mtl. This is to
    avoid the accidental selection of the completely unrelated ghc-mtl
