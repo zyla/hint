@@ -1,7 +1,7 @@
 module Hint.Base (
     MonadInterpreter(..), RunGhc,
     --
-    GhcError(..), InterpreterError(..), finally, mayFail,
+    GhcError(..), InterpreterError(..), mayFail,
     --
     InterpreterSession, SessionData(..), GhcErrLogger,
     InterpreterState(..), fromState, onState,
@@ -204,15 +204,6 @@ mayFail action =
             (Just a, True)  -> return a
             (Just _, False) -> fail $ "GHC returned a result but said: " ++
                                       show es
-
-finally :: MonadInterpreter m => m a -> m () -> m a
-finally action clean_up = do r <- protected_action
-                             clean_up
-                             return r
-    where protected_action = action
-                             `catchError`
-                             (\e -> do clean_up `catchError` (\_ -> return ())
-                                       throwError e)
 
 -- ================ Misc ===================================
 
