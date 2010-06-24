@@ -1,5 +1,5 @@
 module Hint.InterpreterT (
-    InterpreterT, Interpreter, runInterpreter,
+    InterpreterT, Interpreter, runInterpreter, runInterpreterWithArgs
 )
 
 where
@@ -15,6 +15,7 @@ import Control.Monad.Reader
 import Control.Monad.Error
 import Control.Monad.CatchIO
 
+import qualified Data.Foldable as F
 import Data.IORef
 #if __GLASGOW_HASKELL__ < 610
 import Data.Dynamic
@@ -90,17 +91,28 @@ showGhcEx = flip GHC.showGhcException ""
 
 -- ================= Executing the interpreter ==================
 
-initialize :: (MonadCatchIO m, Functor m) => InterpreterT m ()
-initialize =
+initialize :: (MonadCatchIO m, Functor m)
+              => [String]
+              -> InterpreterT m ()
+initialize args =
     do log_handler <- fromSession ghcErrLogger
-       --
        -- Set a custom log handler, to intercept error messages :S
+       dflags <- runGhc GHC.getSessionDynFlags
+
+       let parse flags arg = do
+               (flags', extra) <- runGhc2 Compat.parseDynamicFlags flags [arg]
+               when (not . null $ extra) $
+                    throwError $ UnknownError (concat ["flag: '", arg,
+                                                       "' not recognized"])
+               return flags'
+           dflags' = Compat.configureDynFlags dflags
+
+       dflags'' <- F.foldlM parse dflags' args
+
        -- Observe that, setSessionDynFlags loads info on packages
        -- available; calling this function once is mandatory!
-       dflags <- runGhc GHC.getSessionDynFlags
-       let dflags' = Compat.configureDynFlags dflags
-       runGhc1 GHC.setSessionDynFlags dflags'{GHC.log_action = log_handler}
-       --
+       runGhc1 GHC.setSessionDynFlags dflags''{GHC.log_action = log_handler}
+
        reset
 
 -- | Executes the interpreter. Returns @Left InterpreterError@ in case of error.
@@ -108,9 +120,18 @@ initialize =
 runInterpreter :: (MonadCatchIO m, Functor m)
                => InterpreterT m a
                -> m (Either InterpreterError a)
-runInterpreter action =
+runInterpreter = runInterpreterWithArgs []
+
+-- | Executes the interpreter, setting args passed in as though they
+-- were command-line args. Returns @Left InterpreterError@ in case of
+-- error.
+runInterpreterWithArgs :: (MonadCatchIO m, Functor m)
+                          => [String]
+                          -> InterpreterT m a
+                          -> m (Either InterpreterError a)
+runInterpreterWithArgs args action =
     do s <- newInterpreterSession `catch` rethrowGhcException
-       execute s (initialize >> action)
+       execute s (initialize args >> action)
     where rethrowGhcException   = throw . GhcException . showGhcEx
 #if __GLASGOW_HASKELL__ < 610
           newInterpreterSession =  do s <- liftIO $
