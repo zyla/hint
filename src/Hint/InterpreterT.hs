@@ -15,8 +15,8 @@ import Control.Monad.Reader
 import Control.Monad.Error
 import Control.Monad.CatchIO
 
-import qualified Data.Foldable as F
 import Data.IORef
+import Data.List
 #if __GLASGOW_HASKELL__ < 610
 import Data.Dynamic
 #endif
@@ -101,19 +101,19 @@ initialize args =
        -- Set a custom log handler, to intercept error messages :S
        dflags <- runGhc GHC.getSessionDynFlags
 
-       let parse flags arg = do
-               (flags', extra) <- runGhc2 Compat.parseDynamicFlags flags [arg]
-               when (not . null $ extra) $
-                    throwError $ UnknownError (concat ["flag: '", arg,
-                                                       "' not recognized"])
-               return flags'
-           dflags' = Compat.configureDynFlags dflags
+       dflags' <- do
+           let df = Compat.configureDynFlags dflags
 
-       dflags'' <- F.foldlM parse dflags' args
+           (df', extra) <- runGhc2 Compat.parseDynamicFlags df args
+           when (not . null $ extra) $
+               throwError $ UnknownError (concat [ "flags: '"
+                                                 , intercalate " " extra
+                                                 , "' not recognized"])
+           return df'
 
        -- Observe that, setSessionDynFlags loads info on packages
        -- available; calling this function once is mandatory!
-       runGhc1 GHC.setSessionDynFlags dflags''{GHC.log_action = log_handler}
+       runGhc1 GHC.setSessionDynFlags dflags'{GHC.log_action = log_handler}
 
        reset
 
