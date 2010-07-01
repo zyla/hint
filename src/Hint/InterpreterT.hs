@@ -1,5 +1,6 @@
 module Hint.InterpreterT (
-    InterpreterT, Interpreter, runInterpreter, runInterpreterWithArgs
+    InterpreterT, Interpreter, runInterpreter, runInterpreterWithArgs,
+    MultipleInstancesNotAllowed(..)
 )
 
 where
@@ -14,6 +15,10 @@ import Control.Applicative
 import Control.Monad.Reader
 import Control.Monad.Error
 import Control.Monad.CatchIO
+
+import Data.Typeable ( Typeable )
+import Control.Concurrent.MVar
+import System.IO.Unsafe ( unsafePerformIO )
 
 import Data.IORef
 import Data.List
@@ -132,6 +137,7 @@ runInterpreterWithArgs :: (MonadCatchIO m, Functor m)
                           -> InterpreterT m a
                           -> m (Either InterpreterError a)
 runInterpreterWithArgs args action =
+  ifInterpreterNotRunning $
     do s <- newInterpreterSession `catch` rethrowGhcException
        SH.protectHandlers $ execute s (initialize args >> action)
     where rethrowGhcException   = throw . GhcException . showGhcEx
@@ -143,6 +149,28 @@ runInterpreterWithArgs args action =
           -- GHC >= 610
           newInterpreterSession = newSessionData ()
 #endif
+
+{-# NOINLINE uniqueToken #-}
+uniqueToken :: MVar ()
+uniqueToken = unsafePerformIO $ newMVar ()
+
+ifInterpreterNotRunning :: MonadCatchIO m => m a -> m a
+ifInterpreterNotRunning action =
+    do maybe_token <- liftIO $ tryTakeMVar uniqueToken
+       case maybe_token of
+           Nothing -> throw MultipleInstancesNotAllowed
+           Just x  -> action `finally` (liftIO $ putMVar uniqueToken x)
+
+-- | The installed version of ghc is not thread-safe. This exception
+--   is thrown whenever you try to execute @runInterpreter@ while another
+--   instance is already running.
+data MultipleInstancesNotAllowed = MultipleInstancesNotAllowed deriving Typeable
+
+instance Exception MultipleInstancesNotAllowed
+
+instance Show MultipleInstancesNotAllowed where
+    show _ = "This version of GHC is not thread-safe," ++
+             "can't safely run two instances of the interpreter simultaneously"
 
 initialState :: InterpreterState
 initialState = St {active_phantoms      = [],

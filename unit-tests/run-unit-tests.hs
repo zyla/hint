@@ -8,6 +8,9 @@ import Control.Monad.CatchIO ( catch, throw )
 import Control.Monad       ( liftM, when )
 import Control.Monad.Error ( Error, MonadError(catchError) )
 
+import Control.Concurrent ( forkIO )
+import Control.Concurrent.MVar
+
 import System.IO
 import System.FilePath
 import System.Directory
@@ -195,6 +198,18 @@ test_catch = TestCase "catch" [] $ do
                       return $! s
 
 
+test_only_one_instance :: TestCase
+test_only_one_instance = TestCase "only_one_instance" [] $ do
+    liftIO $ do
+        r <- newEmptyMVar
+        let concurrent = runInterpreter (liftIO $ putMVar r False)
+                          `catch` \MultipleInstancesNotAllowed ->
+                                    do liftIO $ putMVar r True
+                                       return $ Right ()
+        forkIO $ concurrent >> return ()
+        readMVar r @?  "concurrent instance did not fail"
+
+
 tests :: [TestCase]
 tests = [test_reload_modified,
          test_lang_exts,
@@ -208,7 +223,8 @@ tests = [test_reload_modified,
          test_priv_syms_in_scope,
          test_search_path,
          test_search_path_dot,
-         test_catch]
+         test_catch,
+         test_only_one_instance]
 
 main :: IO ()
 main = do -- run the tests...
