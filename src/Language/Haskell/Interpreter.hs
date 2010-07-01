@@ -44,7 +44,7 @@ module Language.Haskell.Interpreter(
     -- ** Evaluation
      interpret, as, infer, eval,
     -- * Error handling
-     InterpreterError(..), GhcError(..),
+     InterpreterError(..), GhcError(..), MultipleInstancesNotAllowed(..),
     -- * Miscellaneous
      ghcVersion,parens,
      module Control.Monad.Trans)
