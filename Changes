@@ -1,3 +1,7 @@
+- ver 0.3.3.0
+ * add unsafeRunInterpreterWithArgs
+ * protect signal handlers (messed up by ghc, see ticket #4162)
+
 - ver 0.3.2.3
  * Can be built against MonadCatchIO-mtl-0.3.x.x
 
