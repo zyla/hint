@@ -33,7 +33,7 @@ setGhcOptions opts =
        when (not . null $ not_parsed) $
             throwError $ UnknownError (concat ["flag: '", unwords opts,
                                                "' not recognized"])
-       runGhc1 GHC.setSessionDynFlags new_flags
+       _ <- runGhc1 GHC.setSessionDynFlags new_flags
        return ()
 
 setGhcOption :: MonadInterpreter m => String -> m ()
