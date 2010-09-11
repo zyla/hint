@@ -31,8 +31,6 @@ import qualified GHC.Paths
 import qualified Hint.GHC as GHC
 import qualified Hint.Compat as Compat
 
-import qualified Hint.SignalHandlers as SH
-
 type Interpreter = InterpreterT IO
 
 #if __GLASGOW_HASKELL__ < 610
@@ -142,7 +140,8 @@ runInterpreterWithArgs :: (MonadCatchIO m, Functor m)
 runInterpreterWithArgs args action =
   ifInterpreterNotRunning $
     do s <- newInterpreterSession `catch` rethrowGhcException
-       SH.protectHandlers $ execute s (initialize args >> action)
+       -- SH.protectHandlers $ execute s (initialize args >> action)
+       execute s (initialize args >> action)
     where rethrowGhcException   = throw . GhcException . showGhcEx
 #if __GLASGOW_HASKELL__ < 610
           newInterpreterSession =  do s <- liftIO $
