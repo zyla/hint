@@ -102,8 +102,9 @@ asExtensionList exts = map read knownPos                  ++
 
 -- | List of extensions turned on when the @-fglasgow-exts@ flag is used
 glasgowExtensions :: [Extension]
-glasgowExtensions = intersect availableExtensions exts610 -- works also for 608
-    where exts610 = asExtensionList ["ForeignFunctionInterface",
+glasgowExtensions = intersect availableExtensions exts612 -- works also for 608 and 610
+    where exts612 = asExtensionList ["PrintExplicitForalls",
+                                     "ForeignFunctionInterface",
                                      "UnliftedFFITypes",
                                      "GADTs",
                                      "ImplicitParams",
@@ -124,10 +125,12 @@ glasgowExtensions = intersect availableExtensions exts610 -- works also for 608
                                      "PostfixOperators",
                                      "PatternGuards",
                                      "LiberalTypeSynonyms",
+                                     "ExplicitForAll",
                                      "RankNTypes",
                                      "ImpredicativeTypes",
                                      "TypeOperators",
                                      "RecursiveDo",
+                                     "DoRec",
                                      "ParallelListComp",
                                      "EmptyDataDecls",
                                      "KindSignatures",
