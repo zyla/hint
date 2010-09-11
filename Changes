@@ -1,6 +1,5 @@
 - ver 0.3.3.0
  * add unsafeRunInterpreterWithArgs
- * protect signal handlers (messed up by ghc, see ticket #4162)
  * check that only one instance of the interpreter is run at any time
 
 - ver 0.3.2.3
