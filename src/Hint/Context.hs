@@ -264,7 +264,7 @@ reset =
        --
        -- Unload all previously loaded modules
        runGhc1 GHC.setTargets []
-       runGhc1 GHC.load GHC.LoadAllTargets
+       _ <- runGhc1 GHC.load GHC.LoadAllTargets
        --
        -- At this point, GHCi would call rts_revertCAFs and
        -- reset the buffering of stdin, stdout and stderr.

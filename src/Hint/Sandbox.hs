@@ -7,7 +7,6 @@ import Hint.Util
 
 import {-# SOURCE #-} Hint.Typecheck ( typeChecks_unsandboxed )
 
-import Data.List
 import Control.Monad.Error
 
 sandboxed :: MonadInterpreter m => (Expr -> m a) -> (Expr -> m a)

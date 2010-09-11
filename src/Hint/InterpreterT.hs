@@ -118,7 +118,7 @@ initialize args =
 
        -- Observe that, setSessionDynFlags loads info on packages
        -- available; calling this function once is mandatory!
-       runGhc1 GHC.setSessionDynFlags dflags'{GHC.log_action = log_handler}
+       _ <- runGhc1 GHC.setSessionDynFlags dflags'{GHC.log_action = log_handler}
 
        reset
 
