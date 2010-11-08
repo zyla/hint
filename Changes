@@ -1,3 +1,7 @@
+- ver 0.3.3.1
+ * Instance declaration for Applicative (InterpreterT m) works with mtl-2
+   (requires Applicative m, this shouldn't break anything...)
+
 - ver 0.3.3.0
  * add unsafeRunInterpreterWithArgs
  * check that only one instance of the interpreter is run at any time
