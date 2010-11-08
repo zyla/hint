@@ -221,6 +221,6 @@ instance Monad m => MonadError InterpreterError (InterpreterT m) where
                                              m `catchError`
                                               (\e -> unInterpreterT $ catchE e)
 
-instance Monad m => Applicative (InterpreterT m) where
+instance (Monad m, Applicative m) => Applicative (InterpreterT m) where
     pure  = return
     (<*>) = ap
