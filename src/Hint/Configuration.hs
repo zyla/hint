@@ -101,6 +101,7 @@ asExtensionList exts = map read knownPos                  ++
 
 
 -- | List of extensions turned on when the @-fglasgow-exts@ flag is used
+{-# DEPRECATED glasgowExtensions "glasgowExtensions list is no longer maintained, will be removed soon" #-}
 glasgowExtensions :: [Extension]
 glasgowExtensions = intersect availableExtensions exts612 -- works also for 608 and 610
     where exts612 = asExtensionList ["PrintExplicitForalls",
