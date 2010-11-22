@@ -5,6 +5,7 @@ where
 import Prelude hiding(span)
 
 import Hint.Base
+import qualified Hint.Compat as Compat
 
 import Control.Monad.Trans ( liftIO )
 
@@ -24,7 +25,7 @@ runParser parser expr =
        --
        buf <- liftIO $ GHC.stringToStringBuffer expr
        --
-       let parse_res = GHC.unP parser (GHC.mkPState buf GHC.noSrcLoc dyn_fl)
+       let parse_res = GHC.unP parser (Compat.mkPState dyn_fl buf GHC.noSrcLoc)
        --
        case parse_res of
            GHC.POk{}            -> return ParseOk
