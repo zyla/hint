@@ -7,6 +7,7 @@ where
 data Extension = OverlappingInstances
                | UndecidableInstances
                | IncoherentInstances
+               | DoRec
                | RecursiveDo
                | ParallelListComp
                | MultiParamTypeClasses
@@ -62,6 +63,19 @@ data Extension = OverlappingInstances
                | QuasiQuotes
                | TransformListComp
                | ViewPatterns
+               | XmlSyntax
+               | RegularPatterns
+               | TupleSections
+               | GHCForeignImportPrim
+               | NPlusKPatterns
+               | DoAndIfThenElse
+               | RebindableSyntax
+               | ExplicitForAll
+               | DatatypeContexts
+               | MonoLocalBinds
+               | DeriveFunctor
+               | DeriveTraversable
+               | DeriveFoldable
                | UnknownExtension String
         deriving (Eq, Show, Read)
 
@@ -69,6 +83,7 @@ knownExtensions :: [Extension]
 knownExtensions = [OverlappingInstances,
                    UndecidableInstances,
                    IncoherentInstances,
+                   DoRec,
                    RecursiveDo,
                    ParallelListComp,
                    MultiParamTypeClasses,
@@ -123,5 +138,18 @@ knownExtensions = [OverlappingInstances,
                    PostfixOperators,
                    QuasiQuotes,
                    TransformListComp,
-                   ViewPatterns
+                   ViewPatterns,
+                   XmlSyntax,
+                   RegularPatterns,
+                   TupleSections,
+                   GHCForeignImportPrim,
+                   NPlusKPatterns,
+                   DoAndIfThenElse,
+                   RebindableSyntax,
+                   ExplicitForAll,
+                   DatatypeContexts,
+                   MonoLocalBinds,
+                   DeriveFunctor,
+                   DeriveTraversable,
+                   DeriveFoldable
                    ]
