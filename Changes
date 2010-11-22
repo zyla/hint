@@ -1,3 +1,6 @@
+- ver 0.3.3.2
+ * Supports GHC 7
+
 - ver 0.3.3.1
  * Instance declaration for Applicative (InterpreterT m) works with mtl-2
    (requires Applicative m, this shouldn't break anything...)
