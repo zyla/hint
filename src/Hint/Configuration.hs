@@ -89,7 +89,7 @@ languageExtensions = Option setter getter
 
 -- | List of the extensions known by the interpreter.
 availableExtensions :: [Extension]
-availableExtensions = asExtensionList GHC.supportedLanguages
+availableExtensions = asExtensionList Compat.supportedLanguages
 
 asExtensionList :: [String] -> [Extension]
 asExtensionList exts = map read knownPos                  ++

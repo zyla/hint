@@ -1,3 +1,4 @@
+{-# OPTIONS_GHC -fno-warn-missing-signatures #-}
 module Hint.Compat
 
 where
@@ -7,6 +8,32 @@ import qualified Hint.GHC as GHC
 -- Kinds became a synonym for Type in GHC 6.8. We define this wrapper
 -- to be able to define a FromGhcRep instance for both versions
 newtype Kind = Kind GHC.Kind
+
+#if __GLASGOW_HASKELL__ >= 700
+-- supportedLanguages :: [String]
+supportedLanguages = GHC.supportedLanguagesAndExtensions
+
+-- setContext :: GHC.GhcMonad m => [GHC.Module] -> [GHC.Module] -> m ()
+setContext xs = GHC.setContext xs . map (\y -> (y,Nothing))
+
+getContext :: GHC.GhcMonad m => m ([GHC.Module], [GHC.Module])
+getContext = fmap (\(as,bs) -> (as,map fst bs)) GHC.getContext
+
+mkPState = GHC.mkPState
+
+#else
+-- supportedLanguages :: [String]
+supportedLanguages = GHC.supportedLanguages
+
+-- setContext :: GHC.GhcMonad m => [GHC.Module] -> [GHC.Module] -> m ()
+-- i don't want to check the signature on every ghc version....
+setContext = GHC.setContext
+
+getContext = GHC.getContext
+
+mkPState df buf loc = GHC.mkPState buf loc df
+#endif
+
 
 #if __GLASGOW_HASKELL__ >= 610
 configureDynFlags :: GHC.DynFlags -> GHC.DynFlags

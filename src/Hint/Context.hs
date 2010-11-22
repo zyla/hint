@@ -58,7 +58,7 @@ newPhantomModule =
 
 allModulesInContext :: MonadInterpreter m => m ([ModuleName], [ModuleName])
 allModulesInContext =
-    do (l, i) <- runGhc GHC.getContext
+    do (l, i) <- runGhc Compat.getContext
        return (map fromGhcRep_ l, map fromGhcRep_ i)
 
 addPhantomModule :: MonadInterpreter m
@@ -74,13 +74,13 @@ addPhantomModule mod_text =
        onState (\s -> s{active_phantoms = pm:active_phantoms s})
        mayFail (do -- GHC.load will remove all the modules from scope, so first
                    -- we save the context...
-                   (old_top, old_imps) <- runGhc GHC.getContext
+                   (old_top, old_imps) <- runGhc Compat.getContext
                    --
                    runGhc1 GHC.addTarget t
                    res <- runGhc1 GHC.load (GHC.LoadUpTo m)
                    --
                    if isSucceeded res
-                     then do runGhc2 GHC.setContext old_top old_imps
+                     then do runGhc2 Compat.setContext old_top old_imps
                              return $ Just ()
                      else return Nothing)
         `catchError` (\err -> case err of
@@ -105,9 +105,9 @@ removePhantomModule pm =
            if isLoaded
              then do -- take it out of scope
                      mod <- findModule (pm_name pm)
-                     (mods, imps) <- runGhc GHC.getContext
+                     (mods, imps) <- runGhc Compat.getContext
                      let mods' = filter (mod /=) mods
-                     runGhc2 GHC.setContext mods' imps
+                     runGhc2 Compat.setContext mods' imps
                      --
                      let isNotPhantom = isPhantomModule . fromGhcRep_  >=>
                                           return . not
@@ -197,14 +197,14 @@ setTopLevelModules ms =
          throwError $ NotAllowed ("These modules are not interpreted:\n" ++
                                   unlines (map fromGhcRep_ not_interpreted))
        --
-       (_, old_imports) <- runGhc GHC.getContext
-       runGhc2 GHC.setContext ms_mods old_imports
+       (_, old_imports) <- runGhc Compat.getContext
+       runGhc2 Compat.setContext ms_mods old_imports
 
 onAnEmptyContext :: MonadInterpreter m => m a -> m a
 onAnEmptyContext action =
-    do (old_mods, old_imps) <- runGhc GHC.getContext
-       runGhc2 GHC.setContext [] []
-       let restore = runGhc2 GHC.setContext old_mods old_imps
+    do (old_mods, old_imps) <- runGhc Compat.getContext
+       runGhc2 Compat.setContext [] []
+       let restore = runGhc2 Compat.setContext old_mods old_imps
        a <- action `catchError` (\e -> do restore; throwError e)
        restore
        return a
@@ -247,9 +247,9 @@ setImportsQ ms =
                    else return Nothing
        --
        pm <- maybe (return []) (findModule . pm_name >=> return . return) new_pm
-       (old_top_level, _) <- runGhc GHC.getContext
+       (old_top_level, _) <- runGhc Compat.getContext
        let new_top_level = pm ++ old_top_level
-       runGhc2 GHC.setContext new_top_level unqual_mods
+       runGhc2 Compat.setContext new_top_level unqual_mods
        --
        onState (\s ->s{qual_imports = quals})
 
@@ -260,7 +260,7 @@ setImportsQ ms =
 reset :: MonadInterpreter m => m ()
 reset =
     do -- Remove all modules from context
-       runGhc2 GHC.setContext [] []
+       runGhc2 Compat.setContext [] []
        --
        -- Unload all previously loaded modules
        runGhc1 GHC.setTargets []
@@ -289,7 +289,7 @@ installSupportModule :: MonadInterpreter m => m ()
 installSupportModule = do mod <- addPhantomModule support_module
                           onState (\st -> st{hint_support_module = mod})
                           mod' <- findModule (pm_name mod)
-                          runGhc2 GHC.setContext [mod'] []
+                          runGhc2 Compat.setContext [mod'] []
     --
     where support_module m = unlines [
                                "module " ++ m ++ "( ",

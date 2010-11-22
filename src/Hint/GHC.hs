@@ -40,7 +40,12 @@ import DriverPhases ( Phase(Cpp), HscSource(HsSrcFile) )
 import StringBuffer ( stringToStringBuffer )
 import Lexer        ( P(..), ParseResult(..), mkPState )
 import Parser       ( parseStmt, parseType )
+
+#if __GLASGOW_HASKELL__ >= 700
+import DynFlags     ( supportedLanguagesAndExtensions )
+#else
 import DynFlags     ( supportedLanguages )
+#endif
 
 #if __GLASGOW_HASKELL__ >= 608
 import PprTyThing   ( pprTypeForUser )
