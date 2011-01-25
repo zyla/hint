@@ -22,7 +22,7 @@ import Data.List ( intersect, intercalate )
 import qualified Hint.GHC as GHC
 import qualified Hint.Compat as Compat
 import Hint.Base
-import Hint.Util ( partition )
+import Hint.Util ( quote )
 
 import Hint.Extension
 
@@ -31,8 +31,9 @@ setGhcOptions opts =
     do old_flags <- runGhc GHC.getSessionDynFlags
        (new_flags,not_parsed) <- runGhc2 Compat.parseDynamicFlags old_flags opts
        when (not . null $ not_parsed) $
-            throwError $ UnknownError (concat ["flag: '", unwords opts,
-                                               "' not recognized"])
+            throwError $ UnknownError
+                            $ concat ["flags: ", unwords $ map quote not_parsed,
+                                               "not recognized"]
        _ <- runGhc1 GHC.setSessionDynFlags new_flags
        return ()
 
@@ -52,6 +53,8 @@ defaultConf = Conf {
 --    * 'languageExtensions'
 --
 --    * 'installedModulesInScope'
+--
+--    * 'searchPath'
 data Option m a = Option{_set :: MonadInterpreter m => a -> m (),
                          _get :: MonadInterpreter m => m a}
 
@@ -73,38 +76,31 @@ get = _get
 -- Default is: @[]@ (i.e. none, pure Haskell 98)
 languageExtensions :: MonadInterpreter m => Option m [Extension]
 languageExtensions = Option setter getter
-    where setter es = do setGhcOptions $ map (mkFlag False) availableExtensions
-                         setGhcOptions $ map (mkFlag True)  es
+    where setter es = do resetExtensions
+                         setGhcOptions $ map (extFlag True)  es
                          onConf $ \c -> c{language_exts = es}
           --
           getter = fromConf language_exts
           --
-          mkFlag b (UnknownExtension o) = "-X" ++ concat ["No"|not b] ++ o
-          mkFlag b o
-            | ('N':'o':c:_) <- show o,
-              isUpper c                 = if b
-                                            then "-X" ++ show o
-                                            else "-X" ++ (drop 2 $ show o)
-            | otherwise                 = "-X" ++ concat ["No"|not b] ++ show o
+          resetExtensions = do es <- fromState defaultExts
+                               setGhcOptions $ map (uncurry $ flip extFlag) es
 
--- | List of the extensions known by the interpreter.
-availableExtensions :: [Extension]
-availableExtensions = asExtensionList Compat.supportedLanguages
+extFlag :: Bool -> Extension -> String
+extFlag = mkFlag
+  where mkFlag b (UnknownExtension o)   = strToFlag b o
+        mkFlag b o                      = strToFlag b (show o)
+        --
+        strToFlag b o@('N':'o':(c:_))
+                             | isUpper c = "-X" ++ drop (if b then 0 else 2) o
+        strToFlag b o                    = "-X" ++ concat ["No"|not b] ++ o
 
-asExtensionList :: [String] -> [Extension]
-asExtensionList exts = map read knownPos                  ++
-                       map read (map ("No" ++) knownNegs) ++
-                       map UnknownExtension unknown
-    where (knownPos, unknownPos) = partition isKnown exts
-          (knownNegs,unknown)    = partition (isKnown . ("No" ++)) unknownPos
-          isKnown e = e `elem` map show knownExtensions
 
 
 -- | List of extensions turned on when the @-fglasgow-exts@ flag is used
 {-# DEPRECATED glasgowExtensions "glasgowExtensions list is no longer maintained, will be removed soon" #-}
 glasgowExtensions :: [Extension]
 glasgowExtensions = intersect availableExtensions exts612 -- works also for 608 and 610
-    where exts612 = asExtensionList ["PrintExplicitForalls",
+    where exts612 = map asExtension ["PrintExplicitForalls",
                                      "ForeignFunctionInterface",
                                      "UnliftedFFITypes",
                                      "GADTs",

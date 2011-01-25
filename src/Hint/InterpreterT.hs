@@ -10,6 +10,7 @@ import Prelude hiding ( catch )
 import Hint.Base
 import Hint.Context
 import Hint.Configuration
+import Hint.Extension
 
 import Control.Applicative
 import Control.Monad.Reader
@@ -22,6 +23,7 @@ import System.IO.Unsafe ( unsafePerformIO )
 
 import Data.IORef
 import Data.List
+import Data.Maybe
 #if __GLASGOW_HASKELL__ < 610
 import Data.Dynamic
 #endif
@@ -102,23 +104,33 @@ initialize :: (MonadCatchIO m, Functor m)
 initialize args =
     do log_handler <- fromSession ghcErrLogger
        -- Set a custom log handler, to intercept error messages :S
-       dflags <- runGhc GHC.getSessionDynFlags
+       df0 <- runGhc GHC.getSessionDynFlags
 
-       dflags' <- do
-           let df = Compat.configureDynFlags dflags
-
-           (df', extra) <- runGhc2 Compat.parseDynamicFlags df args
-           when (not . null $ extra) $
-               throwError $ UnknownError (concat [ "flags: '"
-                                                 , intercalate " " extra
-                                                 , "' not recognized"])
-           return df'
+       let df1 = Compat.configureDynFlags df0
+       (df2, extra) <- runGhc2 Compat.parseDynamicFlags df1 args
+       when (not . null $ extra) $
+            throwError $ UnknownError (concat [ "flags: '"
+                                        , intercalate " " extra
+                                        , "' not recognized"])
 
        -- Observe that, setSessionDynFlags loads info on packages
        -- available; calling this function once is mandatory!
-       _ <- runGhc1 GHC.setSessionDynFlags dflags'{GHC.log_action = log_handler}
+       _ <- runGhc1 GHC.setSessionDynFlags df2{GHC.log_action = log_handler}
+
+#if __GLASGOW_HASKELL__ >= 700
+       let extMap      = map (\(a,b,_) -> (a,b)) GHC.xFlags
+       let toOpt e     = let err = error ("init error: unknown ext:" ++ show e)
+                         in fromMaybe err (lookup e extMap)
+       let getOptVal e = (asExtension e, GHC.xopt (toOpt e) df2)
+       let defExts = map  getOptVal Compat.supportedExtensions
+#else
+       let defExts = zip availableExtensions (repeat False)
+#endif
+
+       onState (\s -> s{defaultExts = defExts})
 
        reset
+
 
 -- | Executes the interpreter. Returns @Left InterpreterError@ in case of error.
 --
@@ -180,18 +192,20 @@ initialState = St {active_phantoms      = [],
                    hint_support_module  = error "No support module loaded!",
                    import_qual_hack_mod = Nothing,
                    qual_imports         = [],
+                   defaultExts          = error "defaultExts missing!",
                    configuration        = defaultConf}
 
 
 newSessionData :: MonadIO m => a -> m (SessionData a)
-newSessionData  a = do initial_state    <- liftIO $ newIORef initialState
-                       ghc_err_list_ref <- liftIO $ newIORef []
-                       return SessionData{
-                                internalState   = initial_state,
-                                versionSpecific = a,
-                                ghcErrListRef   = ghc_err_list_ref,
-                                ghcErrLogger    = mkLogHandler ghc_err_list_ref
-                              }
+newSessionData  a =
+    do initial_state    <- liftIO $ newIORef initialState
+       ghc_err_list_ref <- liftIO $ newIORef []
+       return SessionData{
+         internalState   = initial_state,
+         versionSpecific = a,
+         ghcErrListRef   = ghc_err_list_ref,
+         ghcErrLogger    = mkLogHandler ghc_err_list_ref
+       }
 
 mkLogHandler :: IORef [GhcError] -> GhcErrLogger
 mkLogHandler r _ src style msg = modifyIORef r (errorEntry :)

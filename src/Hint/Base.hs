@@ -67,6 +67,7 @@ data InterpreterState = St{active_phantoms      :: [PhantomModule],
                            hint_support_module  :: PhantomModule,
                            import_qual_hack_mod :: Maybe PhantomModule,
                            qual_imports         :: [(ModuleName, String)],
+                           defaultExts          :: [(Extension,Bool)], -- R/O
                            configuration        :: InterpreterConfiguration}
 
 data InterpreterConfiguration = Conf {

@@ -1,9 +1,27 @@
 -- this module was automatically generated. do not edit!
-module Hint.Extension (Extension(..), knownExtensions)
+-- edit util/mk_extensions_mod.hs instead
+module Hint.Extension (Extension(..),
+                       knownExtensions, availableExtensions, asExtension)
 
 where
 
--- | This represents language extensions beyond Haskell 98      that are supported by GHC (it was taken from      Cabal's @Language.Haskell.Extension@)
+import Hint.Compat as Compat
+
+-- | List of the extensions known by the interpreter.
+availableExtensions :: [Extension]
+availableExtensions = map asExtension Compat.supportedExtensions
+
+asExtension :: String -> Extension
+asExtension s = if isKnown s
+                  then read s
+                  else let no_s = "No" ++ s
+                  in if isKnown no_s then read no_s
+                                     else UnknownExtension s
+  where isKnown e = e `elem` map show knownExtensions
+
+-- | This represents language extensions beyond Haskell 98
+--   that are supported by GHC (it was taken from
+--   Cabal's @Language.Haskell.Extension@)
 data Extension = OverlappingInstances
                | UndecidableInstances
                | IncoherentInstances
