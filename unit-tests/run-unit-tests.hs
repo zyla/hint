@@ -53,7 +53,7 @@ test_lang_exts = TestCase "lang_exts" [mod_file] $ do
                       liftIO $ writeFile mod_file "data T where T :: T"
                       fails do_load @@? "first time, it shouldn't load"
                       --
-                      set [languageExtensions := glasgowExtensions]
+                      set [languageExtensions := [GADTs]]
                       succeeds do_load @@? "now, it should load"
                       --
                       set [languageExtensions := []]
@@ -95,8 +95,8 @@ test_comments_in_expr = TestCase "comments_in_expr" [] $ do
                             setImports ["Prelude"]
                             let expr = "length $ concat [[1,2],[3]] -- bla"
                             typeChecks expr @@? "comment on expression"
-                            eval expr
-                            interpret expr (as :: Int)
+                            _ <- eval expr
+                            _ <- interpret expr (as :: Int)
                             return ()
 
 test_qual_import :: TestCase
@@ -206,7 +206,7 @@ test_only_one_instance = TestCase "only_one_instance" [] $ do
                           `catch` \MultipleInstancesNotAllowed ->
                                     do liftIO $ putMVar r True
                                        return $ Right ()
-        forkIO $ concurrent >> return ()
+        _ <- forkIO $ concurrent >> return ()
         readMVar r @?  "concurrent instance did not fail"
 
 
