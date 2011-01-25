@@ -42,7 +42,7 @@ import Lexer        ( P(..), ParseResult(..), mkPState )
 import Parser       ( parseStmt, parseType )
 
 #if __GLASGOW_HASKELL__ >= 700
-import DynFlags     ( supportedLanguagesAndExtensions )
+import DynFlags     ( xFlags, xopt )
 #else
 import DynFlags     ( supportedLanguages )
 #endif

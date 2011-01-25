@@ -5,21 +5,38 @@ main = putStrLn $ render moduleDoc
 
 moduleDoc :: Doc
 moduleDoc =
-    vcat [text "-- this module was automatically generated. do not edit!",
-          text "module Hint.Extension (Extension(..), knownExtensions)",
-          text "",
-          text "where",
-          text "",
-          text "-- | This represents language extensions beyond Haskell 98" <+>
-          text "     that are supported by GHC (it was taken from" <+>
-          text "     Cabal's @Language.Haskell.Extension@)",
-          align "data Extension " $
-              punctuateL (text "| ") . onFirst (text "= ") $ known ++ [unknown],
-          nest 8 $ text "deriving (Eq, Show, Read)",
-          text "",
-          text "knownExtensions :: [Extension]",
-          align "knownExtensions = [" (punctuate comma known ++ [text "]"])
-          ]
+  vcat [
+    text "-- this module was automatically generated. do not edit!",
+    text "-- edit util/mk_extensions_mod.hs instead",
+    text "module Hint.Extension (Extension(..),",
+    text "                       knownExtensions, availableExtensions, asExtension)",
+    text "",
+    text "where",
+    text "",
+    text "import Hint.Compat as Compat",
+    text "",
+    text "-- | List of the extensions known by the interpreter.",
+    text "availableExtensions :: [Extension]",
+    text "availableExtensions = map asExtension Compat.supportedExtensions",
+    text "",
+    text "asExtension :: String -> Extension",
+    text "asExtension s = if isKnown s",
+    text "                  then read s",
+    text "                  else let no_s = \"No\" ++ s",
+    text "                  in if isKnown no_s then read no_s",
+    text "                                     else UnknownExtension s",
+    text "  where isKnown e = e `elem` map show knownExtensions",
+    text "",
+    text "-- | This represents language extensions beyond Haskell 98",
+    text "--   that are supported by GHC (it was taken from",
+    text "--   Cabal's @Language.Haskell.Extension@)",
+    align "data Extension " $
+    punctuateL (text "| ") . onFirst (text "= ") $ known ++ [unknown],
+    nest 8 $ text "deriving (Eq, Show, Read)",
+    text "",
+    text "knownExtensions :: [Extension]",
+    align "knownExtensions = [" (punctuate comma known ++ [text "]"])
+  ]
 
 known :: [Doc]
 known = map (text . show) knownExtensions

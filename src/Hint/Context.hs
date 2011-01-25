@@ -19,7 +19,6 @@ import Prelude hiding ( mod )
 
 import Data.Char
 import Data.List
-import Data.Maybe
 
 import Control.Monad       ( liftM, filterM, when, guard )
 import Control.Monad.Error ( catchError, throwError, liftIO )
@@ -227,8 +226,8 @@ setImports ms = setImportsQ $ zip ms (repeat Nothing)
 --   Here, "map" will refer to Prelude.map and "M.map" to Data.Map.map.
 setImportsQ :: MonadInterpreter m => [(ModuleName, Maybe String)] -> m ()
 setImportsQ ms =
-    do let (q,     u) = Util.partition (isJust . snd) ms
-           (quals, unquals) = (map (\(a, Just b) -> (a,b)) q, map fst u)
+    do let qualOrNot = \(a,mb) -> maybe (Right a) (Left . (,) a) mb
+           (quals,unquals) = Util.partitionEither $ map qualOrNot ms
        --
        unqual_mods <- mapM findModule unquals
        mapM_ (findModule . fst) quals -- just to be sure they exist
