@@ -72,7 +72,7 @@ test_work_in_main = TestCase "work_in_main" [mod_file] $ do
                         setImportsQ [("Prelude",Nothing),
                                        ("Data.Maybe", Just "Mb")]
                         --
-                        typeOf "f $ 1+1" @@?= "(Num a) => a"
+                        typeOf "f $ (1 + 1 :: Int)" @@?= "Int"
                         eval "f . Mb.fromJust $ Just [1,2]" @@?= "[1,2]"
                         interpret "f $ 1 == 2" infer @@?= False
     --
