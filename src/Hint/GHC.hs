@@ -32,7 +32,7 @@ import Bag ( bagToList )
 import GHC hiding ( Phase )
 #endif
 
-import Outputable   ( PprStyle, ppr,
+import Outputable   ( PprStyle, SDoc, ppr,
                       showSDoc, showSDocForUser, showSDocUnqual,
                       withPprStyle, defaultErrStyle )
 import ErrUtils     ( Message, mkLocMessage  )
