@@ -110,12 +110,21 @@ configureDynFlags dflags = dflags{GHC.ghcMode    = GHC.CompManager,
                                   GHC.ghcLink    = GHC.LinkInMemory}
 #endif
 
-  -- 6.08 and above
+#if __GLASGOW_HASKELL__ < 701
+  -- 6.08 - 7.0.4
 pprType :: GHC.Type -> (GHC.PprStyle -> GHC.Doc)
 pprType = GHC.pprTypeForUser False -- False means drop explicit foralls
 
 pprKind :: GHC.Kind -> (GHC.PprStyle -> GHC.Doc)
 pprKind = pprType
+#else
+  -- 7.2.1 and above
+pprType :: GHC.Type -> GHC.SDoc
+pprType = GHC.pprTypeForUser False -- False means drop explicit foralls
+
+pprKind :: GHC.Kind -> GHC.SDoc
+pprKind = pprType
+#endif
 
 #elif __GLASGOW_HASKELL__ >= 606
   -- 6.6 only
