@@ -118,7 +118,11 @@ initialize args =
        _ <- runGhc1 GHC.setSessionDynFlags df2{GHC.log_action = log_handler}
 
 #if __GLASGOW_HASKELL__ >= 700
+#if __GLASGOW_HASKELL__ >= 702
+       let extMap      = map (\(a,_,b,_) -> (a,b)) GHC.xFlags
+#else
        let extMap      = map (\(a,b,_) -> (a,b)) GHC.xFlags
+#endif
        let toOpt e     = let err = error ("init error: unknown ext:" ++ show e)
                          in fromMaybe err (lookup e extMap)
        let getOptVal e = (asExtension e, GHC.xopt (toOpt e) df2)

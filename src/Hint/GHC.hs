@@ -44,7 +44,7 @@ import Parser       ( parseStmt, parseType )
 import FastString   ( fsLit )
 
 #if __GLASGOW_HASKELL__ >= 700
-import DynFlags     ( xFlags, xopt )
+import DynFlags     ( supportedLanguagesAndExtensions, xFlags, xopt )
 #else
 import DynFlags     ( supportedLanguages )
 #endif
