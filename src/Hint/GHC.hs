@@ -19,6 +19,9 @@ module Hint.GHC (
 #elif __GLASGOW_HASKELL__ < 608
     module SrcLoc,
 #endif
+#if __GLASGOW_HASKELL__ >= 702
+    module SrcLoc,
+#endif
 )
 
 where
@@ -52,5 +55,9 @@ import DynFlags     ( supportedLanguages )
 #if __GLASGOW_HASKELL__ >= 608
 import PprTyThing   ( pprTypeForUser )
 #elif __GLASGOW_HASKELL__ < 608
-import SrcLoc       ( SrcSpan, noSrcLoc )
+import SrcLoc       ( SrcSpan )
+#endif
+
+#if __GLASGOW_HASKELL__ >= 702
+import SrcLoc       ( mkRealSrcLoc )
 #endif
