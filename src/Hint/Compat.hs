@@ -18,11 +18,25 @@ newtype Kind = Kind GHC.Kind
 -- supportedLanguages :: [String]
 supportedExtensions = GHC.supportedLanguagesAndExtensions
 
+#if __GLASGOW_HASKELL__ < 702
 -- setContext :: GHC.GhcMonad m => [GHC.Module] -> [GHC.Module] -> m ()
 setContext xs = GHC.setContext xs . map (\y -> (y,Nothing))
 
 getContext :: GHC.GhcMonad m => m ([GHC.Module], [GHC.Module])
 getContext = fmap (\(as,bs) -> (as,map fst bs)) GHC.getContext
+#else
+
+-- Keep setContext/getContext unmodified for use where the results of getContext
+-- are simply restored by setContext, in which case we don't really care about the
+-- particular type of b.
+
+-- setContext :: GHC.GhcMonad m => [GHC.Module] -> [b] -> m ()
+setContext = GHC.setContext
+
+-- getContext :: GHC.GhcMonad m => m ([GHC.Module], [b])
+getContext = GHC.getContext
+
+#endif
 
 mkPState = GHC.mkPState
 
@@ -39,6 +53,24 @@ getContext = GHC.getContext
 mkPState df buf loc = GHC.mkPState buf loc df
 #endif
 
+-- Explicitly-typed variants of getContext/setContext, for use where we modify
+-- or override the context.
+#if __GLASGOW_HASKELL__ < 702
+setContextModules :: GHC.GhcMonad m => [GHC.Module] -> [GHC.Module] -> m ()
+setContextModules = setContext
+
+getContextNames :: GHC.GhcMonad m => m([String], [String])
+getContextNames = fmap (\(as,bs) -> (map name as, map name bs)) getContext
+    where name = GHC.moduleNameString . GHC.moduleName
+#else
+setContextModules :: GHC.GhcMonad m => [GHC.Module] -> [GHC.Module] -> m ()
+setContextModules as = GHC.setContext as . map (GHC.simpleImportDecl . GHC.moduleName)
+
+getContextNames :: GHC.GhcMonad m => m([String], [String])
+getContextNames = fmap (\(as,bs) -> (map name as, map decl bs)) GHC.getContext
+    where name = GHC.moduleNameString . GHC.moduleName
+          decl = GHC.moduleNameString . GHC.unLoc . GHC.ideclName
+#endif
 
 #if __GLASGOW_HASKELL__ < 702
 stringToStringBuffer = liftIO . GHC.stringToStringBuffer
