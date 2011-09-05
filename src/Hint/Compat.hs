@@ -4,6 +4,10 @@ module Hint.Compat
 
 where
 
+#if __GLASGOW_HASKELL__ < 702
+import Control.Monad.Trans (liftIO)
+#endif
+
 import qualified Hint.GHC as GHC
 
 -- Kinds became a synonym for Type in GHC 6.8. We define this wrapper
@@ -35,6 +39,12 @@ getContext = GHC.getContext
 mkPState df buf loc = GHC.mkPState buf loc df
 #endif
 
+
+#if __GLASGOW_HASKELL__ < 702
+stringToStringBuffer = liftIO . GHC.stringToStringBuffer
+#else
+stringToStringBuffer = return . GHC.stringToStringBuffer
+#endif
 
 #if __GLASGOW_HASKELL__ >= 610
 configureDynFlags :: GHC.DynFlags -> GHC.DynFlags
