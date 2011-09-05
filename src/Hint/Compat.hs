@@ -73,8 +73,10 @@ getContextNames = fmap (\(as,bs) -> (map name as, map decl bs)) GHC.getContext
 #endif
 
 #if __GLASGOW_HASKELL__ < 702
+mkSrcLoc = GHC.mkSrcLoc
 stringToStringBuffer = liftIO . GHC.stringToStringBuffer
 #else
+mkSrcLoc = GHC.mkRealSrcLoc
 stringToStringBuffer = return . GHC.stringToStringBuffer
 #endif
 
