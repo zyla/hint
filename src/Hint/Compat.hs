@@ -16,7 +16,13 @@ newtype Kind = Kind GHC.Kind
 
 #if __GLASGOW_HASKELL__ >= 700
 -- supportedLanguages :: [String]
-supportedExtensions = GHC.supportedLanguagesAndExtensions
+supportedExtensions = map f GHC.xFlags
+    where
+#if __GLASGOW_HASKELL__ < 702
+      f (e,_,_) = e
+#else
+      f (e,_,_,_) = e
+#endif
 
 #if __GLASGOW_HASKELL__ < 702
 -- setContext :: GHC.GhcMonad m => [GHC.Module] -> [GHC.Module] -> m ()
