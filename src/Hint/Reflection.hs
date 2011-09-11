@@ -61,6 +61,7 @@ asModElem (GHC.ATyCon tc)   = Data  (getUnqualName tc)
                                     (map getUnqualName $ GHC.tyConDataCons tc)
 asModElem (GHC.AClass c)    = Class (getUnqualName c)
                                     (map getUnqualName $ GHC.classMethods c)
+asModElem _ = error "asModElem: can't happen!"
 
 getUnqualName :: GHC.NamedThing a => a -> String
 getUnqualName = GHC.showSDocUnqual . GHC.pprParenSymName
