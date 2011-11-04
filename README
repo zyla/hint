@@ -20,5 +20,5 @@ Bug-reports, questions, suggestions and patches are all welcome.
 
 To get a copy of the darcs repository:
 
-darcs get http://code.haskell.org/hint/devel
+darcs get http://darcsden.com/jcpetruzza/hint
 
