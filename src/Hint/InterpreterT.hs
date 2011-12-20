@@ -119,7 +119,11 @@ initialize args =
 
 #if __GLASGOW_HASKELL__ >= 700
 #if __GLASGOW_HASKELL__ >= 702
+#if __GLASGOW_HASKELL__ >= 704
+       let extMap      = map (\(a,b,_) -> (a,b)) GHC.xFlags
+#else
        let extMap      = map (\(a,_,b,_) -> (a,b)) GHC.xFlags
+#endif
 #else
        let extMap      = map (\(a,b,_) -> (a,b)) GHC.xFlags
 #endif
