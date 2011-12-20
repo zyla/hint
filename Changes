@@ -1,3 +1,9 @@
+- ver 0.3.3.4
+ * Works on GHC 7.4.1
+
+- ver 0.3.3.3
+ * Works on GHC 7.2.1
+
 - ver 0.3.3.2
  * Supports GHC 7
 
