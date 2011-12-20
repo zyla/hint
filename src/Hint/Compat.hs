@@ -8,6 +8,10 @@ where
 import Control.Monad.Trans (liftIO)
 #endif
 
+#if __GLASGOW_HASKELL__ >= 704
+import Control.Monad (foldM, liftM)
+#endif
+
 import qualified Hint.GHC as GHC
 
 -- Kinds became a synonym for Type in GHC 6.8. We define this wrapper
@@ -18,7 +22,7 @@ newtype Kind = Kind GHC.Kind
 -- supportedLanguages :: [String]
 supportedExtensions = map f GHC.xFlags
     where
-#if __GLASGOW_HASKELL__ < 702
+#if (__GLASGOW_HASKELL__ < 702) || (__GLASGOW_HASKELL__ >= 704)
       f (e,_,_) = e
 #else
       f (e,_,_,_) = e
@@ -31,7 +35,7 @@ setContext xs = GHC.setContext xs . map (\y -> (y,Nothing))
 getContext :: GHC.GhcMonad m => m ([GHC.Module], [GHC.Module])
 getContext = fmap (\(as,bs) -> (as,map fst bs)) GHC.getContext
 #else
-
+#if __GLASGOW_HASKELL__ < 704
 -- Keep setContext/getContext unmodified for use where the results of getContext
 -- are simply restored by setContext, in which case we don't really care about the
 -- particular type of b.
@@ -41,7 +45,25 @@ setContext = GHC.setContext
 
 -- getContext :: GHC.GhcMonad m => m ([GHC.Module], [b])
 getContext = GHC.getContext
+#else
+setContext :: GHC.GhcMonad m => [GHC.Module] -> [GHC.ImportDecl GHC.RdrName] -> m ()
+setContext ms ds =
+  let ms' = map GHC.IIModule ms
+      ds' = map GHC.IIDecl ds
+      is = ms' ++ ds'
+  in GHC.setContext is
 
+getContext :: GHC.GhcMonad m => m ([GHC.Module], [GHC.ImportDecl GHC.RdrName])
+getContext = GHC.getContext >>= foldM f ([], [])
+  where
+    f :: (GHC.GhcMonad m) =>
+         ([GHC.Module], [GHC.ImportDecl GHC.RdrName]) ->
+         GHC.InteractiveImport ->
+         m ([GHC.Module], [GHC.ImportDecl GHC.RdrName])
+    f (ns, ds) i = case i of
+      (GHC.IIDecl d) -> return (ns, (d:ds))
+      (GHC.IIModule n) -> return ((n:ns), ds)
+#endif
 #endif
 
 mkPState = GHC.mkPState
@@ -70,10 +92,10 @@ getContextNames = fmap (\(as,bs) -> (map name as, map name bs)) getContext
     where name = GHC.moduleNameString . GHC.moduleName
 #else
 setContextModules :: GHC.GhcMonad m => [GHC.Module] -> [GHC.Module] -> m ()
-setContextModules as = GHC.setContext as . map (GHC.simpleImportDecl . GHC.moduleName)
+setContextModules as = setContext as . map (GHC.simpleImportDecl . GHC.moduleName)
 
 getContextNames :: GHC.GhcMonad m => m([String], [String])
-getContextNames = fmap (\(as,bs) -> (map name as, map decl bs)) GHC.getContext
+getContextNames = fmap (\(as,bs) -> (map name as, map decl bs)) getContext
     where name = GHC.moduleNameString . GHC.moduleName
           decl = GHC.moduleNameString . GHC.unLoc . GHC.ideclName
 #endif
@@ -117,8 +139,13 @@ exprType :: GHC.GhcMonad m => String -> m (Maybe GHC.Type)
 exprType = fmap Just . GHC.exprType
 
 -- add a bogus Maybe, in order to use it with mayFail
+#if __GLASGOW_HASKELL__ < 704
 typeKind :: GHC.GhcMonad m => String -> m (Maybe GHC.Kind)
 typeKind = fmap Just . GHC.typeKind
+#else
+typeKind :: GHC.GhcMonad m => String -> m (Maybe GHC.Kind)
+typeKind = fmap Just . (liftM snd) . (GHC.typeKind True)
+#endif
 #else
 -- add a bogus session parameter, in order to use it with runGhc2
 parseDynamicFlags :: GHC.Session
