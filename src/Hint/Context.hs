@@ -7,6 +7,7 @@ module Hint.Context (
 
       PhantomModule(..), ModuleText,
       addPhantomModule, removePhantomModule, getPhantomModules,
+      cleanPhantomModules,
 
       allModulesInContext, onAnEmptyContext,
 
@@ -250,12 +251,11 @@ setImportsQ ms =
        --
        onState (\s ->s{qual_imports = quals})
 
--- | All imported modules are cleared from the context, and
---   loaded modules are unloaded. It is similar to a @:load@ in
---   GHCi, but observe that not even the Prelude will be in
---   context after a reset.
-reset :: MonadInterpreter m => m ()
-reset =
+-- | 'cleanPhantomModules' works like 'reset', but skips the
+--   loading of the support module that installs '_show'. Its purpose
+--   is to clean up all temporary files generated for phantom modules.
+cleanPhantomModules :: MonadInterpreter m => m ()
+cleanPhantomModules =
     do -- Remove all modules from context
        runGhc2 Compat.setContext [] []
        --
@@ -277,9 +277,17 @@ reset =
                         import_qual_hack_mod = Nothing,
                         qual_imports         = []})
        liftIO $ mapM_ (removeFile . pm_file) (old_active ++ old_zombie)
-       --
-       -- Now, install a support module
-       installSupportModule
+
+-- | All imported modules are cleared from the context, and
+--   loaded modules are unloaded. It is similar to a @:load@ in
+--   GHCi, but observe that not even the Prelude will be in
+--   context after a reset.
+reset :: MonadInterpreter m => m ()
+reset = do -- clean up context
+           cleanPhantomModules
+           --
+           -- Now, install a support module
+           installSupportModule
 
 -- Load a phantom module with all the symbols from the prelude we need
 installSupportModule :: MonadInterpreter m => m ()

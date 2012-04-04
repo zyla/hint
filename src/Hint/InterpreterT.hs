@@ -161,15 +161,20 @@ runInterpreterWithArgs args action =
   ifInterpreterNotRunning $
     do s <- newInterpreterSession `catch` rethrowGhcException
        -- SH.protectHandlers $ execute s (initialize args >> action)
-       execute s (initialize args >> action)
+       execute s (initialize args >> action `finally` cleanSession)
     where rethrowGhcException   = throw . GhcException . showGhcEx
 #if __GLASGOW_HASKELL__ < 610
           newInterpreterSession =  do s <- liftIO $
                                              Compat.newSession GHC.Paths.libdir
                                       newSessionData s
+          cleanSession = cleanPhantomModules -- clean ghc session, too?
 #else
           -- GHC >= 610
           newInterpreterSession = newSessionData ()
+          cleanSession =
+               do cleanPhantomModules
+                  runGhc $ do dflags <- GHC.getSessionDynFlags
+                              GHC.defaultCleanupHandler dflags (return ())
 #endif
 
 {-# NOINLINE uniqueToken #-}
