@@ -12,6 +12,7 @@ import Data.Maybe
 
 import Hint.Base
 import qualified Hint.GHC as GHC
+import qualified Hint.Compat as Compat
 
 -- | An Id for a class, a type constructor, a data constructor, a binding, etc
 type Id = String
@@ -37,56 +38,49 @@ getModuleExports mn =
     do module_  <- findModule mn
        mod_info <- mayFail $ runGhc1 GHC.getModuleInfo module_
        exports  <- mapM (runGhc1 GHC.lookupName) (GHC.modInfoExports mod_info)
+       dflags   <- runGhc GHC.getSessionDynFlags
        --
-       return (asModElemList $ catMaybes exports)
+       return $ asModElemList dflags (catMaybes exports)
 
+asModElemList :: GHC.DynFlags -> [GHC.TyThing] -> [ModuleElem]
+asModElemList df xs = concat [
+                        cs',
+                        ts',
+                        ds \\ (concatMap (map Fun . children) ts'),
+                        fs \\ (concatMap (map Fun . children) cs')
+                      ]
+    where (cs,ts,ds,fs) =
+           (
 #if __GLASGOW_HASKELL__ < 704
-asModElemList :: [GHC.TyThing] -> [ModuleElem]
-asModElemList xs = concat [cs',
-                           ts',
-                           ds \\ (concatMap (map Fun . children) ts'),
-                           fs \\ (concatMap (map Fun . children) cs')]
-    where (cs,ts,ds,fs) = ([asModElem c | c@GHC.AClass{}   <- xs],
-                           [asModElem t | t@GHC.ATyCon{}   <- xs],
-                           [asModElem d | d@GHC.ADataCon{} <- xs],
-                           [asModElem f | f@GHC.AnId{}     <- xs])
-          cs' = [Class n $ filter (alsoIn fs) ms  | Class n ms  <- cs]
-          ts' = [Data  t $ filter (alsoIn ds) dcs | Data  t dcs <- ts]
-          alsoIn es = (`elem` (map name es))
-
-
-asModElem :: GHC.TyThing -> ModuleElem
-asModElem (GHC.AnId f)      = Fun $ getUnqualName f
-asModElem (GHC.ADataCon dc) = Fun $ getUnqualName dc
-asModElem (GHC.ATyCon tc)   = Data  (getUnqualName tc)
-                                    (map getUnqualName $ GHC.tyConDataCons tc)
-asModElem (GHC.AClass c)    = Class (getUnqualName c)
-                                    (map getUnqualName $ GHC.classMethods c)
-asModElem _ = error "asModElem: can't happen!"
+             [asModElem df c | c@GHC.AClass{}   <- xs],
+             [asModElem df t | t@GHC.ATyCon{}   <- xs],
 #else
-asModElemList :: [GHC.TyThing] -> [ModuleElem]
-asModElemList xs = concat [cs',
-                           ts',
-                           ds \\ (concatMap (map Fun . children) ts'),
-                           fs \\ (concatMap (map Fun . children) cs')]
-    where (cs,ts,ds,fs) = ([asModElem c | c@(GHC.ATyCon c')   <- xs, GHC.isClassTyCon c'],
-                           [asModElem t | t@(GHC.ATyCon c')   <- xs, (not . GHC.isClassTyCon) c'],
-                           [asModElem d | d@GHC.ADataCon{} <- xs],
-                           [asModElem f | f@GHC.AnId{}     <- xs])
+             [asModElem df c | c@(GHC.ATyCon c')   <- xs, GHC.isClassTyCon c'],
+             [asModElem df t | t@(GHC.ATyCon c')   <- xs, (not . GHC.isClassTyCon) c'],
+#endif
+             [asModElem df d | d@GHC.ADataCon{} <- xs],
+             [asModElem df f | f@GHC.AnId{}     <- xs]
+           )
           cs' = [Class n $ filter (alsoIn fs) ms  | Class n ms  <- cs]
           ts' = [Data  t $ filter (alsoIn ds) dcs | Data  t dcs <- ts]
           alsoIn es = (`elem` (map name es))
 
 
-asModElem :: GHC.TyThing -> ModuleElem
-asModElem (GHC.AnId f)      = Fun $ getUnqualName f
-asModElem (GHC.ADataCon dc) = Fun $ getUnqualName dc
-asModElem (GHC.ATyCon tc)   = 
+asModElem :: GHC.DynFlags -> GHC.TyThing -> ModuleElem
+asModElem df (GHC.AnId f)      = Fun $ getUnqualName df f
+asModElem df (GHC.ADataCon dc) = Fun $ getUnqualName df dc
+#if __GLASGOW_HASKELL__ < 704
+asModElem df(GHC.ATyCon tc)   = Data  (getUnqualName df tc)
+                                      (map (getUnqualName df) $ GHC.tyConDataCons tc)
+asModElem df (GHC.AClass c)    = Class (getUnqualName c)
+                                      (map (getUnqualName df) $ GHC.classMethods c)
+#else
+asModElem df (GHC.ATyCon tc)   =
   if GHC.isClassTyCon tc
-  then Class (getUnqualName tc) (map getUnqualName $ (GHC.classMethods . fromJust . GHC.tyConClass_maybe) tc)
-  else Data  (getUnqualName tc) (map getUnqualName $ GHC.tyConDataCons tc)
-asModElem _ = error "asModElem: can't happen!"
+  then Class (getUnqualName df tc) (map (getUnqualName df) $ (GHC.classMethods . fromJust . GHC.tyConClass_maybe) tc)
+  else Data  (getUnqualName df tc) (map (getUnqualName df) $ GHC.tyConDataCons tc)
+asModElem _ _ = error "asModElem: can't happen!"
 #endif
 
-getUnqualName :: GHC.NamedThing a => a -> String
-getUnqualName = GHC.showSDocUnqual . GHC.pprParenSymName
+getUnqualName :: GHC.NamedThing a => GHC.DynFlags -> a -> String
+getUnqualName dfs = Compat.showSDocUnqual dfs . GHC.pprParenSymName

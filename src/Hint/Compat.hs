@@ -34,8 +34,7 @@ setContext xs = GHC.setContext xs . map (\y -> (y,Nothing))
 
 getContext :: GHC.GhcMonad m => m ([GHC.Module], [GHC.Module])
 getContext = fmap (\(as,bs) -> (as,map fst bs)) GHC.getContext
-#else
-#if __GLASGOW_HASKELL__ < 704
+#elif __GLASGOW_HASKELL__ < 704
 -- Keep setContext/getContext unmodified for use where the results of getContext
 -- are simply restored by setContext, in which case we don't really care about the
 -- particular type of b.
@@ -48,7 +47,7 @@ getContext = GHC.getContext
 #else
 setContext :: GHC.GhcMonad m => [GHC.Module] -> [GHC.ImportDecl GHC.RdrName] -> m ()
 setContext ms ds =
-  let ms' = map GHC.IIModule ms
+  let ms' = map modToIIMod ms
       ds' = map GHC.IIDecl ds
       is = ms' ++ ds'
   in GHC.setContext is
@@ -61,9 +60,21 @@ getContext = GHC.getContext >>= foldM f ([], [])
          GHC.InteractiveImport ->
          m ([GHC.Module], [GHC.ImportDecl GHC.RdrName])
     f (ns, ds) i = case i of
-      (GHC.IIDecl d) -> return (ns, (d:ds))
-      (GHC.IIModule n) -> return ((n:ns), ds)
+      (GHC.IIDecl d)     -> return (ns, (d:ds))
+      m@(GHC.IIModule _) -> do n <- iiModToMod m; return ((n:ns), ds)
+
+
+modToIIMod :: GHC.Module -> GHC.InteractiveImport
+iiModToMod :: GHC.GhcMonad m => GHC.InteractiveImport -> m GHC.Module
+#if __GLASGOW_HASKELL__ < 706
+modToIIMod = GHC.IIModule
+iiModToMod (GHC.IIModule m) = return m
+#else
+modToIIMod = GHC.IIModule . GHC.moduleName
+iiModToMod (GHC.IIModule m) = GHC.findModule m Nothing
 #endif
+iiModToMod _ = error "iiModToMod!"
+
 #endif
 
 mkPState = GHC.mkPState
@@ -220,3 +231,20 @@ pprKind = GHC.ppr
 
 #endif
 
+#if __GLASGOW_HASKELL__ >= 706
+  -- why did they have to add a DynFlag to each showSDocXXX function.... (sigh)
+showSDoc = GHC.showSDoc GHC.tracingDynFlags -- hack!
+showSDocForUser = GHC.showSDocForUser GHC.tracingDynFlags -- hack!
+showSDocUnqual  = GHC.showSDocUnqual
+#else
+showSDoc = GHC.showSDoc
+showSDocForUser = GHC.showSDocForUser
+showSDocUnqual  = const GHC.showSDocUnqual
+#endif
+
+
+#if __GLASGOW_HASKELL__ >= 706
+mkLocMessage = GHC.mkLocMessage GHC.SevError
+#else
+mkLocMessage = GHC.mkLocMessage
+#endif

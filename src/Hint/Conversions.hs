@@ -35,7 +35,7 @@ instance FromGhcRep GHC.Type String where
     fromGhcRep t = do -- Unqualify necessary types
                       -- (i.e., do not expose internals)
                       unqual <- runGhc GHC.getPrintUnqual
-                      return $ GHC.showSDocForUser unqual (Compat.pprType t)
+                      return $ Compat.showSDocForUser unqual (Compat.pprType t)
 
 parseModule' :: String -> HsModule
 parseModule' s = case parseModule s of
@@ -45,7 +45,7 @@ parseModule' s = case parseModule s of
                                                   show failed]
 
 instance FromGhcRep_ Compat.Kind String where
-    fromGhcRep_ (Compat.Kind k) = GHC.showSDoc (Compat.pprKind k)
+    fromGhcRep_ (Compat.Kind k) = Compat.showSDoc (Compat.pprKind k)
 
 
 -- ---------------- Modules --------------------------

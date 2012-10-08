@@ -216,13 +216,20 @@ newSessionData  a =
        }
 
 mkLogHandler :: IORef [GhcError] -> GhcErrLogger
-mkLogHandler r _ src style msg = modifyIORef r (errorEntry :)
-    where errorEntry = mkGhcError src style msg
+mkLogHandler r = compat $ \_ src style msg ->
+                 let errorEntry = mkGhcError src style msg
+                  in modifyIORef r (errorEntry :)
+    where
+#if __GLASGOW_HASKELL__ < 706
+          compat = id
+#else
+          compat = const   -- cater for the extra DynFlags args
+#endif
 
 mkGhcError :: GHC.SrcSpan -> GHC.PprStyle -> GHC.Message -> GhcError
 mkGhcError src_span style msg = GhcError{errMsg = niceErrMsg}
-    where niceErrMsg = GHC.showSDoc . GHC.withPprStyle style $
-                         GHC.mkLocMessage src_span msg
+    where niceErrMsg = Compat.showSDoc . GHC.withPprStyle style $
+                         Compat.mkLocMessage src_span msg
 
 
 -- The MonadInterpreter instance

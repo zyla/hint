@@ -1,7 +1,7 @@
 module Hint.GHC (
     module GHC,
     module Outputable,
-    module ErrUtils,
+    module ErrUtils, Message,
     module Pretty,
     module DriverPhases,
     module StringBuffer,
@@ -38,7 +38,14 @@ import GHC hiding ( Phase )
 import Outputable   ( PprStyle, SDoc, ppr,
                       showSDoc, showSDocForUser, showSDocUnqual,
                       withPprStyle, defaultErrStyle )
-import ErrUtils     ( Message, mkLocMessage  )
+
+import ErrUtils     ( mkLocMessage  )
+#if __GLASGOW_HASKELL__ < 706
+import ErrUtils     ( Message )
+#else
+import ErrUtils     ( MsgDoc ) -- we alias it as Message below
+#endif
+
 import Pretty       ( Doc )
 import DriverPhases ( Phase(Cpp), HscSource(HsSrcFile) )
 import StringBuffer ( stringToStringBuffer )
@@ -52,6 +59,14 @@ import DynFlags     ( supportedLanguagesAndExtensions, xFlags, xopt )
 import DynFlags     ( supportedLanguages )
 #endif
 
+#if __GLASGOW_HASKELL__ >=704
+import DynFlags     ( LogAction )
+#endif
+
+#if __GLASGOW_HASKELL__ >= 706
+import DynFlags     ( tracingDynFlags )
+#endif
+
 #if __GLASGOW_HASKELL__ >= 608
 import PprTyThing   ( pprTypeForUser )
 #elif __GLASGOW_HASKELL__ < 608
@@ -60,4 +75,9 @@ import SrcLoc       ( SrcSpan )
 
 #if __GLASGOW_HASKELL__ >= 702
 import SrcLoc       ( mkRealSrcLoc )
+#endif
+
+
+#if __GLASGOW_HASKELL__ >= 706
+type Message = MsgDoc
 #endif
