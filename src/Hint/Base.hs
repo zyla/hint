@@ -156,11 +156,15 @@ mapGhcExceptions buildEx action =
                                     GhcException s -> throwError (buildEx s)
                                     _              -> throwError err)
 
+#if __GLASGOW_HASKELL__ < 704
 type GhcErrLogger = GHC.Severity
                  -> GHC.SrcSpan
                  -> GHC.PprStyle
                  -> GHC.Message
                  -> IO ()
+#else
+type GhcErrLogger = GHC.LogAction
+#endif
 
 -- | Module names are _not_ filepaths.
 type ModuleName = String

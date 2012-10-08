@@ -50,10 +50,19 @@ failOnParseError parser expr = mayFail go
                           do -- parsing failed, so we report it just as all
                              -- other errors get reported....
                              logger <- fromSession ghcErrLogger
-                             liftIO $ logger GHC.SevError
-                                             span
-                                             GHC.defaultErrStyle
-                                             err
+#if __GLASGOW_HASKELL__ >= 706
+                             dflags <- runGhc GHC.getSessionDynFlags
+                             let logger'  = logger dflags
+                                 errStyle = GHC.defaultErrStyle dflags
+#else
+                             let logger'  = logger
+                                 errStyle = GHC.defaultErrStyle
+
+#endif
+                             liftIO $ logger' GHC.SevError
+                                              span
+                                              errStyle
+                                              err
                              --
                              -- behave like the rest of the GHC API functions
                              -- do on error...
