@@ -72,7 +72,7 @@ asModElem df (GHC.ADataCon dc) = Fun $ getUnqualName df dc
 #if __GLASGOW_HASKELL__ < 704
 asModElem df(GHC.ATyCon tc)   = Data  (getUnqualName df tc)
                                       (map (getUnqualName df) $ GHC.tyConDataCons tc)
-asModElem df (GHC.AClass c)    = Class (getUnqualName c)
+asModElem df (GHC.AClass c)    = Class (getUnqualName df c)
                                       (map (getUnqualName df) $ GHC.classMethods c)
 #else
 asModElem df (GHC.ATyCon tc)   =
