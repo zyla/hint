@@ -1,3 +1,6 @@
+- ver 0.3.3.6
+ * Works again on GHC 7.2.x (thanks to Björn Peemöller)
+
 - ver 0.3.3.5
  * Works on GHC 7.4.6
  * Cleans up files for phantom modules that were left behind (thanks to Beltram Felgenhauer)
