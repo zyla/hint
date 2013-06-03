@@ -220,7 +220,7 @@ setImports ms = setImportsQ $ zip ms (repeat Nothing)
 -- | Sets the modules whose exports must be in context; some
 --   of them may be qualified. E.g.:
 --
---   @setImports [("Prelude", Nothing), ("Data.Map", Just "M")]@.
+--   @setImportsQ [("Prelude", Nothing), ("Data.Map", Just "M")]@.
 --
 --   Here, "map" will refer to Prelude.map and "M.map" to Data.Map.map.
 setImportsQ :: MonadInterpreter m => [(ModuleName, Maybe String)] -> m ()
