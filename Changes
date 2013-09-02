@@ -1,3 +1,10 @@
+- ver 0.3.3.7
+ * Fixed a race condition that would happen, for instance, when two process where run
+   one next to the other, making them, on some platforms, to get the same random number seed
+   (thanks to Mario Pastorelli and Samuel Gélineau)
+
+ * Small fix in documentation (thanks to Daniil Frumin)
+
 - ver 0.3.3.6
  * Works again on GHC 7.2.x (thanks to Björn Peemöller)
 
