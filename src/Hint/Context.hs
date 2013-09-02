@@ -29,6 +29,7 @@ import Hint.Util ( (>=>) ) -- compat version
 import Hint.Conversions
 import qualified Hint.Util   as Util
 import qualified Hint.Compat as Compat
+import qualified Hint.CompatPlatform as Compat
 
 import qualified Hint.GHC as GHC
 
@@ -44,12 +45,15 @@ type ModuleText = String
 -- already in-scope. Additionally, since this may be used with sandboxing in
 -- mind we want to avoid easy-to-guess names. Thus, we do a trick similar
 -- to the one in safeBndFor, but including a random number instead of an
--- additional digit
+-- additional digit. Finally, to avoid clashes between two processes
+-- that are concurrently running with the same random seed (e.g., initialized
+-- with the system time with not enough resolution), we also include the process id
 newPhantomModule :: MonadInterpreter m => m PhantomModule
 newPhantomModule =
     do n <- liftIO randomIO
+       p <- liftIO Compat.getPID
        (ls,is) <- allModulesInContext
-       let nums = concat [show (abs n::Int), filter isDigit $ concat (ls ++ is)]
+       let nums = concat [show (abs n::Int), show p, filter isDigit $ concat (ls ++ is)]
        let mod_name = 'M':nums
        --
        tmp_dir <- liftIO getTemporaryDirectory
