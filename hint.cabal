@@ -18,7 +18,7 @@ author:             Daniel Gorin
 maintainer:         jcpetruzza@gmail.com
 homepage:           http://darcsden.com/jcpetruzza/hint
 
-cabal-version:      >= 1.2.3
+cabal-version:      >= 1.9.2
 build-type:         Simple
 tested-with:        GHC==6.8.3, GHC==6.10
 
@@ -27,7 +27,19 @@ extra-source-files: README
                     Changes
                     examples/example.hs
                     examples/SomeModule.hs
-                    unit-tests/run-unit-tests.hs
+
+Test-Suite unit-tests
+  type: exitcode-stdio-1.0
+  hs-source-dirs: unit-tests
+  main-is: run-unit-tests.hs
+  build-depends: base < 5
+                ,hint
+                ,HUnit==1.2.*
+                ,directory
+                ,filepath
+                ,mtl
+                ,MonadCatchIO-mtl
+                ,extensible-exceptions
 
 Library
   build-depends:      haskell-src,
