@@ -49,4 +49,5 @@
 ^\.darcs-temp-mail$
 (^|/)dist($|/)
 (^|/)ghc-ref($|/)
-
+(^|/).cabal-sandbox($|/)
+\cabal.sandbox.config$
