@@ -24,7 +24,7 @@ tested-with:        GHC==6.8.3, GHC==6.10
 
 extra-source-files: README
                     AUTHORS
-                    Changes
+                    CHANGELOG.markdown
                     examples/example.hs
                     examples/SomeModule.hs
 
