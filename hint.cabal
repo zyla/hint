@@ -8,8 +8,7 @@ description:
         values).
 
         It is, esentially, a huge subset of the GHC API wrapped in a simpler
-        API. Works with GHC 6.10.x and 6.8.x
-        (this version was not tested with GHC 6.6).
+        API. 
 synopsis:           Runtime Haskell interpreter (GHC API wrapper)
 category:           Language, Compilers/Interpreters
 license:            BSD3
