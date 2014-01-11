@@ -15,7 +15,8 @@ module Hint.Configuration (
       searchPath
       ) where
 
-import Control.Monad.Error
+import Control.Monad
+import Control.Monad.Catch
 import Data.Char
 import Data.List ( intersect, intercalate )
 
@@ -31,7 +32,7 @@ setGhcOptions opts =
     do old_flags <- runGhc GHC.getSessionDynFlags
        (new_flags,not_parsed) <- runGhc2 Compat.parseDynamicFlags old_flags opts
        when (not . null $ not_parsed) $
-            throwError $ UnknownError
+            throwM $ UnknownError
                             $ concat ["flags: ", unwords $ map quote not_parsed,
                                                "not recognized"]
        _ <- runGhc1 GHC.setSessionDynFlags new_flags

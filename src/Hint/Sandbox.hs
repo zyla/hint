@@ -7,7 +7,7 @@ import Hint.Util
 
 import {-# SOURCE #-} Hint.Typecheck ( typeChecks_unsandboxed )
 
-import Control.Monad.Error
+import Control.Monad.Catch
 
 sandboxed :: MonadInterpreter m => (Expr -> m a) -> (Expr -> m a)
 sandboxed = if ghcVersion >= 610 then id else old_sandboxed
@@ -50,12 +50,12 @@ usingAModule do_stuff_on = \expr ->
                 let go no_prel = do pm <- addPhantomModule (mod_text no_prel)
                                     setTopLevelModules [pm_name pm]
                                     r <- do_stuff_on e
-                                          `catchError` (\err ->
+                                          `catchIE` (\err ->
                                              case err of
                                                WontCompile _ ->
                                                       do removePhantomModule pm
-                                                         throwError err
-                                               _ -> throwError err)
+                                                         throwM err
+                                               _ -> throwM err)
                                     removePhantomModule pm
                                     return r
                 -- If the Prelude was not explicitly imported but implicitly
@@ -65,9 +65,9 @@ usingAModule do_stuff_on = \expr ->
                 -- I guess this may lead to even more obscure errors, but
                 -- hopefully in much less frequent situations...
                 r <- onAnEmptyContext $ go True
-                      `catchError` (\err -> case err of
-                                             WontCompile _ -> go False
-                                             _             -> throwError err)
+                      `catchIE` (\err -> case err of
+                                           WontCompile _ -> go False
+                                           _             -> throwM err)
                 --
                 return r
            --

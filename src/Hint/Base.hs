@@ -1,7 +1,7 @@
 module Hint.Base (
     MonadInterpreter(..), RunGhc,
     --
-    GhcError(..), InterpreterError(..), mayFail,
+    GhcError(..), InterpreterError(..), mayFail, catchIE,
     --
     InterpreterSession, SessionData(..), GhcErrLogger,
     InterpreterState(..), fromState, onState,
@@ -17,8 +17,8 @@ module Hint.Base (
 
 where
 
-import Control.Monad.Error
-import Control.Monad.CatchIO
+import Control.Monad.Trans
+import Control.Monad.Catch as MC
 
 import Data.IORef
 import Data.Dynamic
@@ -39,8 +39,7 @@ import Hint.Extension
 ghcVersion :: Int
 ghcVersion = __GLASGOW_HASKELL__
 
--- this requires FlexibleContexts
-class (MonadCatchIO m,MonadError InterpreterError m) => MonadInterpreter m where
+class (MonadIO m, MonadCatch m) => MonadInterpreter m where
     fromSession      :: FromSession m a
     modifySessionRef :: ModifySessionRef m a
     runGhc           :: RunGhc m a
@@ -57,10 +56,6 @@ data InterpreterError = UnknownError String
                       -- and rethrown as this.
                       | GhcException String
                       deriving (Show, Typeable)
-
-instance Error InterpreterError where
-    noMsg  = UnknownError ""
-    strMsg = UnknownError
 
 data InterpreterState = St{active_phantoms      :: [PhantomModule],
                            zombie_phantoms      :: [PhantomModule],
@@ -107,27 +102,27 @@ adjust :: (a -> b) -> (a -> b)
 adjust = id
 
 type RunGhc  m a =
-    (forall n.(MonadCatchIO n,Functor n) => GHC.GhcT n a)
+    (forall n.(MonadIO n, MonadCatch n,Functor n) => GHC.GhcT n a)
  -> m a
 
 type RunGhc1 m a b =
-    (forall n.(MonadCatchIO n, Functor n) => a -> GHC.GhcT n b)
+    (forall n.(MonadIO n, MonadCatch n, Functor n) => a -> GHC.GhcT n b)
  -> (a -> m b)
 
 type RunGhc2 m a b c =
-    (forall n.(MonadCatchIO n, Functor n) => a -> b -> GHC.GhcT n c)
+    (forall n.(MonadIO n, MonadCatch n, Functor n) => a -> b -> GHC.GhcT n c)
  -> (a -> b -> m c)
 
 type RunGhc3 m a b c d =
-    (forall n.(MonadCatchIO n, Functor n) => a -> b -> c -> GHC.GhcT n d)
+    (forall n.(MonadIO n, MonadCatch n, Functor n) => a -> b -> c -> GHC.GhcT n d)
  -> (a -> b -> c -> m d)
 
 type RunGhc4 m a b c d e =
-    (forall n.(MonadCatchIO n, Functor n) => a -> b -> c -> d -> GHC.GhcT n e)
+    (forall n.(MonadIO n, MonadCatch n, Functor n) => a -> b -> c -> d -> GHC.GhcT n e)
  -> (a -> b -> c -> d -> m e)
 
 type RunGhc5 m a b c d e f =
-    (forall n.(MonadCatchIO n, Functor n) => a->b->c->d->e->GHC.GhcT n f)
+    (forall n.(MonadIO n, MonadCatch n, Functor n) => a->b->c->d->e->GHC.GhcT n f)
  -> (a -> b -> c -> d -> e -> m f)
 #endif
 
@@ -152,9 +147,13 @@ mapGhcExceptions :: MonadInterpreter m
                  -> m a
 mapGhcExceptions buildEx action =
     do  action
-          `catchError` (\err -> case err of
-                                    GhcException s -> throwError (buildEx s)
-                                    _              -> throwError err)
+          `MC.catch` (\err -> case err of
+                                GhcException s -> throwM (buildEx s)
+                                _              -> throwM err)
+
+catchIE :: MonadInterpreter m => m a -> (InterpreterError -> m a) -> m a
+catchIE = MC.catch
+
 
 #if __GLASGOW_HASKELL__ < 704
 type GhcErrLogger = GHC.Severity
@@ -204,8 +203,8 @@ mayFail action =
         es <- modifySessionRef ghcErrListRef (const [])
         --
         case (maybe_res, null es) of
-            (Nothing,True)  -> throwError $ UnknownError "Got no error message"
-            (Nothing,False) -> throwError $ WontCompile (reverse es)
+            (Nothing,True)  -> throwM $ UnknownError "Got no error message"
+            (Nothing,False) -> throwM $ WontCompile (reverse es)
             (Just a, True)  -> return a
             (Just _, False) -> fail $ "GHC returned a result but said: " ++
                                       show es
@@ -224,6 +223,6 @@ findModule mn = mapGhcExceptions NotAllowed $
 
 moduleIsLoaded :: MonadInterpreter m => ModuleName -> m Bool
 moduleIsLoaded mn = (findModule mn >> return True)
-                   `catchError` (\e -> case e of
-                                        NotAllowed{} -> return False
-                                        _            -> throwError e)
+                   `catchIE` (\e -> case e of
+                                      NotAllowed{} -> return False
+                                      _            -> throwM e)

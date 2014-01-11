@@ -22,7 +22,8 @@ import Data.Char
 import Data.List
 
 import Control.Monad       ( liftM, filterM, when, guard )
-import Control.Monad.Error ( catchError, throwError, liftIO )
+import Control.Monad.Trans ( liftIO )
+import Control.Monad.Catch
 
 import Hint.Base
 import Hint.Util ( (>=>) ) -- compat version
@@ -85,10 +86,10 @@ addPhantomModule mod_text =
                      then do runGhc2 Compat.setContext old_top old_imps
                              return $ Just ()
                      else return Nothing)
-        `catchError` (\err -> case err of
-                                WontCompile _ -> do removePhantomModule pm
-                                                    throwError err
-                                _             -> throwError err)
+        `catchIE` (\err -> case err of
+                             WontCompile _ -> do removePhantomModule pm
+                                                 throwM err
+                             _             -> throwM err)
        --
        return pm
 
@@ -147,7 +148,8 @@ isPhantomModule mn = do (as,zs) <- getPhantomModules
 loadModules :: MonadInterpreter m => [String] -> m ()
 loadModules fs = do -- first, unload everything, and do some clean-up
                     reset
-                    doLoad fs `catchError` (\e -> reset >> throwError e)
+                    doLoad fs `catchIE` (\e  -> reset >> throwM e)
+
 
 doLoad :: MonadInterpreter m => [String] -> m ()
 doLoad fs = do mayFail $ do
@@ -187,8 +189,8 @@ setTopLevelModules ms =
        --
        let not_loaded = ms \\ map modNameFromSummary loaded_mods_ghc
        when (not . null $ not_loaded) $
-         throwError $ NotAllowed ("These modules have not been loaded:\n" ++
-                                  unlines not_loaded)
+         throwM $ NotAllowed ("These modules have not been loaded:\n" ++
+                              unlines not_loaded)
        --
        active_pms <- fromState active_phantoms
        ms_mods <- mapM findModule (nub $ ms ++ map pm_name active_pms)
@@ -196,8 +198,8 @@ setTopLevelModules ms =
        let mod_is_interpr = runGhc1 GHC.moduleIsInterpreted
        not_interpreted <- filterM (liftM not . mod_is_interpr) ms_mods
        when (not . null $ not_interpreted) $
-         throwError $ NotAllowed ("These modules are not interpreted:\n" ++
-                                  unlines (map fromGhcRep_ not_interpreted))
+         throwM $ NotAllowed ("These modules are not interpreted:\n" ++
+                              unlines (map fromGhcRep_ not_interpreted))
        --
        (_, old_imports) <- runGhc Compat.getContext
        runGhc2 Compat.setContext ms_mods old_imports
@@ -207,7 +209,7 @@ onAnEmptyContext action =
     do (old_mods, old_imps) <- runGhc Compat.getContext
        runGhc2 Compat.setContext [] []
        let restore = runGhc2 Compat.setContext old_mods old_imps
-       a <- action `catchError` (\e -> do restore; throwError e)
+       a <- action `catchIE` (\e -> do restore; throwM e)
        restore
        return a
 

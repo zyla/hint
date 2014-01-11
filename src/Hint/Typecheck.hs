@@ -8,7 +8,7 @@ module Hint.Typecheck (
 
 where
 
-import Control.Monad.Error
+import Control.Monad.Catch
 
 import Hint.Base
 import Hint.Parsers
@@ -38,7 +38,7 @@ typeChecks = sandboxed typeChecks_unsandboxed
 
 typeChecks_unsandboxed :: MonadInterpreter m => String -> m Bool
 typeChecks_unsandboxed expr = (typeOf_unsandboxed expr >> return True)
-                              `catchError`
+                              `catchIE`
                               onCompilationError (\_ -> return False)
 
 -- | Returns a string representation of the kind of the type expression.
@@ -60,4 +60,4 @@ onCompilationError :: MonadInterpreter m
 onCompilationError recover =
     \interp_error -> case interp_error of
                        WontCompile errs -> recover errs
-                       otherErr         -> throwError otherErr
+                       otherErr         -> throwM otherErr

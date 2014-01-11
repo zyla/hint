@@ -1,12 +1,11 @@
 module Main ( main ) where
 
-import Prelude hiding (catch)
+import Prelude
 
-import Control.Exception.Extensible ( ArithException(..), finally )
-import Control.Monad.CatchIO ( catch, throw )
+import Control.Exception.Extensible ( ArithException(..) )
+import Control.Monad.Catch as MC
 
 import Control.Monad       ( liftM, when )
-import Control.Monad.Error ( Error, MonadError(catchError) )
 
 import Control.Concurrent ( forkIO )
 import Control.Concurrent.MVar
@@ -46,7 +45,8 @@ test_reload_modified = TestCase "reload_modified" [mod_file] $ do
           --
           get_f    =  do loadModules [mod_file]
                          setTopLevelModules [mod_name]
-                         interpret "f" (as :: Int -> Int)
+                         r <- interpret "f" (as :: Int -> Int)
+                         return r
 
 test_lang_exts :: TestCase
 test_lang_exts = TestCase "lang_exts" [mod_file] $ do
@@ -193,7 +193,7 @@ test_catch = TestCase "catch" [] $ do
         setImports ["Prelude"]
         succeeds (action `catch` handler) @@? "catch failed"
     where handler DivideByZero = return "catched"
-          handler e = throw e
+          handler e = throwM e
           action = do s <- eval "1 `div` 0 :: Int"
                       return $! s
 
@@ -211,20 +211,21 @@ test_only_one_instance = TestCase "only_one_instance" [] $ do
 
 
 tests :: [TestCase]
-tests = [test_reload_modified,
-         test_lang_exts,
-         test_work_in_main,
-         test_comments_in_expr,
-         test_qual_import,
-         test_basic_eval,
-         test_eval_layout,
-         test_show_in_scope,
-         test_installed_not_in_scope,
-         test_priv_syms_in_scope,
-         test_search_path,
-         test_search_path_dot,
-         test_catch,
-         test_only_one_instance]
+tests = [test_reload_modified
+        ,test_lang_exts
+        ,test_work_in_main
+        ,test_comments_in_expr
+        ,test_qual_import
+        ,test_basic_eval
+        ,test_eval_layout
+        ,test_show_in_scope
+        ,test_installed_not_in_scope
+        ,test_priv_syms_in_scope
+        ,test_search_path
+        ,test_search_path_dot
+        ,test_catch
+        ,test_only_one_instance
+        ]
 
 main :: IO ()
 main = do -- run the tests...
@@ -255,10 +256,13 @@ p @@? msg = do b <- p; liftIO (b @? msg)
 (@@?=) :: (Eq a, Show a, MonadIO m) => m a -> a -> m ()
 m_a @@?= b = do a <- m_a; liftIO (a @?= b)
 
-fails :: (Error e, MonadError e m, MonadIO m) => m a -> m Bool
-fails action = (action >> return False) `catchError` (\_ -> return True)
+fails :: (MonadCatch m, MonadIO m) => m a -> m Bool
+fails action = (action >> return False) `catchIE` (\_ -> return True)
+  where
+    catchIE :: MonadCatch m => m a -> (InterpreterError -> m a) -> m a
+    catchIE = MC.catch
 
-succeeds :: (Error e, MonadError e m, MonadIO m) => m a -> m Bool
+succeeds :: (MonadCatch m, MonadIO m) => m a -> m Bool
 succeeds = liftM not . fails
 
 

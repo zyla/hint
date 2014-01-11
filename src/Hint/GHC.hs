@@ -35,7 +35,7 @@ import Bag ( bagToList )
 import GHC hiding ( Phase )
 #endif
 
-import Outputable   ( PprStyle, SDoc, ppr,
+import Outputable   ( PprStyle, SDoc, Outputable(ppr),
                       showSDoc, showSDocForUser, showSDocUnqual,
                       withPprStyle, defaultErrStyle )
 
