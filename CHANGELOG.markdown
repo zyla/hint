@@ -1,47 +1,67 @@
-- ver 0.3.3.7
+0.4.0.0
+-------
+ * Uses exceptions package instead of MonadCatchIO-mtl (API breakage expected)
+
+ * Changelog should now appear in Hackage
+
+ * Integrated unit tests with cabal
+
+0.3.3.7
+-------
  * Fixed a race condition that would happen, for instance, when two process where run
    one next to the other, making them, on some platforms, to get the same random number seed
    (thanks to Mario Pastorelli and Samuel Gélineau)
 
  * Small fix in documentation (thanks to Daniil Frumin)
 
-- ver 0.3.3.6
+0.3.3.6
+-------
  * Works again on GHC 7.2.x (thanks to Björn Peemöller)
 
-- ver 0.3.3.5
+0.3.3.5
+-------
  * Works on GHC 7.4.6
  * Cleans up files for phantom modules that were left behind (thanks to Beltram Felgenhauer)
 
-- ver 0.3.3.4
+0.3.3.4
+-------
  * Works on GHC 7.4.1
 
-- ver 0.3.3.3
+0.3.3.3
+-------
  * Works on GHC 7.2.1
 
-- ver 0.3.3.2
+0.3.3.2
+-------
  * Supports GHC 7
 
-- ver 0.3.3.1
+0.3.3.1
+-------
  * Instance declaration for Applicative (InterpreterT m) works with mtl-2
    (requires Applicative m, this shouldn't break anything...)
 
-- ver 0.3.3.0
+0.3.3.0
+-------
  * add unsafeRunInterpreterWithArgs
  * check that only one instance of the interpreter is run at any time
 
-- ver 0.3.2.3
+0.3.2.3
+-------
  * Can be built against MonadCatchIO-mtl-0.3.x.x
 
-- ver 0.3.2.2
+0.3.2.2
+-------
  * Fixed a bug that would make expressions using heavy use of the layout
    rule to fail to be interpreted (see parens)
 
-- ver 0.3.2.1
+0.3.2.1
+-------
  * hint.cabal includes version bounds for package ghc-mtl. This is to
    avoid the accidental selection of the completely unrelated ghc-mtl
    internal to ghc and, apparently, installed in the hackage server
 
-- ver 0.3.2.0
+0.3.2.0
+-------
  * Exports functions parens and isInterpretedModule
 
  * Experimental support for module annotations
@@ -54,11 +74,13 @@
  * Adds an option to configurate the searchPath
 
 
-- ver 0.3.1.0
+0.3.1.0
+-------
  * No longer uses Language.Haskell.Extension due to configuration problems with Cabal.
    Instead, it uses its own Language.Haskell.Interpreter.Extension module.
 
-- ver 0.3.0.0
+0.3.0.0
+-------
  * Updated API:
    + InterpreterT monad transformer (Interpreter = InterpreterT IO)
    + No more Sessions, use runInterpreter only once
@@ -68,30 +90,37 @@
        doing nothing
  * Works with GHC 6.10 and 6.8 (untested with 6.6)
 
-- ver 0.2.5
+0.2.5
+-----
  * setImportsQ added (modules can be imported both qualified and unqualified)
 
-- ver 0.2.4.1
+0.2.4.1
+-------
  * BUGFIX: No longer fails on expressions ending in a -- comment
 
-- ver 0.2.4
+0.2.4
+-----
  * setInstalledModsAreInScopeQualified added
  * Now depends on ghc-paths (no longer needs a custom cabal script)
 
-- ver 0.2.2
+0.2.2
+-----
  * setOptimizations added
  * Module Language.Haskell.Interpreter.GHC.Unsafe added
    (contains unsafeSetGhcOption)
  * unit tests now based on HUnit
 
-- ver 0.2.1
+0.2.1
+-----
  * BUGFIX: Module reloading was broken under 6.8
  * GHC.GhcExceptions are catched and turned into InterpreterErrors
 
-- ver 0.2.0.1
+0.2.0.1
+-------
  * Adds the requirement cabal-version < 1.3
 
-- ver 0.2
+0.2
+---
 
  * Works also with GHC 6.8 and 6.6
  * Added the getModuleExports function
