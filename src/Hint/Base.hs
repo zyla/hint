@@ -12,7 +12,9 @@ module Hint.Base (
     ModuleName, PhantomModule(..),
     findModule, moduleIsLoaded,
     --
-    ghcVersion
+    ghcVersion,
+    --
+    debug, showGHC
 )
 
 where
@@ -26,6 +28,7 @@ import Data.Dynamic
 import qualified Hint.GHC as GHC
 
 import Hint.Extension
+import Hint.Compat as Compat
 
 -- | Version of the underlying ghc api. Values are:
 --
@@ -208,6 +211,16 @@ mayFail action =
             (Just a, True)  -> return a
             (Just _, False) -> fail $ "GHC returned a result but said: " ++
                                       show es
+
+-- ================= Debugging stuff ===============
+
+debug :: MonadInterpreter m => String -> m ()
+debug = liftIO . putStrLn . ("!! " ++)
+
+showGHC :: (MonadInterpreter m, GHC.Outputable a) => a -> m String
+showGHC a =
+   do unqual <- runGhc GHC.getPrintUnqual
+      return $ Compat.showSDocForUser unqual (GHC.ppr a)
 
 -- ================ Misc ===================================
 
