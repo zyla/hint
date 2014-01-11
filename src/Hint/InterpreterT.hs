@@ -5,7 +5,7 @@ module Hint.InterpreterT (
 
 where
 
-import Prelude hiding ( catch )
+import Prelude
 
 import Hint.Base
 import Hint.Context
@@ -14,8 +14,7 @@ import Hint.Extension
 
 import Control.Applicative
 import Control.Monad.Reader
-import Control.Monad.Error
-import Control.Monad.CatchIO
+import Control.Monad.Catch as MC
 
 import Data.Typeable ( Typeable )
 import Control.Concurrent.MVar
@@ -24,6 +23,7 @@ import System.IO.Unsafe ( unsafePerformIO )
 import Data.IORef
 import Data.List
 import Data.Maybe
+import Data.Monoid
 #if __GLASGOW_HASKELL__ < 610
 import Data.Dynamic
 #endif
@@ -40,9 +40,9 @@ type Interpreter = InterpreterT IO
 newtype InterpreterT m a = InterpreterT{
                              unInterpreterT :: ReaderT InterpreterSession
                                                (ErrorT InterpreterError m) a}
-    deriving (Functor, Monad, MonadIO, MonadCatchIO)
+    deriving (Functor, Monad, MonadIO, MonadCatch)
 
-execute :: (MonadCatchIO m, Functor m)
+execute :: (MonadIO m, MonadCatch m, Functor m)
         => InterpreterSession
         -> InterpreterT m a
         -> m (Either InterpreterError a)
@@ -51,7 +51,7 @@ execute s = runErrorT . flip runReaderT s . unInterpreterT
 instance MonadTrans InterpreterT where
     lift = InterpreterT . lift . lift
 
-runGhc_impl :: (MonadCatchIO m, Functor m) => RunGhc (InterpreterT m) a
+runGhc_impl :: (MonadIO m, MonadCatch m, Functor m) => RunGhc (InterpreterT m) a
 runGhc_impl f = do s <- fromSession versionSpecific -- i.e. the ghc session
                    r <- liftIO $ f' s
                    either throwError return r
@@ -63,34 +63,36 @@ runGhc_impl f = do s <- fromSession versionSpecific -- i.e. the ghc session
       -- ghc >= 6.10
 newtype InterpreterT m a = InterpreterT{
                              unInterpreterT :: ReaderT  InterpreterSession
-                                              (ErrorT   InterpreterError
-                                              (GHC.GhcT m)) a}
-    deriving (Functor, Monad, MonadIO, MonadCatchIO)
+                                              (GHC.GhcT m) a}
+    deriving (Functor, Monad, MonadIO, MonadCatch)
 
-execute :: (MonadCatchIO m, Functor m)
+execute :: (MonadIO m, MonadCatch m, Functor m)
         => InterpreterSession
         -> InterpreterT m a
         -> m (Either InterpreterError a)
-execute s = GHC.runGhcT (Just GHC.Paths.libdir)
-          . runErrorT
+execute s = try
+          . GHC.runGhcT (Just GHC.Paths.libdir)
           . flip runReaderT s
           . unInterpreterT
 
-instance MonadTrans InterpreterT where
-    lift = InterpreterT . lift . lift . lift
 
-runGhc_impl :: (MonadCatchIO m, Functor m) => RunGhc (InterpreterT m) a
-runGhc_impl a = InterpreterT (lift (lift a))
-                `catches`
-                 [Handler (\(e :: GHC.SourceError)  -> rethrowWC e),
-                  Handler (\(e :: GHC.GhcApiError)  -> rethrowGE $ show e),
-                  Handler (\(e :: GHC.GhcException) -> rethrowGE $ showGhcEx e)]
-    where rethrowGE = throwError . GhcException
-          rethrowWC = throwError
-                    . WontCompile
-                    . map (GhcError . show)
-                    . GHC.bagToList
-                    . GHC.srcErrorMessages
+instance MonadTrans InterpreterT where
+    lift = InterpreterT . lift . lift
+
+runGhc_impl :: (MonadIO m, MonadCatch m, Functor m) => RunGhc (InterpreterT m) a
+runGhc_impl a =
+  InterpreterT (lift a)
+   `catches`
+   [Handler (\(e :: GHC.SourceError)  -> throwM $ compilationError e)
+   ,Handler (\(e :: GHC.GhcApiError)  -> throwM $ GhcException $ show e)
+   ,Handler (\(e :: GHC.GhcException) -> throwM $ GhcException $ showGhcEx e)
+   ]
+  where
+    compilationError
+      = WontCompile
+      . map (GhcError . show)
+      . GHC.bagToList
+      . GHC.srcErrorMessages
 #endif
 
 showGhcEx :: GHC.GhcException -> String
@@ -98,7 +100,7 @@ showGhcEx = flip GHC.showGhcException ""
 
 -- ================= Executing the interpreter ==================
 
-initialize :: (MonadCatchIO m, Functor m)
+initialize :: (MonadIO m, MonadCatch m, Functor m)
               => [String]
               -> InterpreterT m ()
 initialize args =
@@ -109,9 +111,9 @@ initialize args =
        let df1 = Compat.configureDynFlags df0
        (df2, extra) <- runGhc2 Compat.parseDynamicFlags df1 args
        when (not . null $ extra) $
-            throwError $ UnknownError (concat [ "flags: '"
-                                        , intercalate " " extra
-                                        , "' not recognized"])
+            throwM $ UnknownError (concat [ "flags: '"
+                                          , intercalate " " extra
+                                          , "' not recognized"])
 
        -- Observe that, setSessionDynFlags loads info on packages
        -- available; calling this function once is mandatory!
@@ -145,7 +147,7 @@ initialize args =
 -- NB. The underlying ghc will overwrite certain signal handlers
 -- (SIGINT, SIGHUP, SIGTERM, SIGQUIT on Posix systems, Ctrl-C handler on Windows).
 -- In future versions of hint, this might be controlled by the user.
-runInterpreter :: (MonadCatchIO m, Functor m)
+runInterpreter :: (MonadIO m, MonadCatch m, Functor m)
                => InterpreterT m a
                -> m (Either InterpreterError a)
 runInterpreter = runInterpreterWithArgs []
@@ -153,16 +155,16 @@ runInterpreter = runInterpreterWithArgs []
 -- | Executes the interpreter, setting args passed in as though they
 -- were command-line args. Returns @Left InterpreterError@ in case of
 -- error.
-runInterpreterWithArgs :: (MonadCatchIO m, Functor m)
+runInterpreterWithArgs :: (MonadIO m, MonadCatch m, Functor m)
                           => [String]
                           -> InterpreterT m a
                           -> m (Either InterpreterError a)
 runInterpreterWithArgs args action =
   ifInterpreterNotRunning $
-    do s <- newInterpreterSession `catch` rethrowGhcException
+    do s <- newInterpreterSession `MC.catch` rethrowGhcException
        -- SH.protectHandlers $ execute s (initialize args >> action)
        execute s (initialize args >> action `finally` cleanSession)
-    where rethrowGhcException   = throw . GhcException . showGhcEx
+    where rethrowGhcException   = throwM . GhcException . showGhcEx
 #if __GLASGOW_HASKELL__ < 610
           newInterpreterSession =  do s <- liftIO $
                                              Compat.newSession GHC.Paths.libdir
@@ -181,11 +183,11 @@ runInterpreterWithArgs args action =
 uniqueToken :: MVar ()
 uniqueToken = unsafePerformIO $ newMVar ()
 
-ifInterpreterNotRunning :: MonadCatchIO m => m a -> m a
+ifInterpreterNotRunning :: (MonadIO m, MonadCatch m) => m a -> m a
 ifInterpreterNotRunning action =
     do maybe_token <- liftIO $ tryTakeMVar uniqueToken
        case maybe_token of
-           Nothing -> throw MultipleInstancesNotAllowed
+           Nothing -> throwM MultipleInstancesNotAllowed
            Just x  -> action `finally` (liftIO $ putMVar uniqueToken x)
 
 -- | The installed version of ghc is not thread-safe. This exception
@@ -239,7 +241,7 @@ mkGhcError src_span style msg = GhcError{errMsg = niceErrMsg}
 
 -- The MonadInterpreter instance
 
-instance (MonadCatchIO m, Functor m) => MonadInterpreter (InterpreterT m) where
+instance (MonadIO m, MonadCatch m, Functor m) => MonadInterpreter (InterpreterT m) where
     fromSession f = InterpreterT $ fmap f ask
     --
     modifySessionRef target f =
@@ -249,11 +251,6 @@ instance (MonadCatchIO m, Functor m) => MonadInterpreter (InterpreterT m) where
     --
     runGhc a = runGhc_impl a
 
-instance Monad m => MonadError InterpreterError (InterpreterT m) where
-    throwError  = InterpreterT . throwError
-    catchError (InterpreterT m) catchE = InterpreterT $
-                                             m `catchError`
-                                              (\e -> unInterpreterT $ catchE e)
 
 instance (Monad m, Applicative m) => Applicative (InterpreterT m) where
     pure  = return

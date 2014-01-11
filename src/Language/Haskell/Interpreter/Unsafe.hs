@@ -4,7 +4,8 @@ module Language.Haskell.Interpreter.Unsafe (
 
 where
 
-import Control.Monad.CatchIO
+import Control.Monad.Trans
+import Control.Monad.Catch
 
 import Hint.Base
 import Hint.Configuration
@@ -23,7 +24,7 @@ unsafeSetGhcOption = setGhcOption
 --   context.
 --
 --   Warning: Some options may interact badly with the Interpreter.
-unsafeRunInterpreterWithArgs :: (MonadCatchIO m, Functor m)
+unsafeRunInterpreterWithArgs :: (MonadCatch m, MonadIO m, Functor m)
                                 => [String]
                                 -> InterpreterT m a
                                 -> m (Either InterpreterError a)

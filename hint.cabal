@@ -38,8 +38,8 @@ Test-Suite unit-tests
                 ,directory
                 ,filepath
                 ,mtl
-                ,MonadCatchIO-mtl
                 ,extensible-exceptions
+                ,exceptions >= 0.3.2, exceptions < 0.4
 
 Library
   build-depends:      haskell-src,
@@ -49,16 +49,15 @@ Library
                       filepath,
                       utf8-string,
                       extensible-exceptions,
-                      MonadCatchIO-mtl >= 0.3
+                      exceptions >= 0.3.2, exceptions < 0.4
   if impl(ghc >= 6.8) {
     build-depends:    random,
                       directory
 
     if impl(ghc >= 6.10) {
       build-depends:  base >= 4, base < 5,
-                      ghc-mtl >= 1.0.1.0, ghc-mtl < 1.1.0.0
-                        -- this is to protect against the accidental selection
-                        -- of the completely unrelated ghc'c ghc-mtl package
+                      ghc-mtl == 1.1.*
+                        -- version 1.1.* uses exceptions instead of MonadCatchIO
     } else {
       build-depends:  base >= 3, base < 4
     }
