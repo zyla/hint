@@ -308,15 +308,16 @@ installSupportModule = do mod <- addPhantomModule support_module
                                "    " ++ _show   ++ ")",
                                "where",
                                "",
-                               "import qualified Prelude as P",
+                               "import qualified Prelude as " ++ _P ++ " (String, Show(show))",
                                "",
-                               "type " ++ _String ++ " = P.String",
+                               "type " ++ _String ++ " = " ++ _P ++ ".String",
                                "",
-                               _show ++ " :: P.Show a => a -> P.String",
-                               _show ++ " = P.show"
+                               _show ++ " :: " ++ _P ++ ".Show a => a -> " ++ _P ++ ".String",
+                               _show ++ " = " ++ _P ++ ".show"
                              ]
             where _String = altStringName m
                   _show   = altShowName m
+                  _P      = altPreludeName m
 
 -- Call it when the support module is an active phantom module but has been
 -- unloaded as a side effect by GHC (e.g. by calling GHC.loadTargets)
@@ -330,6 +331,9 @@ altStringName mod_name = "String_" ++ mod_name
 
 altShowName :: ModuleName -> String
 altShowName mod_name = "show_" ++ mod_name
+
+altPreludeName :: ModuleName -> String
+altPreludeName mod_name = "Prelude_" ++ mod_name
 
 support_String :: MonadInterpreter m => m String
 support_String = do mod_name <- fromState (pm_name . hint_support_module)
