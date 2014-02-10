@@ -23,7 +23,6 @@ import System.IO.Unsafe ( unsafePerformIO )
 import Data.IORef
 import Data.List
 import Data.Maybe
-import Data.Monoid
 #if __GLASGOW_HASKELL__ < 610
 import Data.Dynamic
 #endif
