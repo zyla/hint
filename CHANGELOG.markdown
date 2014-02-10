@@ -1,5 +1,8 @@
 0.4.0.0
 -------
+ * Fixed an issue where "P" was available as a qualified version of Prelude
+   (thanks to Samuel Gélineau)
+
  * Uses exceptions package instead of MonadCatchIO-mtl (API breakage expected)
 
  * Changelog should now appear in Hackage
