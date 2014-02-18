@@ -15,7 +15,7 @@ license:            BSD3
 license-file:       LICENSE
 author:             Daniel Gorin
 maintainer:         jcpetruzza@gmail.com
-homepage:           http://darcsden.com/jcpetruzza/hint
+homepage:           http://hub.darcs.net/jcpetruzza/hint
 
 cabal-version:      >= 1.9.2
 build-type:         Simple
