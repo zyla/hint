@@ -30,7 +30,7 @@ typeOf_unsandboxed expr =
        --
        ty <- mayFail $ runGhc1 Compat.exprType expr
        --
-       fromGhcRep ty
+       typeToString ty
 
 -- | Tests if the expression type checks.
 typeChecks :: MonadInterpreter m => String -> m Bool
@@ -52,7 +52,7 @@ kindOf = sandboxed go
                  --
                  kind <- mayFail $ runGhc1 Compat.typeKind type_expr
                  --
-                 return $ fromGhcRep_ (Compat.Kind kind)
+                 kindToString (Compat.Kind kind)
 
 onCompilationError :: MonadInterpreter m
                    => ([GhcError] -> m a)

@@ -11,6 +11,7 @@ module Hint.Base (
     --
     ModuleName, PhantomModule(..),
     findModule, moduleIsLoaded,
+    withDynFlags,
     --
     ghcVersion,
     --
@@ -218,9 +219,10 @@ debug :: MonadInterpreter m => String -> m ()
 debug = liftIO . putStrLn . ("!! " ++)
 
 showGHC :: (MonadInterpreter m, GHC.Outputable a) => a -> m String
-showGHC a =
-   do unqual <- runGhc GHC.getPrintUnqual
-      return $ Compat.showSDocForUser unqual (GHC.ppr a)
+showGHC a
+ = do unqual <- runGhc GHC.getPrintUnqual
+      withDynFlags $ \df ->
+        return $ Compat.showSDocForUser df unqual (GHC.ppr a)
 
 -- ================ Misc ===================================
 
@@ -239,3 +241,8 @@ moduleIsLoaded mn = (findModule mn >> return True)
                    `catchIE` (\e -> case e of
                                       NotAllowed{} -> return False
                                       _            -> throwM e)
+
+withDynFlags :: MonadInterpreter m => (GHC.DynFlags -> m a) -> m a
+withDynFlags action
+ = do df <- runGhc GHC.getSessionDynFlags
+      action df

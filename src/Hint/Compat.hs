@@ -207,8 +207,13 @@ pprKind :: GHC.Kind -> (GHC.PprStyle -> GHC.Doc)
 pprKind = pprType
 #else
   -- 7.2.1 and above
+
 pprType :: GHC.Type -> GHC.SDoc
+#if __GLASGOW_HASKELL__ < 708
 pprType = GHC.pprTypeForUser False -- False means drop explicit foralls
+#else
+pprType = GHC.pprTypeForUser
+#endif
 
 pprKind :: GHC.Kind -> GHC.SDoc
 pprKind = pprType
@@ -232,14 +237,14 @@ pprKind = GHC.ppr
 #endif
 
 #if __GLASGOW_HASKELL__ >= 706
-  -- why did they have to add a DynFlag to each showSDocXXX function.... (sigh)
-showSDoc = GHC.showSDoc GHC.tracingDynFlags -- hack!
-showSDocForUser = GHC.showSDocForUser GHC.tracingDynFlags -- hack!
+showSDoc        = GHC.showSDoc
+showSDocForUser = GHC.showSDocForUser
 showSDocUnqual  = GHC.showSDocUnqual
 #else
-showSDoc = GHC.showSDoc
-showSDocForUser = GHC.showSDocForUser
-showSDocUnqual  = const GHC.showSDocUnqual
+  -- starting from ghc 7.6, they started to receive a DynFlags argument (sigh)
+showSDoc        _ = GHC.showSDoc
+showSDocForUser _ = GHC.showSDocForUser
+showSDocUnqual  _ = GHC.showSDocUnqual
 #endif
 
 

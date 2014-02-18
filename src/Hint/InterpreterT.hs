@@ -222,19 +222,20 @@ newSessionData  a =
        }
 
 mkLogHandler :: IORef [GhcError] -> GhcErrLogger
-mkLogHandler r = compat $ \_ src style msg ->
-                 let errorEntry = mkGhcError src style msg
-                  in modifyIORef r (errorEntry :)
-    where
+mkLogHandler r =
 #if __GLASGOW_HASKELL__ < 706
-          compat = id
+  \_ src style msg ->
+    let renderErrMsg = Compat.showSDoc ()
 #else
-          compat = const   -- cater for the extra DynFlags args
+  \df _ src style msg ->
+    let renderErrMsg = Compat.showSDoc df
 #endif
+        errorEntry = mkGhcError renderErrMsg src style msg
+    in modifyIORef r (errorEntry :)
 
-mkGhcError :: GHC.SrcSpan -> GHC.PprStyle -> GHC.Message -> GhcError
-mkGhcError src_span style msg = GhcError{errMsg = niceErrMsg}
-    where niceErrMsg = Compat.showSDoc . GHC.withPprStyle style $
+mkGhcError :: (GHC.SDoc -> String) -> GHC.SrcSpan -> GHC.PprStyle -> GHC.Message -> GhcError
+mkGhcError render src_span style msg = GhcError{errMsg = niceErrMsg}
+    where niceErrMsg = render . GHC.withPprStyle style $
                          Compat.mkLocMessage src_span msg
 
 
