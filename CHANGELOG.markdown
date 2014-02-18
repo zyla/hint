@@ -7,6 +7,8 @@
 
  * Uses exceptions package instead of MonadCatchIO-mtl (API breakage expected)
 
+ * No longer depends on haskell-src
+
  * Changelog should now appear in Hackage
 
  * Integrated unit tests with cabal

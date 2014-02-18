@@ -41,8 +41,7 @@ Test-Suite unit-tests
                 ,exceptions >= 0.3.2, exceptions < 0.4
 
 Library
-  build-depends:      haskell-src,
-                      ghc > 6.6,
+  build-depends:      ghc > 6.6,
                       ghc-paths,
                       mtl,
                       filepath,
