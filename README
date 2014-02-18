@@ -1,10 +1,14 @@
-=== Installation ===
-To install locally:
+=== Description ===
 
-> runhaskell Setup.lhs configure --prefix=$HOME --user
-> runhaskell Setup.lhs build
-> runhaskell Setup.lhs haddock
-> runhaskell Setup.lhs install
+This library defines an Interpreter monad. It allows to load Haskell
+modules, browse them, type-check and evaluate strings with Haskell
+expressions and even coerce them into values. The library is
+thread-safe and type-safe (even the coercion of expressions to
+values).
+
+It is, esentially, a huge subset of the GHC API wrapped in a simpler
+API.
+
 
 === Documentation ===
 
