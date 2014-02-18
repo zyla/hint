@@ -22,6 +22,9 @@ module Hint.GHC (
 #if __GLASGOW_HASKELL__ >= 702
     module SrcLoc,
 #endif
+#if __GLASGOW_HASKELL__ >= 708
+    module ConLike,
+#endif
 )
 
 where
@@ -63,10 +66,6 @@ import DynFlags     ( supportedLanguages )
 import DynFlags     ( LogAction )
 #endif
 
-#if __GLASGOW_HASKELL__ >= 706
-import DynFlags     ( tracingDynFlags )
-#endif
-
 #if __GLASGOW_HASKELL__ >= 608
 import PprTyThing   ( pprTypeForUser )
 #elif __GLASGOW_HASKELL__ < 608
@@ -77,6 +76,9 @@ import SrcLoc       ( SrcSpan )
 import SrcLoc       ( mkRealSrcLoc )
 #endif
 
+#if __GLASGOW_HASKELL__ >= 708
+import ConLike      ( ConLike(RealDataCon) )
+#endif
 
 #if __GLASGOW_HASKELL__ >= 706
 type Message = MsgDoc

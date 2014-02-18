@@ -58,7 +58,11 @@ asModElemList df xs = concat [
              [asModElem df c | c@(GHC.ATyCon c')   <- xs, GHC.isClassTyCon c'],
              [asModElem df t | t@(GHC.ATyCon c')   <- xs, (not . GHC.isClassTyCon) c'],
 #endif
+#if __GLASGOW_HASKELL__ < 708
              [asModElem df d | d@GHC.ADataCon{} <- xs],
+#else
+             [asModElem df d | d@(GHC.AConLike (GHC.RealDataCon{})) <- xs],
+#endif
              [asModElem df f | f@GHC.AnId{}     <- xs]
            )
           cs' = [Class n $ filter (alsoIn fs) ms  | Class n ms  <- cs]
@@ -68,7 +72,11 @@ asModElemList df xs = concat [
 
 asModElem :: GHC.DynFlags -> GHC.TyThing -> ModuleElem
 asModElem df (GHC.AnId f)      = Fun $ getUnqualName df f
+#if __GLASGOW_HASKELL__ < 708
 asModElem df (GHC.ADataCon dc) = Fun $ getUnqualName df dc
+#else
+asModElem df (GHC.AConLike (GHC.RealDataCon dc)) = Fun $ getUnqualName df dc
+#endif
 #if __GLASGOW_HASKELL__ < 704
 asModElem df(GHC.ATyCon tc)   = Data  (getUnqualName df tc)
                                       (map (getUnqualName df) $ GHC.tyConDataCons tc)

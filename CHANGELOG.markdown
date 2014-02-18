@@ -1,5 +1,7 @@
 0.4.0.0
 -------
+ * Compiles with ghc 7.8
+
  * Fixed an issue where "P" was available as a qualified version of Prelude
    (thanks to Samuel Gélineau)
 

@@ -112,7 +112,7 @@ removePhantomModule pm =
                      let mods' = filter (mod /=) mods
                      runGhc2 Compat.setContext mods' imps
                      --
-                     let isNotPhantom = isPhantomModule . fromGhcRep_  >=>
+                     let isNotPhantom = isPhantomModule . moduleToString  >=>
                                           return . not
                      null `liftM` filterM isNotPhantom mods'
              else return True
@@ -172,7 +172,7 @@ getLoadedModules = do (active_pms, zombie_pms) <- getPhantomModules
                       return $ ms \\ (map pm_name $ active_pms ++ zombie_pms)
 
 modNameFromSummary :: GHC.ModSummary -> ModuleName
-modNameFromSummary =  fromGhcRep_ . GHC.ms_mod
+modNameFromSummary =  moduleToString . GHC.ms_mod
 
 getLoadedModSummaries :: MonadInterpreter m => m [GHC.ModSummary]
 getLoadedModSummaries =
@@ -199,7 +199,7 @@ setTopLevelModules ms =
        not_interpreted <- filterM (liftM not . mod_is_interpr) ms_mods
        when (not . null $ not_interpreted) $
          throwM $ NotAllowed ("These modules are not interpreted:\n" ++
-                              unlines (map fromGhcRep_ not_interpreted))
+                              unlines (map moduleToString not_interpreted))
        --
        (_, old_imports) <- runGhc Compat.getContext
        runGhc2 Compat.setContext ms_mods old_imports
