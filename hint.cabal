@@ -38,7 +38,7 @@ Test-Suite unit-tests
                 ,filepath
                 ,mtl
                 ,extensible-exceptions
-                ,exceptions >= 0.3.2, exceptions < 0.4
+                ,exceptions
 
 Library
   build-depends:      ghc > 6.6,
@@ -47,15 +47,16 @@ Library
                       filepath,
                       utf8-string,
                       extensible-exceptions,
-                      exceptions >= 0.3.2, exceptions < 0.4
+                      exceptions
   if impl(ghc >= 6.8) {
     build-depends:    random,
                       directory
 
     if impl(ghc >= 6.10) {
       build-depends:  base >= 4, base < 5,
-                      ghc-mtl == 1.1.*
+                      ghc-mtl == 1.2.*
                         -- version 1.1.* uses exceptions instead of MonadCatchIO
+                        -- version 1.2.* uses the exceptions-0.4 api
     } else {
       build-depends:  base >= 3, base < 4
     }
