@@ -39,7 +39,7 @@ type Interpreter = InterpreterT IO
 newtype InterpreterT m a = InterpreterT{
                              unInterpreterT :: ReaderT InterpreterSession
                                                (ErrorT InterpreterError m) a}
-    deriving (Functor, Monad, MonadIO, MonadCatch)
+    deriving (Functor, Monad, MonadIO, MonadThrow,MonadCatch)
 
 execute :: (MonadIO m, MonadCatch m, Functor m)
         => InterpreterSession
@@ -50,7 +50,7 @@ execute s = runErrorT . flip runReaderT s . unInterpreterT
 instance MonadTrans InterpreterT where
     lift = InterpreterT . lift . lift
 
-runGhc_impl :: (MonadIO m, MonadCatch m, Functor m) => RunGhc (InterpreterT m) a
+runGhc_impl :: (MonadIO m, MonadThrow m, MonadCatch m, Functor m) => RunGhc (InterpreterT m) a
 runGhc_impl f = do s <- fromSession versionSpecific -- i.e. the ghc session
                    r <- liftIO $ f' s
                    either throwError return r
@@ -63,7 +63,7 @@ runGhc_impl f = do s <- fromSession versionSpecific -- i.e. the ghc session
 newtype InterpreterT m a = InterpreterT{
                              unInterpreterT :: ReaderT  InterpreterSession
                                               (GHC.GhcT m) a}
-    deriving (Functor, Monad, MonadIO, MonadCatch)
+    deriving (Functor, Monad, MonadIO, MonadThrow, MonadCatch)
 
 execute :: (MonadIO m, MonadCatch m, Functor m)
         => InterpreterSession
@@ -78,7 +78,7 @@ execute s = try
 instance MonadTrans InterpreterT where
     lift = InterpreterT . lift . lift
 
-runGhc_impl :: (MonadIO m, MonadCatch m, Functor m) => RunGhc (InterpreterT m) a
+runGhc_impl :: (MonadIO m, MonadThrow m, MonadCatch m, Functor m) => RunGhc (InterpreterT m) a
 runGhc_impl a =
   InterpreterT (lift a)
    `catches`
@@ -99,7 +99,7 @@ showGhcEx = flip GHC.showGhcException ""
 
 -- ================= Executing the interpreter ==================
 
-initialize :: (MonadIO m, MonadCatch m, Functor m)
+initialize :: (MonadIO m, MonadThrow m, MonadCatch m, Functor m)
               => [String]
               -> InterpreterT m ()
 initialize args =
