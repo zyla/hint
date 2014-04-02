@@ -1,3 +1,8 @@
+0.4.1.0
+-------
+
+ * Based on exceptions-0.4
+
 0.4.0.0
 -------
  * Compiles with ghc 7.8
