@@ -43,7 +43,7 @@ import Hint.Compat as Compat
 ghcVersion :: Int
 ghcVersion = __GLASGOW_HASKELL__
 
-class (MonadIO m, MonadCatch m) => MonadInterpreter m where
+class (MonadIO m, MonadMask m) => MonadInterpreter m where
     fromSession      :: FromSession m a
     modifySessionRef :: ModifySessionRef m a
     runGhc           :: RunGhc m a
@@ -106,27 +106,27 @@ adjust :: (a -> b) -> (a -> b)
 adjust = id
 
 type RunGhc  m a =
-    (forall n.(MonadIO n, MonadCatch n,Functor n) => GHC.GhcT n a)
+    (forall n.(MonadIO n, MonadMask n,Functor n) => GHC.GhcT n a)
  -> m a
 
 type RunGhc1 m a b =
-    (forall n.(MonadIO n, MonadCatch n, Functor n) => a -> GHC.GhcT n b)
+    (forall n.(MonadIO n, MonadMask n, Functor n) => a -> GHC.GhcT n b)
  -> (a -> m b)
 
 type RunGhc2 m a b c =
-    (forall n.(MonadIO n, MonadCatch n, Functor n) => a -> b -> GHC.GhcT n c)
+    (forall n.(MonadIO n, MonadMask n, Functor n) => a -> b -> GHC.GhcT n c)
  -> (a -> b -> m c)
 
 type RunGhc3 m a b c d =
-    (forall n.(MonadIO n, MonadCatch n, Functor n) => a -> b -> c -> GHC.GhcT n d)
+    (forall n.(MonadIO n, MonadMask n, Functor n) => a -> b -> c -> GHC.GhcT n d)
  -> (a -> b -> c -> m d)
 
 type RunGhc4 m a b c d e =
-    (forall n.(MonadIO n, MonadCatch n, Functor n) => a -> b -> c -> d -> GHC.GhcT n e)
+    (forall n.(MonadIO n, MonadMask n, Functor n) => a -> b -> c -> d -> GHC.GhcT n e)
  -> (a -> b -> c -> d -> m e)
 
 type RunGhc5 m a b c d e f =
-    (forall n.(MonadIO n, MonadCatch n, Functor n) => a->b->c->d->e->GHC.GhcT n f)
+    (forall n.(MonadIO n, MonadMask n, Functor n) => a->b->c->d->e->GHC.GhcT n f)
  -> (a -> b -> c -> d -> e -> m f)
 #endif
 

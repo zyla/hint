@@ -39,9 +39,9 @@ type Interpreter = InterpreterT IO
 newtype InterpreterT m a = InterpreterT{
                              unInterpreterT :: ReaderT InterpreterSession
                                                (ErrorT InterpreterError m) a}
-    deriving (Functor, Monad, MonadIO, MonadThrow,MonadCatch)
+    deriving (Functor, Monad, MonadIO, MonadThrow,MonadCatch,MonadMask)
 
-execute :: (MonadIO m, MonadCatch m, Functor m)
+execute :: (MonadIO m, MonadMask m, Functor m)
         => InterpreterSession
         -> InterpreterT m a
         -> m (Either InterpreterError a)
@@ -50,7 +50,7 @@ execute s = runErrorT . flip runReaderT s . unInterpreterT
 instance MonadTrans InterpreterT where
     lift = InterpreterT . lift . lift
 
-runGhc_impl :: (MonadIO m, MonadThrow m, MonadCatch m, Functor m) => RunGhc (InterpreterT m) a
+runGhc_impl :: (MonadIO m, MonadThrow m, MonadMask m, Functor m) => RunGhc (InterpreterT m) a
 runGhc_impl f = do s <- fromSession versionSpecific -- i.e. the ghc session
                    r <- liftIO $ f' s
                    either throwError return r
@@ -63,9 +63,9 @@ runGhc_impl f = do s <- fromSession versionSpecific -- i.e. the ghc session
 newtype InterpreterT m a = InterpreterT{
                              unInterpreterT :: ReaderT  InterpreterSession
                                               (GHC.GhcT m) a}
-    deriving (Functor, Monad, MonadIO, MonadThrow, MonadCatch)
+    deriving (Functor, Monad, MonadIO, MonadThrow, MonadCatch, MonadMask)
 
-execute :: (MonadIO m, MonadCatch m, Functor m)
+execute :: (MonadIO m, MonadMask m, Functor m)
         => InterpreterSession
         -> InterpreterT m a
         -> m (Either InterpreterError a)
@@ -78,7 +78,7 @@ execute s = try
 instance MonadTrans InterpreterT where
     lift = InterpreterT . lift . lift
 
-runGhc_impl :: (MonadIO m, MonadThrow m, MonadCatch m, Functor m) => RunGhc (InterpreterT m) a
+runGhc_impl :: (MonadIO m, MonadThrow m, MonadMask m, Functor m) => RunGhc (InterpreterT m) a
 runGhc_impl a =
   InterpreterT (lift a)
    `catches`
@@ -99,7 +99,7 @@ showGhcEx = flip GHC.showGhcException ""
 
 -- ================= Executing the interpreter ==================
 
-initialize :: (MonadIO m, MonadThrow m, MonadCatch m, Functor m)
+initialize :: (MonadIO m, MonadThrow m, MonadMask m, Functor m)
               => [String]
               -> InterpreterT m ()
 initialize args =
@@ -146,7 +146,7 @@ initialize args =
 -- NB. The underlying ghc will overwrite certain signal handlers
 -- (SIGINT, SIGHUP, SIGTERM, SIGQUIT on Posix systems, Ctrl-C handler on Windows).
 -- In future versions of hint, this might be controlled by the user.
-runInterpreter :: (MonadIO m, MonadCatch m, Functor m)
+runInterpreter :: (MonadIO m, MonadMask m, Functor m)
                => InterpreterT m a
                -> m (Either InterpreterError a)
 runInterpreter = runInterpreterWithArgs []
@@ -154,7 +154,7 @@ runInterpreter = runInterpreterWithArgs []
 -- | Executes the interpreter, setting args passed in as though they
 -- were command-line args. Returns @Left InterpreterError@ in case of
 -- error.
-runInterpreterWithArgs :: (MonadIO m, MonadCatch m, Functor m)
+runInterpreterWithArgs :: (MonadIO m, MonadMask m, Functor m)
                           => [String]
                           -> InterpreterT m a
                           -> m (Either InterpreterError a)
@@ -182,7 +182,7 @@ runInterpreterWithArgs args action =
 uniqueToken :: MVar ()
 uniqueToken = unsafePerformIO $ newMVar ()
 
-ifInterpreterNotRunning :: (MonadIO m, MonadCatch m) => m a -> m a
+ifInterpreterNotRunning :: (MonadIO m, MonadMask m) => m a -> m a
 ifInterpreterNotRunning action =
     do maybe_token <- liftIO $ tryTakeMVar uniqueToken
        case maybe_token of
@@ -241,7 +241,7 @@ mkGhcError render src_span style msg = GhcError{errMsg = niceErrMsg}
 
 -- The MonadInterpreter instance
 
-instance (MonadIO m, MonadCatch m, Functor m) => MonadInterpreter (InterpreterT m) where
+instance (MonadIO m, MonadMask m, Functor m) => MonadInterpreter (InterpreterT m) where
     fromSession f = InterpreterT $ fmap f ask
     --
     modifySessionRef target f =
