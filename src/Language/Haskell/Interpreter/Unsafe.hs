@@ -24,7 +24,7 @@ unsafeSetGhcOption = setGhcOption
 --   context.
 --
 --   Warning: Some options may interact badly with the Interpreter.
-unsafeRunInterpreterWithArgs :: (MonadCatch m, MonadIO m, Functor m)
+unsafeRunInterpreterWithArgs :: (MonadMask m, MonadIO m, Functor m)
                                 => [String]
                                 -> InterpreterT m a
                                 -> m (Either InterpreterError a)

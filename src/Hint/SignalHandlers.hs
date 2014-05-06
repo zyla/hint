@@ -36,5 +36,5 @@ restoreHandlers h  = liftIO . sequence $ zipWith helper h signals
 
 #endif
 
-protectHandlers :: (MonadIO m, MonadCatch m) => m a -> m a
+protectHandlers :: (MonadIO m, MonadMask m) => m a -> m a
 protectHandlers a = bracket saveHandlers restoreHandlers $ const a

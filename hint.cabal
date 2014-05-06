@@ -54,9 +54,10 @@ Library
 
     if impl(ghc >= 6.10) {
       build-depends:  base >= 4, base < 5,
-                      ghc-mtl == 1.2.*
+                      ghc-mtl == 1.2.1.*
                         -- version 1.1.* uses exceptions instead of MonadCatchIO
                         -- version 1.2.* uses the exceptions-0.4 api
+                        -- version 1.2.1.* uses the exceptions-0.6 api
     } else {
       build-depends:  base >= 3, base < 4
     }
