@@ -27,6 +27,10 @@ extra-source-files: README
                     examples/example.hs
                     examples/SomeModule.hs
 
+source-repository head
+  type: darcs
+  location:  http://hub.darcs.net/jcpetruzza/hint
+
 Test-Suite unit-tests
   type: exitcode-stdio-1.0
   hs-source-dirs: unit-tests
