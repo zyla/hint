@@ -7,7 +7,7 @@ description:
         thread-safe and type-safe (even the coercion of expressions to
         values).
 
-        It is, esentially, a huge subset of the GHC API wrapped in a simpler
+        It is, essentially, a huge subset of the GHC API wrapped in a simpler
         API. 
 synopsis:           Runtime Haskell interpreter (GHC API wrapper)
 category:           Language, Compilers/Interpreters
