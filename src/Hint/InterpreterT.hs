@@ -82,15 +82,17 @@ runGhc_impl :: (MonadIO m, MonadThrow m, MonadMask m, Functor m) => RunGhc (Inte
 runGhc_impl a =
   InterpreterT (lift a)
    `catches`
-   [Handler (\(e :: GHC.SourceError)  -> throwM $ compilationError e)
+   [Handler (\(e :: GHC.SourceError)  -> do
+     dynFlags <- runGhc GHC.getSessionDynFlags
+     throwM $ compilationError dynFlags e)
    ,Handler (\(e :: GHC.GhcApiError)  -> throwM $ GhcException $ show e)
    ,Handler (\(e :: GHC.GhcException) -> throwM $ GhcException $ showGhcEx e)
    ]
   where
-    compilationError
+    compilationError dynFlags
       = WontCompile
-      . map (GhcError . show)
-      . GHC.bagToList
+      . map (GhcError . GHC.showSDoc dynFlags)
+      . GHC.pprErrMsgBagWithLoc
       . GHC.srcErrorMessages
 #endif
 
