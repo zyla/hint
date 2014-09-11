@@ -42,7 +42,7 @@ import Outputable   ( PprStyle, SDoc, Outputable(ppr),
                       showSDoc, showSDocForUser, showSDocUnqual,
                       withPprStyle, defaultErrStyle )
 
-import ErrUtils     ( mkLocMessage  )
+import ErrUtils     ( mkLocMessage, pprErrMsgBagWithLoc)
 #if __GLASGOW_HASKELL__ < 706
 import ErrUtils     ( Message )
 #else
