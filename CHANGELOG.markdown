@@ -1,3 +1,8 @@
+0.4.2.1
+-------
+
+ * Better error reporting (thanks to Corentin Dupont)
+
 0.4.2.0
 -------
 
