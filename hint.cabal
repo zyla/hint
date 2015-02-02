@@ -19,7 +19,6 @@ homepage:           http://hub.darcs.net/jcpetruzza/hint
 
 cabal-version:      >= 1.9.2
 build-type:         Simple
-tested-with:        GHC==6.8.3, GHC==6.10
 
 extra-source-files: README
                     AUTHORS
@@ -45,7 +44,7 @@ Test-Suite unit-tests
                 ,exceptions
 
 Library
-  build-depends:      ghc > 6.6,
+  build-depends:      ghc >= 7.6,
                       ghc-paths,
                       mtl,
                       filepath,
