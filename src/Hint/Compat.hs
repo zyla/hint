@@ -22,7 +22,9 @@ newtype Kind = Kind GHC.Kind
 -- supportedLanguages :: [String]
 supportedExtensions = map f GHC.xFlags
     where
-#if (__GLASGOW_HASKELL__ < 702) || (__GLASGOW_HASKELL__ >= 704)
+#if (__GLASGOW_HASKELL__ >= 710)
+      f = GHC.flagSpecName
+#elif (__GLASGOW_HASKELL__ < 702) || (__GLASGOW_HASKELL__ >= 704)
       f (e,_,_) = e
 #else
       f (e,_,_,_) = e

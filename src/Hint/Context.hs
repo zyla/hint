@@ -37,7 +37,6 @@ import qualified Hint.GHC as GHC
 import System.Random
 import System.FilePath
 import System.Directory
-import qualified System.IO.UTF8 as UTF8 (writeFile)
 
 type ModuleText = String
 
@@ -72,7 +71,7 @@ addPhantomModule mod_text =
        let t  = Compat.fileTarget (pm_file pm)
            m  = GHC.mkModuleName (pm_name pm)
        --
-       liftIO $ UTF8.writeFile (pm_file pm) (mod_text $ pm_name pm)
+       liftIO $ writeFile (pm_file pm) (mod_text $ pm_name pm)
        --
        onState (\s -> s{active_phantoms = pm:active_phantoms s})
        mayFail (do -- GHC.load will remove all the modules from scope, so first
