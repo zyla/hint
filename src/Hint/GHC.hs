@@ -56,7 +56,9 @@ import Lexer        ( P(..), ParseResult(..), mkPState )
 import Parser       ( parseStmt, parseType )
 import FastString   ( fsLit )
 
-#if __GLASGOW_HASKELL__ >= 700
+#if   __GLASGOW_HASKELL__ >= 710
+import DynFlags     ( supportedLanguagesAndExtensions, xFlags, xopt, FlagSpec(..) )
+#elif __GLASGOW_HASKELL__ >= 700
 import DynFlags     ( supportedLanguagesAndExtensions, xFlags, xopt )
 #else
 import DynFlags     ( supportedLanguages )
