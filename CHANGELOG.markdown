@@ -1,3 +1,10 @@
+0.4.2.2
+-------
+
+ * Builds with ghc 7.10
+ * Drops dependency on utf8-string
+
+
 0.4.2.1
 -------
 
