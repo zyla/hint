@@ -2,6 +2,7 @@
 -------
 
  * Builds with ghc 7.10
+ * Builds again with ghc 7.4
  * Drops dependency on utf8-string
 
 

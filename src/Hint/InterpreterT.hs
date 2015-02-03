@@ -91,7 +91,11 @@ runGhc_impl a =
   where
     compilationError dynFlags
       = WontCompile
+#if __GLASGOW_HASKELL__ >= 706
       . map (GhcError . GHC.showSDoc dynFlags)
+#else
+      . map (GhcError . GHC.showSDoc)
+#endif
       . GHC.pprErrMsgBagWithLoc
       . GHC.srcErrorMessages
 #endif
