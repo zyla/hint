@@ -144,6 +144,24 @@ isPhantomModule mn = do (as,zs) <- getPhantomModules
 --
 -- The interpreter is 'reset' both before loading the modules and in the event
 -- of an error.
+--
+-- /IMPORTANT/: Like in a ghci session, this will also load (and interpret)
+--  any dependency that is not available via an installed package. Make
+--  sure that you are not loading any module that is also being used to
+--  compile your application.  In particular, you need to avoid modules
+--  that define types that will later occur in an expression that you will
+--  want to interpret.
+--
+-- The problem in doing this is that those types will have two incompatible
+-- representations at runtime: 1) the one in the compiled code and 2) the
+-- one in the interpreted code. When interpreting such an expression (bringing
+-- it to program-code) you will likely get a segmentation fault, since the
+-- latter representation will be used where the program assumes the former.
+--
+-- The rule of thumb is: never make the interpreter run on the directory
+-- with the source code of your program! If you want your interpreted code to
+-- use some type that is defined in your program, then put the defining module
+-- on a library and make your program depend on that package.
 loadModules :: MonadInterpreter m => [String] -> m ()
 loadModules fs = do -- first, unload everything, and do some clean-up
                     reset
