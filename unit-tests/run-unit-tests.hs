@@ -1,6 +1,6 @@
 module Main ( main ) where
 
-import Prelude
+import Prelude hiding ( catch )
 
 import Control.Exception.Extensible ( ArithException(..) )
 import Control.Monad.Catch as MC
