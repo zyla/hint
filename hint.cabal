@@ -22,7 +22,7 @@ build-type:         Simple
 
 extra-source-files: README
                     AUTHORS
-                    CHANGELOG.markdown
+                    CHANGELOG.md
                     examples/example.hs
                     examples/SomeModule.hs
 
