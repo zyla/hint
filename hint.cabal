@@ -20,7 +20,7 @@ homepage:           http://hub.darcs.net/jcpetruzza/hint
 cabal-version:      >= 1.9.2
 build-type:         Simple
 
-extra-source-files: README
+extra-source-files: README.md
                     AUTHORS
                     CHANGELOG.md
                     examples/example.hs
