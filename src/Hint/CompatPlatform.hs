@@ -23,7 +23,7 @@ import System.Posix.Process
 
 
 #if defined(mingw32_HOST_OS) || defined(__MINGW32__)
--- This function is not yet in the win32 package, so we have to 
+-- This function is not yet in the win32 package, so we have to
 -- roll down our own definition.
 --
 -- Credit goes where it is deserved:

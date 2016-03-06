@@ -8,7 +8,7 @@ description:
         values).
 
         It is, essentially, a huge subset of the GHC API wrapped in a simpler
-        API. 
+        API.
 synopsis:           Runtime Haskell interpreter (GHC API wrapper)
 category:           Language, Compilers/Interpreters
 license:            BSD3
