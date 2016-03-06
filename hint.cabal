@@ -13,9 +13,9 @@ synopsis:           Runtime Haskell interpreter (GHC API wrapper)
 category:           Language, Compilers/Interpreters
 license:            BSD3
 license-file:       LICENSE
-author:             Daniel Gorin
-maintainer:         jcpetruzza@gmail.com
-homepage:           http://hub.darcs.net/jcpetruzza/hint
+author:             The Hint Authors
+maintainer:         mvdan@mvdan.cc
+homepage:           https://github.com/mvdan/hint
 
 cabal-version:      >= 1.9.2
 build-type:         Simple
@@ -27,8 +27,8 @@ extra-source-files: README.md
                     examples/SomeModule.hs
 
 source-repository head
-  type: darcs
-  location:  http://hub.darcs.net/jcpetruzza/hint
+  type:     git
+  location: https://github.com/mvdan/hint
 
 Test-Suite unit-tests
   type: exitcode-stdio-1.0

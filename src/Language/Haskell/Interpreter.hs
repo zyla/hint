@@ -3,7 +3,7 @@
 -- Module      :  Language.Haskell.Interpreter
 -- License     :  BSD-style
 --
--- Maintainer  :  jcpetruzza@gmail.com
+-- Maintainer  :  mvdan@mvdan.cc
 -- Stability   :  experimental
 -- Portability :  non-portable (GHC API)
 --
