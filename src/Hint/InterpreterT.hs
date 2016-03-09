@@ -23,9 +23,6 @@ import System.IO.Unsafe ( unsafePerformIO )
 import Data.IORef
 import Data.List
 import Data.Maybe
-#if __GLASGOW_HASKELL__ < 610
-import Data.Dynamic
-#endif
 
 import qualified GHC.Paths
 
@@ -34,32 +31,6 @@ import qualified Hint.Compat as Compat
 
 type Interpreter = InterpreterT IO
 
-#if __GLASGOW_HASKELL__ < 610
-
-newtype InterpreterT m a = InterpreterT{
-                             unInterpreterT :: ReaderT InterpreterSession
-                                               (ErrorT InterpreterError m) a}
-    deriving (Functor, Monad, MonadIO, MonadThrow,MonadCatch,MonadMask)
-
-execute :: (MonadIO m, MonadMask m, Functor m)
-        => InterpreterSession
-        -> InterpreterT m a
-        -> m (Either InterpreterError a)
-execute s = runErrorT . flip runReaderT s . unInterpreterT
-
-instance MonadTrans InterpreterT where
-    lift = InterpreterT . lift . lift
-
-runGhc_impl :: (MonadIO m, MonadThrow m, MonadMask m, Functor m) => RunGhc (InterpreterT m) a
-runGhc_impl f = do s <- fromSession versionSpecific -- i.e. the ghc session
-                   r <- liftIO $ f' s
-                   either throwError return r
-    where f' = tryJust (fmap (GhcException . showGhcEx) . ghcExceptions) . f
-          ghcExceptions (DynException e) = fromDynamic e
-          ghcExceptions  _               = Nothing
-
-#else
-      -- ghc >= 6.10
 newtype InterpreterT m a = InterpreterT{
                              unInterpreterT :: ReaderT  InterpreterSession
                                               (GHC.GhcT m) a}
@@ -91,14 +62,9 @@ runGhc_impl a =
   where
     compilationError dynFlags
       = WontCompile
-#if __GLASGOW_HASKELL__ >= 706
       . map (GhcError . GHC.showSDoc dynFlags)
-#else
-      . map (GhcError . GHC.showSDoc)
-#endif
       . GHC.pprErrMsgBagWithLoc
       . GHC.srcErrorMessages
-#endif
 
 showGhcEx :: GHC.GhcException -> String
 showGhcEx = flip GHC.showGhcException ""
@@ -124,15 +90,8 @@ initialize args =
        -- available; calling this function once is mandatory!
        _ <- runGhc1 GHC.setSessionDynFlags df2{GHC.log_action = log_handler}
 
-#if __GLASGOW_HASKELL__ >= 700
-#if __GLASGOW_HASKELL__ >= 702
 #if __GLASGOW_HASKELL__ >= 710
        let extMap      = map (\fs -> (GHC.flagSpecName fs, GHC.flagSpecFlag fs)) GHC.xFlags
-#elif __GLASGOW_HASKELL__ >= 704
-       let extMap      = map (\(a,b,_) -> (a,b)) GHC.xFlags
-#else
-       let extMap      = map (\(a,_,b,_) -> (a,b)) GHC.xFlags
-#endif
 #else
        let extMap      = map (\(a,b,_) -> (a,b)) GHC.xFlags
 #endif
@@ -140,9 +99,6 @@ initialize args =
                          in fromMaybe err (lookup e extMap)
        let getOptVal e = (asExtension e, GHC.xopt (toOpt e) df2)
        let defExts = map  getOptVal Compat.supportedExtensions
-#else
-       let defExts = zip availableExtensions (repeat False)
-#endif
 
        onState (\s -> s{defaultExts = defExts})
 
@@ -172,19 +128,11 @@ runInterpreterWithArgs args action =
        -- SH.protectHandlers $ execute s (initialize args >> action)
        execute s (initialize args >> action `finally` cleanSession)
     where rethrowGhcException   = throwM . GhcException . showGhcEx
-#if __GLASGOW_HASKELL__ < 610
-          newInterpreterSession =  do s <- liftIO $
-                                             Compat.newSession GHC.Paths.libdir
-                                      newSessionData s
-          cleanSession = cleanPhantomModules -- clean ghc session, too?
-#else
-          -- GHC >= 610
           newInterpreterSession = newSessionData ()
           cleanSession =
                do cleanPhantomModules
                   runGhc $ do dflags <- GHC.getSessionDynFlags
                               GHC.defaultCleanupHandler dflags (return ())
-#endif
 
 {-# NOINLINE uniqueToken #-}
 uniqueToken :: MVar ()
@@ -231,13 +179,8 @@ newSessionData  a =
 
 mkLogHandler :: IORef [GhcError] -> GhcErrLogger
 mkLogHandler r =
-#if __GLASGOW_HASKELL__ < 706
-  \_ src style msg ->
-    let renderErrMsg = Compat.showSDoc ()
-#else
   \df _ src style msg ->
     let renderErrMsg = Compat.showSDoc df
-#endif
         errorEntry = mkGhcError renderErrMsg src style msg
     in modifyIORef r (errorEntry :)
 

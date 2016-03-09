@@ -75,29 +75,6 @@ data InterpreterConfiguration = Conf {
                                   all_mods_in_scope :: Bool
                                 }
 
-#if __GLASGOW_HASKELL__ < 610
-type InterpreterSession = SessionData GHC.Session
-
-adjust :: (a -> b -> c) -> (b -> a -> c)
-adjust f = flip f
-
-type RunGhc  m a           = (GHC.Session -> IO a)
-                          -> m a
-type RunGhc1 m a b         = (GHC.Session -> a -> IO b)
-                          -> (a -> m b)
-type RunGhc2 m a b c       = (GHC.Session -> a -> b -> IO c)
-                          -> (a -> b -> m c)
-type RunGhc3 m a b c d     = (GHC.Session -> a -> b -> c -> IO d)
-                          -> (a -> b -> c -> m d)
-
-type RunGhc4 m a b c d e   = (GHC.Session -> a -> b -> c -> d -> IO e)
-                          -> (a -> b -> c -> d -> m e)
-
-type RunGhc5 m a b c d e f = (GHC.Session -> a -> b -> c -> d -> e -> IO f)
-                          -> (a -> b -> c -> d -> e -> m f)
-
-#else
-      -- ghc >= 6.10
 type InterpreterSession = SessionData ()
 
 instance Exception InterpreterError
@@ -128,7 +105,6 @@ type RunGhc4 m a b c d e =
 type RunGhc5 m a b c d e f =
     (forall n.(MonadIO n, MonadMask n, Functor n) => a->b->c->d->e->GHC.GhcT n f)
  -> (a -> b -> c -> d -> e -> m f)
-#endif
 
 data SessionData a = SessionData {
                        internalState   :: IORef InterpreterState,
@@ -159,15 +135,7 @@ catchIE :: MonadInterpreter m => m a -> (InterpreterError -> m a) -> m a
 catchIE = MC.catch
 
 
-#if __GLASGOW_HASKELL__ < 704
-type GhcErrLogger = GHC.Severity
-                 -> GHC.SrcSpan
-                 -> GHC.PprStyle
-                 -> GHC.Message
-                 -> IO ()
-#else
 type GhcErrLogger = GHC.LogAction
-#endif
 
 -- | Module names are _not_ filepaths.
 type ModuleName = String

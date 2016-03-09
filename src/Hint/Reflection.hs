@@ -51,13 +51,8 @@ asModElemList df xs = concat [
                       ]
     where (cs,ts,ds,fs) =
            (
-#if __GLASGOW_HASKELL__ < 704
-             [asModElem df c | c@GHC.AClass{}   <- xs],
-             [asModElem df t | t@GHC.ATyCon{}   <- xs],
-#else
              [asModElem df c | c@(GHC.ATyCon c')   <- xs, GHC.isClassTyCon c'],
              [asModElem df t | t@(GHC.ATyCon c')   <- xs, (not . GHC.isClassTyCon) c'],
-#endif
 #if __GLASGOW_HASKELL__ < 708
              [asModElem df d | d@GHC.ADataCon{} <- xs],
 #else
@@ -77,18 +72,11 @@ asModElem df (GHC.ADataCon dc) = Fun $ getUnqualName df dc
 #else
 asModElem df (GHC.AConLike (GHC.RealDataCon dc)) = Fun $ getUnqualName df dc
 #endif
-#if __GLASGOW_HASKELL__ < 704
-asModElem df(GHC.ATyCon tc)   = Data  (getUnqualName df tc)
-                                      (map (getUnqualName df) $ GHC.tyConDataCons tc)
-asModElem df (GHC.AClass c)    = Class (getUnqualName df c)
-                                      (map (getUnqualName df) $ GHC.classMethods c)
-#else
 asModElem df (GHC.ATyCon tc)   =
   if GHC.isClassTyCon tc
   then Class (getUnqualName df tc) (map (getUnqualName df) $ (GHC.classMethods . fromJust . GHC.tyConClass_maybe) tc)
   else Data  (getUnqualName df tc) (map (getUnqualName df) $ GHC.tyConDataCons tc)
 asModElem _ _ = error "asModElem: can't happen!"
-#endif
 
 getUnqualName :: GHC.NamedThing a => GHC.DynFlags -> a -> String
 getUnqualName dfs = Compat.showSDocUnqual dfs . GHC.pprParenSymName
