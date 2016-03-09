@@ -5,7 +5,7 @@ import Prelude hiding ( catch )
 import Control.Exception.Extensible ( ArithException(..) )
 import Control.Monad.Catch as MC
 
-import Control.Monad       ( liftM, when )
+import Control.Monad       ( liftM, when, void )
 
 import Control.Concurrent ( forkIO )
 import Control.Concurrent.MVar
@@ -45,8 +45,7 @@ test_reload_modified = TestCase "reload_modified" [mod_file] $ do
           --
           get_f    =  do loadModules [mod_file]
                          setTopLevelModules [mod_name]
-                         r <- interpret "f" (as :: Int -> Int)
-                         return r
+                         interpret "f" (as :: Int -> Int)
 
 test_lang_exts :: TestCase
 test_lang_exts = TestCase "lang_exts" [mod_file] $ do
@@ -114,9 +113,9 @@ test_basic_eval = TestCase "basic_eval" [] $ do
 test_eval_layout :: TestCase
 test_eval_layout = TestCase "eval_layout" [] $ do
                            eval layout_expr @@?= "10"
-    where layout_expr = unlines $ ["let x = let y = 10",
-                                   "        in y",
-                                   "in x"]
+    where layout_expr = unlines ["let x = let y = 10",
+                                 "        in y",
+                                 "in x"]
 
 test_show_in_scope :: TestCase
 test_show_in_scope = TestCase "show_in_scope" [] $ do
@@ -206,7 +205,7 @@ test_only_one_instance = TestCase "only_one_instance" [] $ do
                           `catch` \MultipleInstancesNotAllowed ->
                                     do liftIO $ putMVar r True
                                        return $ Right ()
-        _ <- forkIO $ concurrent >> return ()
+        _ <- forkIO $ Control.Monad.void concurrent
         readMVar r @?  "concurrent instance did not fail"
 
 
@@ -242,7 +241,7 @@ main = do -- run the tests...
        -- `catch` (\_ -> exitWith (ExitFailure $ -1))
 
 printInterpreterError :: InterpreterError -> IO ()
-printInterpreterError = hPutStrLn stderr . show
+printInterpreterError = hPrint stderr
 
 setSandbox :: Interpreter ()
 setSandbox = set [installedModulesInScope := False]
