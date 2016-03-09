@@ -41,9 +41,8 @@ module Language.Haskell.Interpreter(
      InterpreterError(..), GhcError(..), MultipleInstancesNotAllowed(..),
     -- * Miscellaneous
      ghcVersion,parens,
-     module Control.Monad.Trans)
-
-where
+     module Control.Monad.Trans
+) where
 
 import Hint.Base
 import Hint.Annotations

@@ -1,8 +1,6 @@
 module Language.Haskell.Interpreter.Unsafe (
     unsafeSetGhcOption, unsafeRunInterpreterWithArgs
-)
-
-where
+) where
 
 import Control.Monad.Trans
 import Control.Monad.Catch

@@ -1,12 +1,6 @@
-module Hint.Conversions
-  (
-   typeToString
-  ,kindToString
-  ,moduleToString
-  ,isSucceeded
-  )
-
-where
+module Hint.Conversions (
+      typeToString, kindToString, moduleToString, isSucceeded
+) where
 
 import qualified Hint.GHC as GHC
 

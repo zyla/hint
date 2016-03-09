@@ -1,10 +1,6 @@
 module Hint.Typecheck (
-
       typeOf, typeChecks, kindOf,
-
-)
-
-where
+) where
 
 import Control.Monad.Catch
 

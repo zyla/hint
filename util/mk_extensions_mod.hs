@@ -8,10 +8,9 @@ moduleDoc =
   vcat [
     text "-- this module was automatically generated. do not edit!",
     text "-- edit util/mk_extensions_mod.hs instead",
-    text "module Hint.Extension (Extension(..),",
-    text "                       knownExtensions, availableExtensions, asExtension)",
-    text "",
-    text "where",
+    text "module Hint.Extension (",
+    text "      Extension(..), knownExtensions, availableExtensions, asExtension",
+    text ") where",
     text "",
     text "import Hint.Compat as Compat",
     text "",

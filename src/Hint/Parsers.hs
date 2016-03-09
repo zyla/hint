@@ -1,6 +1,4 @@
-module Hint.Parsers
-
-where
+module Hint.Parsers where
 
 import Prelude hiding(span)
 

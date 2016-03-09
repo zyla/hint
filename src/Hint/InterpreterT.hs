@@ -1,9 +1,7 @@
 module Hint.InterpreterT (
     InterpreterT, Interpreter, runInterpreter, runInterpreterWithArgs,
     MultipleInstancesNotAllowed(..)
-)
-
-where
+) where
 
 import Control.Applicative
 import Prelude

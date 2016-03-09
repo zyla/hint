@@ -1,5 +1,4 @@
 module Hint.Configuration (
-
       setGhcOption, setGhcOptions,
 
       defaultConf, fromConf, onConf,
@@ -10,7 +9,7 @@ module Hint.Configuration (
       installedModulesInScope,
 
       searchPath
-      ) where
+) where
 
 import Control.Monad
 import Control.Monad.Catch

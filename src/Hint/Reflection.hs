@@ -1,11 +1,7 @@
 module Hint.Reflection (
-
       ModuleElem(..), Id, name, children,
       getModuleExports,
-
-)
-
-where
+) where
 
 import Data.List
 import Data.Maybe

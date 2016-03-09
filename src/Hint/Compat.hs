@@ -1,8 +1,6 @@
 {-# LANGUAGE NoMonomorphismRestriction #-}
 {-# OPTIONS_GHC -fno-warn-missing-signatures #-}
-module Hint.Compat
-
-where
+module Hint.Compat where
 
 import Control.Monad (foldM, liftM)
 

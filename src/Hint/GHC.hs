@@ -17,9 +17,8 @@ module Hint.GHC (
 #if __GLASGOW_HASKELL__ >= 708
     module ConLike,
 #endif
-)
+) where
 
-where
 import GHC hiding ( Phase, GhcT, runGhcT )
 import Control.Monad.Ghc ( GhcT, runGhcT )
 

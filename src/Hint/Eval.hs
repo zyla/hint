@@ -1,9 +1,7 @@
 module Hint.Eval (
-
       interpret, as, infer,
-      eval ,parens)
-
-where
+      eval, parens
+) where
 
 import qualified GHC.Exts ( unsafeCoerce# )
 

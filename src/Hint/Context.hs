@@ -1,5 +1,4 @@
 module Hint.Context (
-
       ModuleName, isModuleInterpreted,
       loadModules, getLoadedModules, setTopLevelModules,
       setImports, setImportsQ,
@@ -12,9 +11,7 @@ module Hint.Context (
       allModulesInContext, onAnEmptyContext,
 
       supportString, supportShow
-)
-
-where
+) where
 
 import Prelude hiding ( mod )
 

@@ -1,24 +1,22 @@
 module Hint.Base (
     MonadInterpreter(..), RunGhc,
-    --
+
     GhcError(..), InterpreterError(..), mayFail, catchIE,
-    --
+
     InterpreterSession, SessionData(..), GhcErrLogger,
     InterpreterState(..), fromState, onState,
     InterpreterConfiguration(..),
-    --
+
     runGhc1, runGhc2, runGhc3, runGhc4, runGhc5,
-    --
+
     ModuleName, PhantomModule(..),
     findModule, moduleIsLoaded,
     withDynFlags,
-    --
-    ghcVersion,
-    --
-    debug, showGHC
-)
 
-where
+    ghcVersion,
+
+    debug, showGHC
+) where
 
 import Control.Monad.Trans
 import Control.Monad.Catch as MC

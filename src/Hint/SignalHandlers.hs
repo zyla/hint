@@ -1,7 +1,6 @@
 module Hint.SignalHandlers (
     protectHandlers
-)
-where
+) where
 
 import Control.Monad.Catch
 import Control.Monad.Trans

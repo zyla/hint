@@ -1,12 +1,9 @@
 #if defined(mingw32_HOST_OS) || defined(__MINGW32__)
 {-# LANGUAGE ForeignFunctionInterface #-}
 #endif
-module Hint.CompatPlatform
-  (
+module Hint.CompatPlatform (
     getPID
-  )
-
-where
+) where
 
 import Control.Applicative
 import Prelude
