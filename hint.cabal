@@ -49,25 +49,14 @@ Library
                       mtl,
                       filepath,
                       extensible-exceptions,
-                      exceptions
-  if impl(ghc >= 6.8) {
-    build-depends:    random,
-                      directory
-
-    if impl(ghc >= 6.10) {
-      build-depends:  base >= 4, base < 5,
+                      exceptions,
+                      random,
+                      directory,
+                      base >= 4, base < 5,
                       ghc-mtl == 1.2.1.*
                         -- version 1.1.* uses exceptions instead of MonadCatchIO
                         -- version 1.2.* uses the exceptions-0.4 api
                         -- version 1.2.1.* uses the exceptions-0.6 api
-    } else {
-      build-depends:  base >= 3, base < 4
-    }
-  }
-  else {
-      -- ghc < 6.8
-      build-depends:    utf8-string < 0.3
-  }
 
   if !os(windows) {
       build-depends:    unix >= 2.2.0.0
@@ -94,10 +83,7 @@ Library
                       Hint.Sandbox
                       Hint.SignalHandlers
                       Hint.Util
-
-  if impl(ghc >= 6.11) {
-      other-modules: Hint.Annotations
-  }
+                      Hint.Annotations
 
   hs-source-dirs:     src
 
