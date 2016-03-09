@@ -31,7 +31,7 @@ testHint =
       --
       say "We can also evaluate an expression; the result will be a string"
       let expr2 = "length $ concat [[f,g],[h]]"
-      say $ concat ["e.g. eval ", show expr1]
+      say $ "e.g. eval " ++ show expr1
       a <- eval expr2
       say (show a)
       --
@@ -47,7 +47,7 @@ testHint =
       say . show $ fun (Just 7)
       --
       say "And sometimes we can even use the type system to infer the expected type (eg Maybe Bool -> Bool)!"
-      bool_val <- (interpret expr3 infer `ap` (return $ Just False))
+      bool_val <- interpret expr3 infer `ap` return (Just False)
       say (show $ not bool_val)
       --
       say "Here we evaluate an expression of type string, that when evaluated (again) leads to a string"
@@ -59,5 +59,5 @@ say :: String -> Interpreter ()
 say = liftIO . putStrLn
 
 printInterpreterError :: InterpreterError -> IO ()
-printInterpreterError e = putStrLn $ "Ups... " ++ (show e)
+printInterpreterError e = putStrLn $ "Ups... " ++ show e
 
