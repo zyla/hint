@@ -148,10 +148,9 @@ installedModulesInScope :: MonadInterpreter m => Option m Bool
 installedModulesInScope = Option setter getter
     where getter = fromConf all_mods_in_scope
           setter b = do onConf $ \c -> c{all_mods_in_scope = b}
-                        when ( ghcVersion >= 610 ) $
-                            setGhcOption $ "-f"                   ++
-                                           concat ["no-" | not b] ++
-                                           "implicit-import-qualified"
+                        setGhcOption $ "-f"                   ++
+                                       concat ["no-" | not b] ++
+                                       "implicit-import-qualified"
 
 -- | The search path for source files. Observe that every time it is set,
 --   it overrides the previous search path. The default is @[\".\"]@.

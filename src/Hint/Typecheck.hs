@@ -2,8 +2,6 @@ module Hint.Typecheck (
 
       typeOf, typeChecks, kindOf,
 
-      typeOf_unsandboxed, typeChecks_unsandboxed
-
 )
 
 where
