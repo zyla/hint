@@ -15,7 +15,6 @@ import System.FilePath
 import System.Directory
 import System.Exit
 
-
 import Test.HUnit ( (@?=), (@?) )
 import qualified Test.HUnit as HUnit
 
@@ -170,7 +169,6 @@ test_search_path =
                                   "y :: Bool",
                                   "y = False"]
 
-
 test_search_path_dot :: TestCase
 test_search_path_dot =
     TestCase "search_path_dot" [mod_file, dir] $ do
@@ -186,7 +184,6 @@ test_search_path_dot =
                         writeFile mod_file $
                            unlines ["x :: Int", "x = 42"]
 
-
 test_catch :: TestCase
 test_catch = TestCase "catch" [] $ do
         setImports ["Prelude"]
@@ -195,7 +192,6 @@ test_catch = TestCase "catch" [] $ do
           handler e = throwM e
           action = do s <- eval "1 `div` 0 :: Int"
                       return $! s
-
 
 test_only_one_instance :: TestCase
 test_only_one_instance = TestCase "only_one_instance" [] $ do
@@ -207,7 +203,6 @@ test_only_one_instance = TestCase "only_one_instance" [] $ do
                                        return $ Right ()
         _ <- forkIO $ Control.Monad.void concurrent
         readMVar r @?  "concurrent instance did not fail"
-
 
 tests :: [TestCase]
 tests = [test_reload_modified
@@ -263,7 +258,6 @@ fails action = (action >> return False) `catchIE` (\_ -> return True)
 
 succeeds :: (MonadCatch m, MonadIO m) => m a -> m Bool
 succeeds = liftM not . fails
-
 
 data TestCase = TestCase String [FilePath] (Interpreter ())
 

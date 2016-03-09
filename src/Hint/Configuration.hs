@@ -45,7 +45,6 @@ defaultConf = Conf {
                 search_path       = ["."]
               }
 
-
 -- | Available options are:
 --
 --    * 'languageExtensions'
@@ -119,7 +118,6 @@ searchPath = Option setter getter
           setter p = do onConf $ \c -> c{search_path = p}
                         setGhcOption "-i" -- clear the old path
                         setGhcOption $ "-i" ++ intercalate ":" p
-
 
 fromConf :: MonadInterpreter m => (InterpreterConfiguration -> a) -> m a
 fromConf f = fromState (f . configuration)

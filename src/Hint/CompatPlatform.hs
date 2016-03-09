@@ -11,7 +11,6 @@ where
 import Control.Applicative
 import Prelude
 
-
 #if defined(mingw32_HOST_OS) || defined(__MINGW32__)
 
 import Data.Word
@@ -21,7 +20,6 @@ import Data.Word
 import System.Posix.Process
 
 #endif
-
 
 #if defined(mingw32_HOST_OS) || defined(__MINGW32__)
 -- This function is not yet in the win32 package, so we have to

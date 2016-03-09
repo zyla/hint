@@ -23,7 +23,6 @@ partitionEither [] = ([],[])
 partitionEither (Left  a:xs) = let (ls,rs) = partitionEither xs in (a:ls,rs)
 partitionEither (Right b:xs) = let (ls,rs) = partitionEither xs in (ls,b:rs)
 
-
 infixr 1 >=>
 (>=>) :: Monad m => (a -> m b) -> (b -> m c) -> (a -> m c)
 f >=> g = \x -> f x >>= g

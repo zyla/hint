@@ -39,7 +39,6 @@ getContext = GHC.getContext >>= foldM f ([], [])
       (GHC.IIDecl d)     -> return (ns, d : ds)
       m@(GHC.IIModule _) -> do n <- iiModToMod m; return (n : ns, ds)
 
-
 modToIIMod :: GHC.Module -> GHC.InteractiveImport
 iiModToMod :: GHC.GhcMonad m => GHC.InteractiveImport -> m GHC.Module
 modToIIMod = GHC.IIModule . GHC.moduleName

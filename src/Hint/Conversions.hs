@@ -13,9 +13,7 @@ import qualified Hint.GHC as GHC
 import Hint.Base
 import qualified Hint.Compat as Compat
 
-
 -- --------- Types / Kinds -----------------------
-
 
 typeToString :: MonadInterpreter m => GHC.Type -> m String
 typeToString t
@@ -29,7 +27,6 @@ kindToString :: MonadInterpreter m => Compat.Kind -> m String
 kindToString (Compat.Kind k)
  = withDynFlags $ \df ->
      return $ Compat.showSDoc df (Compat.pprKind k)
-
 
 -- ---------------- Modules --------------------------
 

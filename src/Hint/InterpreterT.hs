@@ -44,7 +44,6 @@ execute s = try
           . flip runReaderT s
           . unInterpreterT
 
-
 instance MonadTrans InterpreterT where
     lift = InterpreterT . lift . lift
 
@@ -102,7 +101,6 @@ initialize args =
        onState (\s -> s{defaultExts = defExts})
 
        reset
-
 
 -- | Executes the interpreter. Returns @Left InterpreterError@ in case of error.
 --
@@ -164,7 +162,6 @@ initialState = St {active_phantoms      = [],
                    defaultExts          = error "defaultExts missing!",
                    configuration        = defaultConf}
 
-
 newSessionData :: MonadIO m => a -> m (SessionData a)
 newSessionData  a =
     do initial_state    <- liftIO $ newIORef initialState
@@ -187,7 +184,6 @@ mkGhcError render src_span style msg = GhcError{errMsg = niceErrMsg}
     where niceErrMsg = render . GHC.withPprStyle style $
                          Compat.mkLocMessage src_span msg
 
-
 -- The MonadInterpreter instance
 
 instance (MonadIO m, MonadMask m, Functor m) => MonadInterpreter (InterpreterT m) where
@@ -198,7 +194,6 @@ instance (MonadIO m, MonadMask m, Functor m) => MonadInterpreter (InterpreterT m
            liftIO $ atomicModifyIORef ref (\a -> (f a, a))
     --
     runGhc = runGhcImpl
-
 
 instance (Monad m, Applicative m) => Applicative (InterpreterT m) where
     pure  = return

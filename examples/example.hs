@@ -54,7 +54,6 @@ testHint =
       res <- interpret "head $ map show [\"Worked!\", \"Didn't work\"]" infer >>= flip interpret infer
       say res
 
-
 say :: String -> Interpreter ()
 say = liftIO . putStrLn
 

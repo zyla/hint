@@ -167,7 +167,6 @@ loadModules fs = do -- first, unload everything, and do some clean-up
                     reset
                     doLoad fs `catchIE` (\e  -> reset >> throwM e)
 
-
 doLoad :: MonadInterpreter m => [String] -> m ()
 doLoad fs = do mayFail $ do
                    targets <- mapM (\f->runGhc2 Compat.guessTarget f Nothing) fs

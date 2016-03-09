@@ -30,7 +30,6 @@ children (Fun   _)     = []
 children (Class _ ms)  = ms
 children (Data  _ dcs) = dcs
 
-
 -- | Gets an abstract representation of all the entities exported by the module.
 --   It is similar to the @:browse@ command in GHCi.
 getModuleExports :: MonadInterpreter m => ModuleName -> m [ModuleElem]
@@ -63,7 +62,6 @@ asModElemList df xs = concat [
           cs' = [Class n $ filter (alsoIn fs) ms  | Class n ms  <- cs]
           ts' = [Data  t $ filter (alsoIn ds) dcs | Data  t dcs <- ts]
           alsoIn es = (`elem` map name es)
-
 
 asModElem :: GHC.DynFlags -> GHC.TyThing -> ModuleElem
 asModElem df (GHC.AnId f)      = Fun $ getUnqualName df f

@@ -52,7 +52,6 @@ class (MonadIO m, MonadMask m) => MonadInterpreter m where
 type FromSession      m a = (InterpreterSession -> a) -> m a
 type ModifySessionRef m a = (InterpreterSession -> IORef a) -> (a -> a) -> m a
 
-
 data InterpreterError = UnknownError String
                       | WontCompile [GhcError]
                       | NotAllowed  String
@@ -134,7 +133,6 @@ mapGhcExceptions buildEx action =
 catchIE :: MonadInterpreter m => m a -> (InterpreterError -> m a) -> m a
 catchIE = MC.catch
 
-
 type GhcErrLogger = GHC.LogAction
 
 -- | Module names are _not_ filepaths.
@@ -154,7 +152,6 @@ runGhc4 f a = runGhc3 (adjust f a)
 
 runGhc5 :: MonadInterpreter m => RunGhc5 m a b c d e f
 runGhc5 f a = runGhc4 (adjust f a)
-
 
 -- ================ Handling the interpreter state =================
 
@@ -202,7 +199,6 @@ findModule :: MonadInterpreter m => ModuleName -> m GHC.Module
 findModule mn = mapGhcExceptions NotAllowed $
                     runGhc2 GHC.findModule mod_name Nothing
     where mod_name = GHC.mkModuleName mn
-
 
 moduleIsLoaded :: MonadInterpreter m => ModuleName -> m Bool
 moduleIsLoaded mn = (findModule mn >> return True)

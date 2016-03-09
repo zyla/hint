@@ -17,7 +17,6 @@ import Hint.Util
 
 import qualified Hint.Compat as Compat
 
-
 -- | Convenience functions to be used with @interpret@ to provide witnesses.
 --   Example:
 --
@@ -31,7 +30,6 @@ infer = undefined
 -- | Evaluates an expression, given a witness for its monomorphic type.
 interpret :: (MonadInterpreter m, Typeable a) => String -> a -> m a
 interpret expr wit = unsafeInterpret expr (show $ Data.Typeable.typeOf wit)
-
 
 unsafeInterpret :: (MonadInterpreter m) => String -> String -> m a
 unsafeInterpret expr type_str =
