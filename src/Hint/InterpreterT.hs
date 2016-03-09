@@ -5,6 +5,7 @@ module Hint.InterpreterT (
 
 where
 
+import Control.Applicative
 import Prelude
 
 import Hint.Base
@@ -12,7 +13,6 @@ import Hint.Context
 import Hint.Configuration
 import Hint.Extension
 
-import Control.Applicative
 import Control.Monad.Reader
 import Control.Monad.Catch as MC
 

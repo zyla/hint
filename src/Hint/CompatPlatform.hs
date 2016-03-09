@@ -9,6 +9,7 @@ module Hint.CompatPlatform
 where
 
 import Control.Applicative
+import Prelude
 
 
 #if defined(mingw32_HOST_OS) || defined(__MINGW32__)
