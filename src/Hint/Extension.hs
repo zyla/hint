@@ -29,13 +29,14 @@ data Extension = OverlappingInstances
                | RecursiveDo
                | ParallelListComp
                | MultiParamTypeClasses
-               | NoMonomorphismRestriction
+               | MonomorphismRestriction
                | FunctionalDependencies
                | Rank2Types
                | RankNTypes
                | PolymorphicComponents
                | ExistentialQuantification
                | ScopedTypeVariables
+               | PatternSignatures
                | ImplicitParams
                | FlexibleContexts
                | FlexibleInstances
@@ -48,7 +49,7 @@ data Extension = OverlappingInstances
                | ForeignFunctionInterface
                | Arrows
                | Generics
-               | NoImplicitPrelude
+               | ImplicitPrelude
                | NamedFieldPuns
                | PatternGuards
                | GeneralizedNewtypeDeriving
@@ -59,20 +60,26 @@ data Extension = OverlappingInstances
                | TypeFamilies
                | StandaloneDeriving
                | UnicodeSyntax
-               | PatternSignatures
                | UnliftedFFITypes
+               | InterruptibleFFI
+               | CApiFFI
                | LiberalTypeSynonyms
                | TypeOperators
                | RecordWildCards
                | RecordPuns
                | DisambiguateRecordFields
+               | TraditionalRecordSyntax
                | OverloadedStrings
                | GADTs
-               | NoMonoPatBinds
+               | GADTSyntax
+               | MonoPatBinds
                | RelaxedPolyRec
                | ExtendedDefaultRules
                | UnboxedTuples
                | DeriveDataTypeable
+               | DeriveGeneric
+               | DefaultSignatures
+               | InstanceSigs
                | ConstrainedClassMethods
                | PackageImports
                | ImpredicativeTypes
@@ -80,6 +87,7 @@ data Extension = OverlappingInstances
                | PostfixOperators
                | QuasiQuotes
                | TransformListComp
+               | MonadComprehensions
                | ViewPatterns
                | XmlSyntax
                | RegularPatterns
@@ -87,6 +95,8 @@ data Extension = OverlappingInstances
                | GHCForeignImportPrim
                | NPlusKPatterns
                | DoAndIfThenElse
+               | MultiWayIf
+               | LambdaCase
                | RebindableSyntax
                | ExplicitForAll
                | DatatypeContexts
@@ -94,6 +104,30 @@ data Extension = OverlappingInstances
                | DeriveFunctor
                | DeriveTraversable
                | DeriveFoldable
+               | NondecreasingIndentation
+               | SafeImports
+               | Safe
+               | Trustworthy
+               | Unsafe
+               | ConstraintKinds
+               | PolyKinds
+               | DataKinds
+               | ParallelArrays
+               | RoleAnnotations
+               | OverloadedLists
+               | EmptyCase
+               | AutoDeriveTypeable
+               | NegativeLiterals
+               | BinaryLiterals
+               | NumDecimals
+               | NullaryTypeClasses
+               | ExplicitNamespaces
+               | AllowAmbiguousTypes
+               | JavaScriptFFI
+               | PatternSynonyms
+               | PartialTypeSignatures
+               | NamedWildCards
+               | DeriveAnyClass
                | UnknownExtension String
         deriving (Eq, Show, Read)
 
@@ -105,13 +139,14 @@ knownExtensions = [OverlappingInstances,
                    RecursiveDo,
                    ParallelListComp,
                    MultiParamTypeClasses,
-                   NoMonomorphismRestriction,
+                   MonomorphismRestriction,
                    FunctionalDependencies,
                    Rank2Types,
                    RankNTypes,
                    PolymorphicComponents,
                    ExistentialQuantification,
                    ScopedTypeVariables,
+                   PatternSignatures,
                    ImplicitParams,
                    FlexibleContexts,
                    FlexibleInstances,
@@ -124,7 +159,7 @@ knownExtensions = [OverlappingInstances,
                    ForeignFunctionInterface,
                    Arrows,
                    Generics,
-                   NoImplicitPrelude,
+                   ImplicitPrelude,
                    NamedFieldPuns,
                    PatternGuards,
                    GeneralizedNewtypeDeriving,
@@ -135,20 +170,26 @@ knownExtensions = [OverlappingInstances,
                    TypeFamilies,
                    StandaloneDeriving,
                    UnicodeSyntax,
-                   PatternSignatures,
                    UnliftedFFITypes,
+                   InterruptibleFFI,
+                   CApiFFI,
                    LiberalTypeSynonyms,
                    TypeOperators,
                    RecordWildCards,
                    RecordPuns,
                    DisambiguateRecordFields,
+                   TraditionalRecordSyntax,
                    OverloadedStrings,
                    GADTs,
-                   NoMonoPatBinds,
+                   GADTSyntax,
+                   MonoPatBinds,
                    RelaxedPolyRec,
                    ExtendedDefaultRules,
                    UnboxedTuples,
                    DeriveDataTypeable,
+                   DeriveGeneric,
+                   DefaultSignatures,
+                   InstanceSigs,
                    ConstrainedClassMethods,
                    PackageImports,
                    ImpredicativeTypes,
@@ -156,6 +197,7 @@ knownExtensions = [OverlappingInstances,
                    PostfixOperators,
                    QuasiQuotes,
                    TransformListComp,
+                   MonadComprehensions,
                    ViewPatterns,
                    XmlSyntax,
                    RegularPatterns,
@@ -163,11 +205,37 @@ knownExtensions = [OverlappingInstances,
                    GHCForeignImportPrim,
                    NPlusKPatterns,
                    DoAndIfThenElse,
+                   MultiWayIf,
+                   LambdaCase,
                    RebindableSyntax,
                    ExplicitForAll,
                    DatatypeContexts,
                    MonoLocalBinds,
                    DeriveFunctor,
                    DeriveTraversable,
-                   DeriveFoldable
+                   DeriveFoldable,
+                   NondecreasingIndentation,
+                   SafeImports,
+                   Safe,
+                   Trustworthy,
+                   Unsafe,
+                   ConstraintKinds,
+                   PolyKinds,
+                   DataKinds,
+                   ParallelArrays,
+                   RoleAnnotations,
+                   OverloadedLists,
+                   EmptyCase,
+                   AutoDeriveTypeable,
+                   NegativeLiterals,
+                   BinaryLiterals,
+                   NumDecimals,
+                   NullaryTypeClasses,
+                   ExplicitNamespaces,
+                   AllowAmbiguousTypes,
+                   JavaScriptFFI,
+                   PatternSynonyms,
+                   PartialTypeSignatures,
+                   NamedWildCards,
+                   DeriveAnyClass
                    ]
