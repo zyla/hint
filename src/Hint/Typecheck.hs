@@ -17,10 +17,10 @@ import qualified Hint.Compat as Compat
 
 -- | Returns a string representation of the type of the expression.
 typeOf :: MonadInterpreter m => String -> m String
-typeOf = sandboxed typeOf_unsandboxed
+typeOf = sandboxed typeOfUnsandboxed
 
-typeOf_unsandboxed :: MonadInterpreter m => String -> m String
-typeOf_unsandboxed expr =
+typeOfUnsandboxed :: MonadInterpreter m => String -> m String
+typeOfUnsandboxed expr =
     do -- First, make sure the expression has no syntax errors,
        -- for this is the only way we have to "intercept" this
        -- kind of errors
@@ -32,10 +32,10 @@ typeOf_unsandboxed expr =
 
 -- | Tests if the expression type checks.
 typeChecks :: MonadInterpreter m => String -> m Bool
-typeChecks = sandboxed typeChecks_unsandboxed
+typeChecks = sandboxed typeChecksUnsandboxed
 
-typeChecks_unsandboxed :: MonadInterpreter m => String -> m Bool
-typeChecks_unsandboxed expr = (typeOf_unsandboxed expr >> return True)
+typeChecksUnsandboxed :: MonadInterpreter m => String -> m Bool
+typeChecksUnsandboxed expr = (typeOfUnsandboxed expr >> return True)
                               `catchIE`
                               onCompilationError (\_ -> return False)
 
