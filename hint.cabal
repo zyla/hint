@@ -87,7 +87,7 @@ Library
 
   hs-source-dirs:     src
 
-  ghc-options:        -Wall -O2
+  ghc-options:        -Wall
   extensions:         CPP
                       GeneralizedNewtypeDeriving
                       MultiParamTypeClasses
