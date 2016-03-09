@@ -17,11 +17,9 @@ module Language.Haskell.Interpreter(
     -- ** Interpreter options
      Option, OptionVal((:=)),
      get, set,
-     languageExtensions, availableExtensions, glasgowExtensions, Extension(..),
+     languageExtensions, availableExtensions, Extension(..),
      installedModulesInScope, searchPath,
 
-     setUseLanguageExtensions,
-     setInstalledModsAreInScopeQualified,
     -- ** Context handling
      ModuleName, isModuleInterpreted,
      loadModules, getLoadedModules, setTopLevelModules,

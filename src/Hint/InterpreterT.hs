@@ -21,7 +21,6 @@ import Control.Concurrent.MVar
 import System.IO.Unsafe ( unsafePerformIO )
 
 import Data.IORef
-import Data.List
 import Data.Maybe
 
 import qualified GHC.Paths

@@ -1,6 +1,12 @@
 ### 0.5.0 (upcoming)
 
 * Drop support for GHC 7.4
+* Remove deprecated functions and modules:
+  - glasgowExtensions
+  - setUseLanguageExtensions
+  - setInstalledModsAreInScopeQualified
+  - Language.Haskell.Interpreter.GHC
+  - Language.Haskell.Interpreter.GHC.Unsafe
 
 ### 0.4.3
 

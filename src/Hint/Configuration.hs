@@ -6,19 +6,16 @@ module Hint.Configuration (
 
       get, set, Option, OptionVal(..),
 
-      languageExtensions, availableExtensions, glasgowExtensions, Extension(..),
+      languageExtensions, availableExtensions, Extension(..),
       installedModulesInScope,
 
-      setUseLanguageExtensions,
-
-      setInstalledModsAreInScopeQualified,
       searchPath
       ) where
 
 import Control.Monad
 import Control.Monad.Catch
 import Data.Char
-import Data.List ( intersect, intercalate )
+import Data.List ( intercalate )
 
 import qualified Hint.GHC as GHC
 import qualified Hint.Compat as Compat
@@ -95,46 +92,6 @@ extFlag = mkFlag
                              | isUpper c = "-X" ++ drop (if b then 0 else 2) o
         strToFlag b o                    = "-X" ++ concat ["No"|not b] ++ o
 
-
-
--- | List of extensions turned on when the @-fglasgow-exts@ flag is used
-{-# DEPRECATED glasgowExtensions "glasgowExtensions list is no longer maintained, will be removed soon" #-}
-glasgowExtensions :: [Extension]
-glasgowExtensions = availableExtensions `intersect` exts612 -- works also for 608 and 610
-    where exts612 = map asExtension ["PrintExplicitForalls",
-                                     "ForeignFunctionInterface",
-                                     "UnliftedFFITypes",
-                                     "GADTs",
-                                     "ImplicitParams",
-                                     "ScopedTypeVariables",
-                                     "UnboxedTuples",
-                                     "TypeSynonymInstances",
-                                     "StandaloneDeriving",
-                                     "DeriveDataTypeable",
-                                     "FlexibleContexts",
-                                     "FlexibleInstances",
-                                     "ConstrainedClassMethods",
-                                     "MultiParamTypeClasses",
-                                     "FunctionalDependencies",
-                                     "MagicHash",
-                                     "PolymorphicComponents",
-                                     "ExistentialQuantification",
-                                     "UnicodeSyntax",
-                                     "PostfixOperators",
-                                     "PatternGuards",
-                                     "LiberalTypeSynonyms",
-                                     "ExplicitForAll",
-                                     "RankNTypes",
-                                     "ImpredicativeTypes",
-                                     "TypeOperators",
-                                     "RecursiveDo",
-                                     "DoRec",
-                                     "ParallelListComp",
-                                     "EmptyDataDecls",
-                                     "KindSignatures",
-                                     "GeneralizedNewtypeDeriving",
-                                     "TypeFamilies" ]
-
 -- | When set to @True@, every module in every available package is implicitly
 --   imported qualified. This is very convenient for interactive
 --   evaluation, but can be a problem in sandboxed environments
@@ -171,13 +128,3 @@ onConf :: MonadInterpreter m
        => (InterpreterConfiguration -> InterpreterConfiguration)
        -> m ()
 onConf f = onState $ \st -> st{configuration = f (configuration st)}
-
-{-# DEPRECATED setUseLanguageExtensions "Use set [languageExtensions := (ExtendedDefaultRules:glasgowExtensions)] instead." #-}
-setUseLanguageExtensions :: MonadInterpreter m => Bool -> m ()
-setUseLanguageExtensions False = set [languageExtensions := []]
-setUseLanguageExtensions True  = set [languageExtensions := exts]
-    where exts = ExtendedDefaultRules : glasgowExtensions
-
-{-# DEPRECATED setInstalledModsAreInScopeQualified "Use set [installedModulesInScope := b] instead." #-}
-setInstalledModsAreInScopeQualified :: MonadInterpreter m => Bool -> m ()
-setInstalledModsAreInScopeQualified b = set [installedModulesInScope := b]
