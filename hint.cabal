@@ -44,7 +44,7 @@ Test-Suite unit-tests
                 ,exceptions
 
 Library
-  build-depends:      ghc >= 7.4.2,
+  build-depends:      ghc >= 7.6,
                       ghc-paths,
                       mtl,
                       filepath,

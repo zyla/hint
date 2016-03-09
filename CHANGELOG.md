@@ -1,3 +1,7 @@
+### 0.5.0 (upcoming)
+
+* Drop support for GHC 7.4
+
 ### 0.4.3
 
 * New maintainer and source code repo
