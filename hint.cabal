@@ -78,7 +78,6 @@ Library
                       Hint.Parsers
                       Hint.Reflection
                       Hint.Typecheck
-                      Hint.Sandbox
                       Hint.SignalHandlers
                       Hint.Util
                       Hint.Annotations

@@ -13,7 +13,6 @@ import qualified Data.Typeable ( typeOf )
 import Hint.Base
 import Hint.Context
 import Hint.Parsers
-import Hint.Sandbox
 import Hint.Util
 
 import qualified Hint.Compat as Compat
@@ -35,17 +34,16 @@ interpret expr wit = unsafeInterpret expr (show $ Data.Typeable.typeOf wit)
 
 
 unsafeInterpret :: (MonadInterpreter m) => String -> String -> m a
-unsafeInterpret expr type_str = sandboxed go expr
-  where go e =
-         do -- First, make sure the expression has no syntax errors,
-            -- for this is the only way we have to "intercept" this
-            -- kind of errors
-            failOnParseError parseExpr e
-            --
-            let expr_typesig = concat [parens e, " :: ", type_str]
-            expr_val <- mayFail $ runGhc1 Compat.compileExpr expr_typesig
-            --
-            return (GHC.Exts.unsafeCoerce# expr_val :: a)
+unsafeInterpret expr type_str =
+    do -- First, make sure the expression has no syntax errors,
+       -- for this is the only way we have to "intercept" this
+       -- kind of errors
+       failOnParseError parseExpr expr
+       --
+       let expr_typesig = concat [parens expr, " :: ", type_str]
+       expr_val <- mayFail $ runGhc1 Compat.compileExpr expr_typesig
+       --
+       return (GHC.Exts.unsafeCoerce# expr_val :: a)
 
 -- | @eval expr@ will evaluate @show expr@.
 --  It will succeed only if @expr@ has type t and there is a 'Show'
