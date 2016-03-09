@@ -33,11 +33,11 @@ import Hint.Compat as Compat
 
 -- | Version of the underlying ghc api. Values are:
 --
--- * @606@ for GHC 6.6.x
+-- * @706@ for GHC 7.6.x
 --
--- * @608@ for GHC 6.8.x
+-- * @708@ for GHC 7.8.x
 --
--- * @610@ for GHC 6.10.x
+-- * @710@ for GHC 7.10.x
 --
 -- * etc...
 ghcVersion :: Int
