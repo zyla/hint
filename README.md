@@ -7,7 +7,7 @@ modules, browse them, type-check and evaluate strings with Haskell
 expressions and even coerce them into values. The library is thread-safe
 and type-safe (even the coercion of expressions to values).
 
-It is, esentially, a huge subset of the GHC API wrapped in a simpler
+It is, essentially, a huge subset of the GHC API wrapped in a simpler
 API.
 
 ### Example
