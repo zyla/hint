@@ -36,8 +36,8 @@ getContext = GHC.getContext >>= foldM f ([], [])
          GHC.InteractiveImport ->
          m ([GHC.Module], [GHC.ImportDecl GHC.RdrName])
     f (ns, ds) i = case i of
-      (GHC.IIDecl d)     -> return (ns, (d:ds))
-      m@(GHC.IIModule _) -> do n <- iiModToMod m; return ((n:ns), ds)
+      (GHC.IIDecl d)     -> return (ns, d : ds)
+      m@(GHC.IIModule _) -> do n <- iiModToMod m; return (n : ns, ds)
 
 
 modToIIMod :: GHC.Module -> GHC.InteractiveImport

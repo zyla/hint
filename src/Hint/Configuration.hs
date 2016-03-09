@@ -100,7 +100,7 @@ extFlag = mkFlag
 -- | List of extensions turned on when the @-fglasgow-exts@ flag is used
 {-# DEPRECATED glasgowExtensions "glasgowExtensions list is no longer maintained, will be removed soon" #-}
 glasgowExtensions :: [Extension]
-glasgowExtensions = intersect availableExtensions exts612 -- works also for 608 and 610
+glasgowExtensions = availableExtensions `intersect` exts612 -- works also for 608 and 610
     where exts612 = map asExtension ["PrintExplicitForalls",
                                      "ForeignFunctionInterface",
                                      "UnliftedFFITypes",
@@ -160,7 +160,7 @@ searchPath :: MonadInterpreter m => Option m [FilePath]
 searchPath = Option setter getter
     where getter = fromConf search_path
           setter p = do onConf $ \c -> c{search_path = p}
-                        setGhcOption $ "-i" -- clear the old path
+                        setGhcOption "-i" -- clear the old path
                         setGhcOption $ "-i" ++ intercalate ":" p
 
 

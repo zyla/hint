@@ -30,8 +30,7 @@ import Outputable   ( PprStyle, SDoc, Outputable(ppr),
                       showSDoc, showSDocForUser, showSDocUnqual,
                       withPprStyle, defaultErrStyle )
 
-import ErrUtils     ( mkLocMessage, pprErrMsgBagWithLoc)
-import ErrUtils     ( MsgDoc ) -- we alias it as Message below
+import ErrUtils     ( mkLocMessage, pprErrMsgBagWithLoc, MsgDoc) -- we alias MsgDoc as Message below
 
 import Pretty       ( Doc )
 import DriverPhases ( Phase(Cpp), HscSource(HsSrcFile) )
@@ -41,12 +40,11 @@ import Parser       ( parseStmt, parseType )
 import FastString   ( fsLit )
 
 #if   __GLASGOW_HASKELL__ >= 710
-import DynFlags     ( supportedLanguagesAndExtensions, xFlags, xopt, FlagSpec(..) )
+import DynFlags     ( supportedLanguagesAndExtensions, xFlags, xopt, LogAction, FlagSpec(..) )
 #else
-import DynFlags     ( supportedLanguagesAndExtensions, xFlags, xopt )
+import DynFlags     ( supportedLanguagesAndExtensions, xFlags, xopt, LogAction)
 #endif
 
-import DynFlags     ( LogAction )
 import PprTyThing   ( pprTypeForUser )
 import SrcLoc       ( mkRealSrcLoc )
 

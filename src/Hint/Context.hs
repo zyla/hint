@@ -11,7 +11,7 @@ module Hint.Context (
 
       allModulesInContext, onAnEmptyContext,
 
-      support_String, support_show
+      supportString, supportShow
 )
 
 where
@@ -136,7 +136,7 @@ getPhantomModules = do active <- fromState active_phantoms
 
 isPhantomModule :: MonadInterpreter m => ModuleName -> m Bool
 isPhantomModule mn = do (as,zs) <- getPhantomModules
-                        return $ mn `elem` (map pm_name $ as ++ zs)
+                        return $ mn `elem` map pm_name (as ++ zs)
 
 -- | Tries to load all the requested modules from their source file.
 --   Modules my be indicated by their ModuleName (e.g. \"My.Module\") or
@@ -248,8 +248,8 @@ setImports ms = setImportsQ $ zip ms (repeat Nothing)
 --   Here, "map" will refer to Prelude.map and "M.map" to Data.Map.map.
 setImportsQ :: MonadInterpreter m => [(ModuleName, Maybe String)] -> m ()
 setImportsQ ms =
-    do let qualOrNot = \(a,mb) -> maybe (Right a) (Left . (,) a) mb
-           (quals,unquals) = Util.partitionEither $ map qualOrNot ms
+    do let qualOrNot (a, mb) = maybe (Right a) (Left . (,) a) mb
+           (quals, unquals) = Util.partitionEither $ map qualOrNot ms
        --
        unqual_mods <- mapM findModule unquals
        mapM_ (findModule . fst) quals -- just to be sure they exist
@@ -257,7 +257,7 @@ setImportsQ ms =
        old_qual_hack_mod <- fromState import_qual_hack_mod
        maybe (return ()) removePhantomModule old_qual_hack_mod
        --
-       new_pm <- if ( not $ null quals )
+       new_pm <- if not $ null quals
                    then do
                      new_pm <- addPhantomModule $ \mod_name -> unlines $
                                 ("module " ++ mod_name ++ " where ") :
@@ -352,13 +352,13 @@ altShowName mod_name = "show_" ++ mod_name
 altPreludeName :: ModuleName -> String
 altPreludeName mod_name = "Prelude_" ++ mod_name
 
-support_String :: MonadInterpreter m => m String
-support_String = do mod_name <- fromState (pm_name . hint_support_module)
-                    return $ concat [mod_name, ".", altStringName mod_name]
+supportString :: MonadInterpreter m => m String
+supportString = do mod_name <- fromState (pm_name . hint_support_module)
+                   return $ concat [mod_name, ".", altStringName mod_name]
 
-support_show :: MonadInterpreter m => m String
-support_show = do mod_name <- fromState (pm_name . hint_support_module)
-                  return $ concat [mod_name, ".", altShowName mod_name]
+supportShow :: MonadInterpreter m => m String
+supportShow = do mod_name <- fromState (pm_name . hint_support_module)
+                 return $ concat [mod_name, ".", altShowName mod_name]
 
 -- SHOULD WE CALL THIS WHEN MODULES ARE LOADED / UNLOADED?
 -- foreign import ccall "revertCAFs" rts_revertCAFs  :: IO ()

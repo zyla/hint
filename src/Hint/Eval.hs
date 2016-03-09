@@ -51,8 +51,8 @@ unsafeInterpret expr type_str = sandboxed go expr
 --  It will succeed only if @expr@ has type t and there is a 'Show'
 --  instance for t.
 eval :: MonadInterpreter m => String -> m String
-eval expr = do in_scope_show   <- support_show
-               in_scope_String <- support_String
+eval expr = do in_scope_show   <- supportShow
+               in_scope_String <- supportString
                let show_expr = unwords [in_scope_show, parens expr]
                unsafeInterpret show_expr in_scope_String
 

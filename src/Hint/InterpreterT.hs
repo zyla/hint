@@ -49,8 +49,8 @@ execute s = try
 instance MonadTrans InterpreterT where
     lift = InterpreterT . lift . lift
 
-runGhc_impl :: (MonadIO m, MonadThrow m, MonadMask m, Functor m) => RunGhc (InterpreterT m) a
-runGhc_impl a =
+runGhcImpl :: (MonadIO m, MonadThrow m, MonadMask m, Functor m) => RunGhc (InterpreterT m) a
+runGhcImpl a =
   InterpreterT (lift a)
    `catches`
    [Handler (\(e :: GHC.SourceError)  -> do
@@ -81,9 +81,9 @@ initialize args =
 
        let df1 = Compat.configureDynFlags df0
        (df2, extra) <- runGhc2 Compat.parseDynamicFlags df1 args
-       when (not . null $ extra) $
+       unless (null extra) $
             throwM $ UnknownError (concat [ "flags: '"
-                                          , intercalate " " extra
+                                          , unwords extra
                                           , "' not recognized"])
 
        -- Observe that, setSessionDynFlags loads info on packages
@@ -143,7 +143,7 @@ ifInterpreterNotRunning action =
     do maybe_token <- liftIO $ tryTakeMVar uniqueToken
        case maybe_token of
            Nothing -> throwM MultipleInstancesNotAllowed
-           Just x  -> action `finally` (liftIO $ putMVar uniqueToken x)
+           Just x  -> action `finally` liftIO (putMVar uniqueToken x)
 
 -- | The installed version of ghc is not thread-safe. This exception
 --   is thrown whenever you try to execute @runInterpreter@ while another
@@ -178,8 +178,7 @@ newSessionData  a =
        }
 
 mkLogHandler :: IORef [GhcError] -> GhcErrLogger
-mkLogHandler r =
-  \df _ src style msg ->
+mkLogHandler r df _ src style msg =
     let renderErrMsg = Compat.showSDoc df
         errorEntry = mkGhcError renderErrMsg src style msg
     in modifyIORef r (errorEntry :)
@@ -196,11 +195,10 @@ instance (MonadIO m, MonadMask m, Functor m) => MonadInterpreter (InterpreterT m
     fromSession f = InterpreterT $ fmap f ask
     --
     modifySessionRef target f =
-        do ref     <- fromSession target
-           old_val <- liftIO $ atomicModifyIORef ref (\a -> (f a, a))
-           return old_val
+        do ref <- fromSession target
+           liftIO $ atomicModifyIORef ref (\a -> (f a, a))
     --
-    runGhc a = runGhc_impl a
+    runGhc = runGhcImpl
 
 
 instance (Monad m, Applicative m) => Applicative (InterpreterT m) where

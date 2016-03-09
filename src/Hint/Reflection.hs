@@ -46,8 +46,8 @@ asModElemList :: GHC.DynFlags -> [GHC.TyThing] -> [ModuleElem]
 asModElemList df xs = concat [
                         cs',
                         ts',
-                        ds \\ (concatMap (map Fun . children) ts'),
-                        fs \\ (concatMap (map Fun . children) cs')
+                        ds \\ concatMap (map Fun . children) ts',
+                        fs \\ concatMap (map Fun . children) cs'
                       ]
     where (cs,ts,ds,fs) =
            (
@@ -62,7 +62,7 @@ asModElemList df xs = concat [
            )
           cs' = [Class n $ filter (alsoIn fs) ms  | Class n ms  <- cs]
           ts' = [Data  t $ filter (alsoIn ds) dcs | Data  t dcs <- ts]
-          alsoIn es = (`elem` (map name es))
+          alsoIn es = (`elem` map name es)
 
 
 asModElem :: GHC.DynFlags -> GHC.TyThing -> ModuleElem

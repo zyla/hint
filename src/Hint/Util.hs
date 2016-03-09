@@ -14,7 +14,7 @@ safeBndFor :: Expr -> String
 safeBndFor expr = "e_1" ++ filter isDigit expr
 
 partition :: (a -> Bool) -> [a] -> ([a], [a])
-partition prop xs = foldr (select prop) ([],[]) xs
+partition prop = foldr (select prop) ([],[])
     where select p x ~(ts,fs) | p x       = (x:ts,fs)
                               | otherwise = (ts, x:fs)
 

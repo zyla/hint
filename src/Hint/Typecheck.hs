@@ -55,7 +55,7 @@ kindOf = sandboxed go
 onCompilationError :: MonadInterpreter m
                    => ([GhcError] -> m a)
                    -> (InterpreterError -> m a)
-onCompilationError recover =
-    \interp_error -> case interp_error of
-                       WontCompile errs -> recover errs
-                       otherErr         -> throwM otherErr
+onCompilationError recover interp_error
+    = case interp_error of
+          WontCompile errs -> recover errs
+          otherErr         -> throwM otherErr
