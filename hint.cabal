@@ -87,15 +87,9 @@ Library
   ghc-options: -Wall
   extensions:  CPP
                GeneralizedNewtypeDeriving
-               MultiParamTypeClasses
                DeriveDataTypeable
                MagicHash
-               TypeSynonymInstances
-               FlexibleInstances
-               FlexibleContexts
                FunctionalDependencies
-               KindSignatures
                Rank2Types
                ScopedTypeVariables
                ExistentialQuantification
-               PatternGuards
