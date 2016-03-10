@@ -5,9 +5,11 @@ module Control.Monad.Ghc (
     module Control.Monad.Trans
 ) where
 
+import Control.Applicative
+import Prelude
+
 import qualified Control.Exception.Extensible as E
 
-import Control.Applicative
 import Control.Monad
 import Control.Monad.Trans
 import qualified Control.Monad.Trans as MTL
@@ -95,7 +97,7 @@ instance MonadCatch m => MonadThrow (GhcT m) where
     throwM = lift . throwM
 
 instance (MonadIO m,MonadCatch m, MonadMask m) => MonadCatch (GhcT m) where
-    m `catch` f = GhcT ((unGhcT m) `GHC.gcatch` (unGhcT . f))
+    m `catch` f = GhcT (unGhcT m `GHC.gcatch` (unGhcT . f))
 
 instance (MonadIO m, MonadMask m) => MonadMask (GhcT m) where
     mask f = wrap $ \s ->
@@ -103,7 +105,7 @@ instance (MonadIO m, MonadMask m) => MonadMask (GhcT m) where
                  unwrap (f $ \m -> (wrap $ \s' -> io_restore (unwrap m s'))) s
       where
         wrap g   = GhcT $ GHC.GhcT $ \s -> MTLAdapter (g s)
-        unwrap m = \s -> unMTLA ((GHC.unGhcT $ unGhcT $  m) s)
+        unwrap m = unMTLA . GHC.unGhcT (unGhcT m)
 
     uninterruptibleMask = mask
 
@@ -123,5 +125,5 @@ instance MTL.MonadIO m => GHC.MonadIO (MTLAdapter m) where
     liftIO = MTLAdapter . MTL.liftIO
 
 instance (MonadIO m, MonadCatch m, MonadMask m) => GHC.ExceptionMonad (MTLAdapter m) where
-  m `gcatch` f = MTLAdapter $ (unMTLA m) `catch` (unMTLA . f)
+  m `gcatch` f = MTLAdapter $ unMTLA m `catch` (unMTLA . f)
   gmask io = MTLAdapter $ mask (\f -> unMTLA $ io (MTLAdapter . f . unMTLA))
