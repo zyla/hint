@@ -7,6 +7,7 @@
   - `setInstalledModsAreInScopeQualified`
   - `Language.Haskell.Interpreter.GHC`
   - `Language.Haskell.Interpreter.GHC.Unsafe`
+* Drop dependencies on `ghc-mtl` and `extensible-exceptions`
 
 ### 0.4.3
 
