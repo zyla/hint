@@ -50,13 +50,10 @@ Library
                  ghc-paths,
                  mtl,
                  filepath,
+                 extensible-exceptions,
                  exceptions,
                  random,
-                 directory,
-                 ghc-mtl == 1.2.1.*
-                   -- version 1.1.* uses exceptions instead of MonadCatchIO
-                   -- version 1.2.* uses the exceptions-0.4 api
-                   -- version 1.2.1.* uses the exceptions-0.6 api
+                 directory
 
   if !os(windows) {
       build-depends: unix >= 2.2.0.0
@@ -81,6 +78,7 @@ Library
                    Hint.SignalHandlers
                    Hint.Util
                    Hint.Annotations
+                   Control.Monad.Ghc
 
   hs-source-dirs: src
 
