@@ -1,8 +1,7 @@
 -- this module was automatically generated. do not edit!
 -- edit util/mk_extensions_mod.hs instead
 module Hint.Extension (
-Extension(..),
-      knownExtensions, availableExtensions, asExtension
+    Extension(..), availableExtensions, asExtension
 ) where
 
 import Hint.Compat as Compat
