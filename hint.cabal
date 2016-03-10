@@ -74,7 +74,6 @@ Library
                    Hint.Parsers
                    Hint.Reflection
                    Hint.Typecheck
-                   Hint.SignalHandlers
                    Hint.Util
                    Hint.Annotations
                    Control.Monad.Ghc

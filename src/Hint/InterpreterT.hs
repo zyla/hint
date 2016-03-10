@@ -120,7 +120,6 @@ runInterpreterWithArgs :: (MonadIO m, MonadMask m, Functor m)
 runInterpreterWithArgs args action =
   ifInterpreterNotRunning $
     do s <- newInterpreterSession `MC.catch` rethrowGhcException
-       -- SH.protectHandlers $ execute s (initialize args >> action)
        execute s (initialize args >> action `finally` cleanSession)
     where rethrowGhcException   = throwM . GhcException . showGhcEx
           newInterpreterSession = newSessionData ()
