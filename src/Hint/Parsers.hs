@@ -24,8 +24,8 @@ runParser parser expr =
        buf <- Compat.stringToStringBuffer expr
        --
        -- ghc >= 7 panics if noSrcLoc is given
-       let srcLoc = Compat.mkSrcLoc (GHC.fsLit "<hint>") 1 1
-       let parse_res = GHC.unP parser (Compat.mkPState dyn_fl buf srcLoc)
+       let srcLoc = GHC.mkRealSrcLoc (GHC.fsLit "<hint>") 1 1
+       let parse_res = GHC.unP parser (GHC.mkPState dyn_fl buf srcLoc)
        --
        case parse_res of
            GHC.POk{}            -> return ParseOk

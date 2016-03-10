@@ -172,7 +172,7 @@ newSessionData  a =
 
 mkLogHandler :: IORef [GhcError] -> GhcErrLogger
 mkLogHandler r df _ src style msg =
-    let renderErrMsg = Compat.showSDoc df
+    let renderErrMsg = GHC.showSDoc df
         errorEntry = mkGhcError renderErrMsg src style msg
     in modifyIORef r (errorEntry :)
 

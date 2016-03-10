@@ -8,7 +8,6 @@ import Data.Maybe
 
 import Hint.Base
 import qualified Hint.GHC as GHC
-import qualified Hint.Compat as Compat
 
 -- | An Id for a class, a type constructor, a data constructor, a binding, etc
 type Id = String
@@ -73,4 +72,4 @@ asModElem df (GHC.ATyCon tc)   =
 asModElem _ _ = error "asModElem: can't happen!"
 
 getUnqualName :: GHC.NamedThing a => GHC.DynFlags -> a -> String
-getUnqualName dfs = Compat.showSDocUnqual dfs . GHC.pprParenSymName
+getUnqualName dfs = GHC.showSDocUnqual dfs . GHC.pprParenSymName

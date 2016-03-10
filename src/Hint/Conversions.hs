@@ -15,12 +15,12 @@ typeToString t
       -- (i.e., do not expose internals)
       unqual <- runGhc GHC.getPrintUnqual
       withDynFlags $ \df ->
-        return $ Compat.showSDocForUser df unqual (Compat.pprType t)
+        return $ GHC.showSDocForUser df unqual (Compat.pprType t)
 
 kindToString :: MonadInterpreter m => Compat.Kind -> m String
 kindToString (Compat.Kind k)
  = withDynFlags $ \df ->
-     return $ Compat.showSDoc df (Compat.pprKind k)
+     return $ GHC.showSDoc df (Compat.pprType k)
 
 -- ---------------- Modules --------------------------
 

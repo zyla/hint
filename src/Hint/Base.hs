@@ -27,7 +27,6 @@ import Data.Dynamic
 import qualified Hint.GHC as GHC
 
 import Hint.Extension
-import Hint.Compat as Compat
 
 -- | Version of the underlying ghc api. Values are:
 --
@@ -169,7 +168,7 @@ showGHC :: (MonadInterpreter m, GHC.Outputable a) => a -> m String
 showGHC a
  = do unqual <- runGhc GHC.getPrintUnqual
       withDynFlags $ \df ->
-        return $ Compat.showSDocForUser df unqual (GHC.ppr a)
+        return $ GHC.showSDocForUser df unqual (GHC.ppr a)
 
 -- ================ Misc ===================================
 

@@ -43,8 +43,6 @@ modToIIMod = GHC.IIModule . GHC.moduleName
 iiModToMod (GHC.IIModule m) = GHC.findModule m Nothing
 iiModToMod _ = error "iiModToMod!"
 
-mkPState = GHC.mkPState
-
 -- Explicitly-typed variants of getContext/setContext, for use where we modify
 -- or override the context.
 setContextModules :: GHC.GhcMonad m => [GHC.Module] -> [GHC.Module] -> m ()
@@ -55,7 +53,6 @@ getContextNames = fmap (\(as,bs) -> (map name as, map decl bs)) getContext
     where name = GHC.moduleNameString . GHC.moduleName
           decl = GHC.moduleNameString . GHC.unLoc . GHC.ideclName
 
-mkSrcLoc = GHC.mkRealSrcLoc
 stringToStringBuffer = return . GHC.stringToStringBuffer
 
 configureDynFlags :: GHC.DynFlags -> GHC.DynFlags
@@ -72,12 +69,6 @@ parseDynamicFlags d = fmap firstTwo . GHC.parseDynamicFlags d . map GHC.noLoc
 fileTarget :: FilePath -> GHC.Target
 fileTarget f = GHC.Target (GHC.TargetFile f $ Just next_phase) True Nothing
     where next_phase = GHC.Cpp GHC.HsSrcFile
-
-targetId :: GHC.Target -> GHC.TargetId
-targetId = GHC.targetId
-
-guessTarget :: GHC.GhcMonad m => String -> Maybe GHC.Phase -> m GHC.Target
-guessTarget = GHC.guessTarget
 
 -- add a bogus Maybe, in order to use it with mayFail
 compileExpr :: GHC.GhcMonad m => String -> m (Maybe GHC.HValue)
@@ -97,12 +88,5 @@ pprType = GHC.pprTypeForUser False -- False means drop explicit foralls
 #else
 pprType = GHC.pprTypeForUser
 #endif
-
-pprKind :: GHC.Kind -> GHC.SDoc
-pprKind = pprType
-
-showSDoc        = GHC.showSDoc
-showSDocForUser = GHC.showSDocForUser
-showSDocUnqual  = GHC.showSDocUnqual
 
 mkLocMessage = GHC.mkLocMessage GHC.SevError

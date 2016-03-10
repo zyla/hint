@@ -111,7 +111,7 @@ removePhantomModule pm =
              else return True
        --
        let file_name = pm_file pm
-       runGhc1 GHC.removeTarget (Compat.targetId $ Compat.fileTarget file_name)
+       runGhc1 GHC.removeTarget (GHC.targetId $ Compat.fileTarget file_name)
        --
        onState (\s -> s{active_phantoms = filter (pm /=) $ active_phantoms s})
        --
@@ -163,7 +163,7 @@ loadModules fs = do -- first, unload everything, and do some clean-up
 
 doLoad :: MonadInterpreter m => [String] -> m ()
 doLoad fs = do mayFail $ do
-                   targets <- mapM (\f->runGhc2 Compat.guessTarget f Nothing) fs
+                   targets <- mapM (\f->runGhc2 GHC.guessTarget f Nothing) fs
                    --
                    runGhc1 GHC.setTargets targets
                    res <- runGhc1 GHC.load GHC.LoadAllTargets
