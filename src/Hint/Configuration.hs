@@ -1,7 +1,7 @@
 module Hint.Configuration (
       setGhcOption, setGhcOptions,
 
-      defaultConf, fromConf, onConf,
+      defaultConf,
 
       get, set, Option, OptionVal(..),
 

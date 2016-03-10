@@ -1,14 +1,11 @@
 module Hint.Context (
-      ModuleName, isModuleInterpreted,
+      isModuleInterpreted,
       loadModules, getLoadedModules, setTopLevelModules,
       setImports, setImportsQ,
       reset,
 
-      PhantomModule(..), ModuleText,
-      addPhantomModule, removePhantomModule, getPhantomModules,
+      PhantomModule(..),
       cleanPhantomModules,
-
-      allModulesInContext, onAnEmptyContext,
 
       supportString, supportShow
 ) where
@@ -216,15 +213,6 @@ setTopLevelModules ms =
        --
        (_, old_imports) <- runGhc Compat.getContext
        runGhc2 Compat.setContext ms_mods old_imports
-
-onAnEmptyContext :: MonadInterpreter m => m a -> m a
-onAnEmptyContext action =
-    do (old_mods, old_imps) <- runGhc Compat.getContext
-       runGhc2 Compat.setContext [] []
-       let restore = runGhc2 Compat.setContext old_mods old_imps
-       a <- action `catchIE` (\e -> do restore; throwM e)
-       restore
-       return a
 
 -- | Sets the modules whose exports must be in context.
 --
