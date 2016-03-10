@@ -1,14 +1,9 @@
 module Control.Monad.Ghc (
-    Ghc, runGhc,
-    GhcT, runGhcT,
-    GHC.GhcMonad(..),
-    module Control.Monad.Trans
+    GhcT, runGhcT
 ) where
 
 import Control.Applicative
 import Prelude
-
-import qualified Control.Exception.Extensible as E
 
 import Control.Monad
 import Control.Monad.Trans
@@ -16,63 +11,15 @@ import qualified Control.Monad.Trans as MTL
 
 import Control.Monad.Catch
 
-import qualified GHC ( runGhc, runGhcT )
+import qualified GHC ( runGhcT )
 import qualified MonadUtils as GHC
 import qualified Exception  as GHC
 import qualified GhcMonad   as GHC
 
 import qualified DynFlags as GHC
 
-newtype Ghc a = Ghc{ unGhc :: GHC.Ghc a }
-    deriving (Functor
-             ,Monad
-             ,GHC.HasDynFlags
-             ,GHC.ExceptionMonad
-#if __GLASGOW_HASKELL__ < 708
-             ,GHC.MonadIO
-#else
-             ,MTL.MonadIO
-             ,Applicative
-#endif
-             ,GHC.GhcMonad)
-
-#if __GLASGOW_HASKELL__ < 708
-instance Applicative Ghc where
-  pure  = return
-  (<*>) = ap
-
-instance MTL.MonadIO Ghc where
-    liftIO = GHC.liftIO
-#endif
-
-instance MonadThrow Ghc where
-    throwM  = liftIO . E.throwIO
-
-instance MonadCatch Ghc where
-    catch   = GHC.gcatch
-
-instance MonadMask Ghc where
-    -- @gmask@ is available...
-    -- ...but it doesn't have a rank-n type like @mask@, so we need
-    -- to use @Control.Exception.mask@ directly... (sigh)
-    -- (this is type-directed, write only code)
-    mask f = wrap $ \s ->
-               mask $ \io_restore ->
-                 unwrap (f $ \m -> (wrap $ \s' -> io_restore (unwrap m s'))) s
-     where
-        wrap   = Ghc . GHC.Ghc
-        unwrap = GHC.unGhc . unGhc
-
-    uninterruptibleMask = mask
-
-runGhc :: Maybe FilePath -> Ghc a -> IO a
-runGhc f (Ghc m) = GHC.runGhc f m
-
 newtype GhcT m a = GhcT { unGhcT :: GHC.GhcT (MTLAdapter m) a }
-                 deriving (Functor
-                          ,Monad
-                          ,GHC.HasDynFlags
-                          )
+                 deriving (Functor, Monad, GHC.HasDynFlags)
 
 instance (Functor m, Monad m) => Applicative (GhcT m) where
   pure  = return

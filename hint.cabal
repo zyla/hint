@@ -50,7 +50,6 @@ Library
                  ghc-paths,
                  mtl,
                  filepath,
-                 extensible-exceptions,
                  exceptions,
                  random,
                  directory
