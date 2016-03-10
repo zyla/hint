@@ -1,7 +1,7 @@
 import Language.Haskell.Extension
 import Text.PrettyPrint
 
-main = putStrLn $ render moduleDoc
+main = writeFile "src/Hint/Extension.hs" $ render moduleDoc
 
 moduleDoc :: Doc
 moduleDoc =
@@ -34,7 +34,8 @@ moduleDoc =
     nest 8 $ text "deriving (Eq, Show, Read)",
     text "",
     text "knownExtensions :: [Extension]",
-    align "knownExtensions = [" (punctuate comma known ++ [text "]"])
+    align "knownExtensions = [" (punctuate comma known ++ [text "]"]),
+    text ""
   ]
 
 known :: [Doc]
