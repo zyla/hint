@@ -7,7 +7,7 @@ module Hint.Base (
     InterpreterState(..), fromState, onState,
     InterpreterConfiguration(..),
 
-    runGhc1, runGhc2, runGhc3, runGhc4, runGhc5,
+    runGhc1, runGhc2, runGhc3,
 
     ModuleName, PhantomModule(..),
     findModule, moduleIsLoaded,
@@ -30,8 +30,6 @@ import Hint.Extension
 import Hint.Compat as Compat
 
 -- | Version of the underlying ghc api. Values are:
---
--- * @706@ for GHC 7.6.x
 --
 -- * @708@ for GHC 7.8.x
 --
@@ -95,14 +93,6 @@ type RunGhc3 m a b c d =
     (forall n.(MonadIO n, MonadMask n, Functor n) => a -> b -> c -> GHC.GhcT n d)
  -> (a -> b -> c -> m d)
 
-type RunGhc4 m a b c d e =
-    (forall n.(MonadIO n, MonadMask n, Functor n) => a -> b -> c -> d -> GHC.GhcT n e)
- -> (a -> b -> c -> d -> m e)
-
-type RunGhc5 m a b c d e f =
-    (forall n.(MonadIO n, MonadMask n, Functor n) => a->b->c->d->e->GHC.GhcT n f)
- -> (a -> b -> c -> d -> e -> m f)
-
 data SessionData a = SessionData {
                        internalState   :: IORef InterpreterState,
                        versionSpecific :: a,
@@ -144,12 +134,6 @@ runGhc2 f a = runGhc1 (adjust f a)
 
 runGhc3 :: MonadInterpreter m => RunGhc3 m a b c d
 runGhc3 f a = runGhc2 (adjust f a)
-
-runGhc4 :: MonadInterpreter m => RunGhc4 m a b c d e
-runGhc4 f a = runGhc3 (adjust f a)
-
-runGhc5 :: MonadInterpreter m => RunGhc5 m a b c d e f
-runGhc5 f a = runGhc4 (adjust f a)
 
 -- ================ Handling the interpreter state =================
 
