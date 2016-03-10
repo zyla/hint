@@ -41,20 +41,18 @@ Test-Suite unit-tests
                   HUnit,
                   directory,
                   filepath,
-                  mtl,
                   extensible-exceptions,
                   exceptions
 
 Library
-  build-depends: ghc >= 7.6,
+  build-depends: base == 4.*,
+                 ghc >= 7.6,
                  ghc-paths,
                  mtl,
                  filepath,
-                 extensible-exceptions,
                  exceptions,
                  random,
                  directory,
-                 base == 4.*,
                  ghc-mtl == 1.2.1.*
                    -- version 1.1.* uses exceptions instead of MonadCatchIO
                    -- version 1.2.* uses the exceptions-0.4 api
