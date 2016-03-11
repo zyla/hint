@@ -28,9 +28,9 @@ import qualified Hint.Compat as Compat
 
 type Interpreter = InterpreterT IO
 
-newtype InterpreterT m a = InterpreterT{
-                             unInterpreterT :: ReaderT  InterpreterSession
-                                              (GHC.GhcT m) a}
+newtype InterpreterT m a = InterpreterT {
+                             unInterpreterT :: ReaderT InterpreterSession (GHC.GhcT m) a
+                           }
     deriving (Functor, Monad, MonadIO, MonadThrow, MonadCatch, MonadMask)
 
 execute :: (MonadIO m, MonadMask m, Functor m)
@@ -151,19 +151,21 @@ instance Show MultipleInstancesNotAllowed where
              "can't safely run two instances of the interpreter simultaneously"
 
 initialState :: InterpreterState
-initialState = St {activePhantoms      = [],
+initialState = St {
+                   activePhantoms      = [],
                    zombiePhantoms      = [],
                    hintSupportModule  = error "No support module loaded!",
                    importQualHackMod = Nothing,
                    qualImports         = [],
                    defaultExts          = error "defaultExts missing!",
-                   configuration        = defaultConf}
+                   configuration        = defaultConf
+                  }
 
 newSessionData :: MonadIO m => a -> m (SessionData a)
 newSessionData  a =
     do initial_state    <- liftIO $ newIORef initialState
        ghc_err_list_ref <- liftIO $ newIORef []
-       return SessionData{
+       return SessionData {
          internalState   = initial_state,
          versionSpecific = a,
          ghcErrListRef   = ghc_err_list_ref,

@@ -51,8 +51,10 @@ defaultConf = Conf {
 --    * 'installedModulesInScope'
 --
 --    * 'searchPath'
-data Option m a = Option{_set :: MonadInterpreter m => a -> m (),
-                         _get :: MonadInterpreter m => m a}
+data Option m a = Option{
+                    _set :: MonadInterpreter m => a -> m (),
+                    _get :: MonadInterpreter m => m a
+                  }
 
 data OptionVal m = forall a . (Option m a) := a
 

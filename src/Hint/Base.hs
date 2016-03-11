@@ -55,7 +55,7 @@ data InterpreterError = UnknownError String
                       | GhcException String
                       deriving (Show, Typeable)
 
-data InterpreterState = St{
+data InterpreterState = St {
                            activePhantoms    :: [PhantomModule],
                            zombiePhantoms    :: [PhantomModule],
                            hintSupportModule :: PhantomModule,
