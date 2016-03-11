@@ -151,11 +151,11 @@ instance Show MultipleInstancesNotAllowed where
              "can't safely run two instances of the interpreter simultaneously"
 
 initialState :: InterpreterState
-initialState = St {active_phantoms      = [],
-                   zombie_phantoms      = [],
-                   hint_support_module  = error "No support module loaded!",
-                   import_qual_hack_mod = Nothing,
-                   qual_imports         = [],
+initialState = St {activePhantoms      = [],
+                   zombiePhantoms      = [],
+                   hintSupportModule  = error "No support module loaded!",
+                   importQualHackMod = Nothing,
+                   qualImports         = [],
                    defaultExts          = error "defaultExts missing!",
                    configuration        = defaultConf}
 

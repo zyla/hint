@@ -39,9 +39,9 @@ setGhcOption opt = setGhcOptions [opt]
 
 defaultConf :: InterpreterConfiguration
 defaultConf = Conf {
-                language_exts     = [],
-                all_mods_in_scope = False,
-                search_path       = ["."]
+                languageExts   = [],
+                allModsInScope = False,
+                searchFilePath = ["."]
               }
 
 -- | Available options are:
@@ -74,9 +74,9 @@ languageExtensions :: MonadInterpreter m => Option m [Extension]
 languageExtensions = Option setter getter
     where setter es = do resetExtensions
                          setGhcOptions $ map (extFlag True)  es
-                         onConf $ \c -> c{language_exts = es}
+                         onConf $ \c -> c{languageExts = es}
           --
-          getter = fromConf language_exts
+          getter = fromConf languageExts
           --
           resetExtensions = do es <- fromState defaultExts
                                setGhcOptions $ map (uncurry $ flip extFlag) es
@@ -101,8 +101,8 @@ extFlag = mkFlag
 --   private symbols in interpreted modules will not be in scope.
 installedModulesInScope :: MonadInterpreter m => Option m Bool
 installedModulesInScope = Option setter getter
-    where getter = fromConf all_mods_in_scope
-          setter b = do onConf $ \c -> c{all_mods_in_scope = b}
+    where getter = fromConf allModsInScope
+          setter b = do onConf $ \c -> c{allModsInScope = b}
                         setGhcOption $ "-f"                   ++
                                        concat ["no-" | not b] ++
                                        "implicit-import-qualified"
@@ -113,8 +113,8 @@ installedModulesInScope = Option setter getter
 --   Keep in mind that by a limitation in ghc, @\".\"@ is always in scope.
 searchPath :: MonadInterpreter m => Option m [FilePath]
 searchPath = Option setter getter
-    where getter = fromConf search_path
-          setter p = do onConf $ \c -> c{search_path = p}
+    where getter = fromConf searchFilePath
+          setter p = do onConf $ \c -> c{searchFilePath = p}
                         setGhcOption "-i" -- clear the old path
                         setGhcOption $ "-i" ++ intercalate ":" p
 

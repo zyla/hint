@@ -55,18 +55,20 @@ data InterpreterError = UnknownError String
                       | GhcException String
                       deriving (Show, Typeable)
 
-data InterpreterState = St{active_phantoms      :: [PhantomModule],
-                           zombie_phantoms      :: [PhantomModule],
-                           hint_support_module  :: PhantomModule,
-                           import_qual_hack_mod :: Maybe PhantomModule,
-                           qual_imports         :: [(ModuleName, String)],
-                           defaultExts          :: [(Extension,Bool)], -- R/O
-                           configuration        :: InterpreterConfiguration}
+data InterpreterState = St{
+                           activePhantoms    :: [PhantomModule],
+                           zombiePhantoms    :: [PhantomModule],
+                           hintSupportModule :: PhantomModule,
+                           importQualHackMod :: Maybe PhantomModule,
+                           qualImports       :: [(ModuleName, String)],
+                           defaultExts       :: [(Extension,Bool)], -- R/O
+                           configuration     :: InterpreterConfiguration
+                        }
 
 data InterpreterConfiguration = Conf {
-                                  search_path       :: [FilePath],
-                                  language_exts     :: [Extension],
-                                  all_mods_in_scope :: Bool
+                                  searchFilePath :: [FilePath],
+                                  languageExts   :: [Extension],
+                                  allModsInScope :: Bool
                                 }
 
 type InterpreterSession = SessionData ()
@@ -170,7 +172,7 @@ showGHC a
 -- ================ Misc ===================================
 
 -- this type ought to go in Hint.Context, but ghc dislikes cyclic imports...
-data PhantomModule = PhantomModule{pm_name :: ModuleName, pm_file :: FilePath}
+data PhantomModule = PhantomModule{pmName :: ModuleName, pmFile :: FilePath}
                    deriving (Eq, Show)
 
 findModule :: MonadInterpreter m => ModuleName -> m GHC.Module

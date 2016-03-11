@@ -52,7 +52,7 @@ newPhantomModule =
        --
        tmp_dir <- liftIO getTemporaryDirectory
        --
-       return PhantomModule{pm_name = mod_name, pm_file = tmp_dir </> nums}
+       return PhantomModule{pmName = mod_name, pmFile = tmp_dir </> nums}
 
 allModulesInContext :: MonadInterpreter m => m ([ModuleName], [ModuleName])
 allModulesInContext = runGhc Compat.getContextNames
@@ -62,12 +62,12 @@ addPhantomModule :: MonadInterpreter m
                  -> m PhantomModule
 addPhantomModule mod_text =
     do pm <- newPhantomModule
-       let t  = Compat.fileTarget (pm_file pm)
-           m  = GHC.mkModuleName (pm_name pm)
+       let t  = Compat.fileTarget (pmFile pm)
+           m  = GHC.mkModuleName (pmName pm)
        --
-       liftIO $ writeFile (pm_file pm) (mod_text $ pm_name pm)
+       liftIO $ writeFile (pmFile pm) (mod_text $ pmName pm)
        --
-       onState (\s -> s{active_phantoms = pm:active_phantoms s})
+       onState (\s -> s{activePhantoms = pm:activePhantoms s})
        mayFail (do -- GHC.load will remove all the modules from scope, so first
                    -- we save the context...
                    (old_top, old_imps) <- runGhc Compat.getContext
@@ -96,11 +96,11 @@ removePhantomModule pm =
        -- and mark it as "delete me when possible" (i.e., next time the
        -- @loadModules@ function is called).
        --
-       isLoaded <- moduleIsLoaded $ pm_name pm
+       isLoaded <- moduleIsLoaded $ pmName pm
        safeToRemove <-
            if isLoaded
              then do -- take it out of scope
-                     mod <- findModule (pm_name pm)
+                     mod <- findModule (pmName pm)
                      (mods, imps) <- runGhc Compat.getContext
                      let mods' = filter (mod /=) mods
                      runGhc2 Compat.setContext mods' imps
@@ -110,27 +110,27 @@ removePhantomModule pm =
                      null `liftM` filterM isNotPhantom mods'
              else return True
        --
-       let file_name = pm_file pm
+       let file_name = pmFile pm
        runGhc1 GHC.removeTarget (GHC.targetId $ Compat.fileTarget file_name)
        --
-       onState (\s -> s{active_phantoms = filter (pm /=) $ active_phantoms s})
+       onState (\s -> s{activePhantoms = filter (pm /=) $ activePhantoms s})
        --
        if safeToRemove
          then do mayFail $ do res <- runGhc1 GHC.load GHC.LoadAllTargets
                               return $ guard (isSucceeded res) >> Just ()
-                 liftIO $ removeFile (pm_file pm)
-         else do onState (\s -> s{zombie_phantoms = pm:zombie_phantoms s})
+                 liftIO $ removeFile (pmFile pm)
+         else do onState (\s -> s{zombiePhantoms = pm:zombiePhantoms s})
                  return ()
 
 -- Returns a tuple with the active and zombie phantom modules respectively
 getPhantomModules :: MonadInterpreter m => m ([PhantomModule], [PhantomModule])
-getPhantomModules = do active <- fromState active_phantoms
-                       zombie <- fromState zombie_phantoms
+getPhantomModules = do active <- fromState activePhantoms
+                       zombie <- fromState zombiePhantoms
                        return (active, zombie)
 
 isPhantomModule :: MonadInterpreter m => ModuleName -> m Bool
 isPhantomModule mn = do (as,zs) <- getPhantomModules
-                        return $ mn `elem` map pm_name (as ++ zs)
+                        return $ mn `elem` map pmName (as ++ zs)
 
 -- | Tries to load all the requested modules from their source file.
 --   Modules my be indicated by their ModuleName (e.g. \"My.Module\") or
@@ -179,7 +179,7 @@ isModuleInterpreted m = findModule m >>= runGhc1 GHC.moduleIsInterpreted
 getLoadedModules :: MonadInterpreter m => m [ModuleName]
 getLoadedModules = do (active_pms, zombie_pms) <- getPhantomModules
                       ms <- map modNameFromSummary `liftM` getLoadedModSummaries
-                      return $ ms \\ map pm_name (active_pms ++ zombie_pms)
+                      return $ ms \\ map pmName (active_pms ++ zombie_pms)
 
 modNameFromSummary :: GHC.ModSummary -> ModuleName
 modNameFromSummary =  moduleToString . GHC.ms_mod
@@ -202,8 +202,8 @@ setTopLevelModules ms =
          throwM $ NotAllowed ("These modules have not been loaded:\n" ++
                               unlines not_loaded)
        --
-       active_pms <- fromState active_phantoms
-       ms_mods <- mapM findModule (nub $ ms ++ map pm_name active_pms)
+       active_pms <- fromState activePhantoms
+       ms_mods <- mapM findModule (nub $ ms ++ map pmName active_pms)
        --
        let mod_is_interpr = runGhc1 GHC.moduleIsInterpreted
        not_interpreted <- filterM (liftM not . mod_is_interpr) ms_mods
@@ -238,7 +238,7 @@ setImportsQ ms =
        unqual_mods <- mapM findModule unquals
        mapM_ (findModule . fst) quals -- just to be sure they exist
        --
-       old_qual_hack_mod <- fromState import_qual_hack_mod
+       old_qual_hack_mod <- fromState importQualHackMod
        maybe (return ()) removePhantomModule old_qual_hack_mod
        --
        new_pm <- if not $ null quals
@@ -247,16 +247,16 @@ setImportsQ ms =
                                 ("module " ++ mod_name ++ " where ") :
                                 ["import qualified " ++ m ++ " as " ++ n |
                                    (m,n) <- quals]
-                     onState (\s -> s{import_qual_hack_mod = Just new_pm})
+                     onState (\s -> s{importQualHackMod = Just new_pm})
                      return $ Just new_pm
                    else return Nothing
        --
-       pm <- maybe (return []) (findModule . pm_name >=> return . return) new_pm
+       pm <- maybe (return []) (findModule . pmName >=> return . return) new_pm
        (old_top_level, _) <- runGhc Compat.getContext
        let new_top_level = pm ++ old_top_level
        runGhc2 Compat.setContextModules new_top_level unqual_mods
        --
-       onState (\s ->s{qual_imports = quals})
+       onState (\s ->s{qualImports = quals})
 
 -- | 'cleanPhantomModules' works like 'reset', but skips the
 --   loading of the support module that installs '_show'. Its purpose
@@ -277,13 +277,13 @@ cleanPhantomModules =
        -- liftIO $ rts_revertCAFs
        --
        -- We now remove every phantom module and forget about qual imports
-       old_active <- fromState active_phantoms
-       old_zombie <- fromState zombie_phantoms
-       onState (\s -> s{active_phantoms      = [],
-                        zombie_phantoms      = [],
-                        import_qual_hack_mod = Nothing,
-                        qual_imports         = []})
-       liftIO $ mapM_ (removeFile . pm_file) (old_active ++ old_zombie)
+       old_active <- fromState activePhantoms
+       old_zombie <- fromState zombiePhantoms
+       onState (\s -> s{activePhantoms      = [],
+                        zombiePhantoms      = [],
+                        importQualHackMod = Nothing,
+                        qualImports         = []})
+       liftIO $ mapM_ (removeFile . pmFile) (old_active ++ old_zombie)
 
 -- | All imported modules are cleared from the context, and
 --   loaded modules are unloaded. It is similar to a @:load@ in
@@ -299,8 +299,8 @@ reset = do -- clean up context
 -- Load a phantom module with all the symbols from the prelude we need
 installSupportModule :: MonadInterpreter m => m ()
 installSupportModule = do mod <- addPhantomModule support_module
-                          onState (\st -> st{hint_support_module = mod})
-                          mod' <- findModule (pm_name mod)
+                          onState (\st -> st{hintSupportModule = mod})
+                          mod' <- findModule (pmName mod)
                           runGhc2 Compat.setContext [mod'] []
     --
     where support_module m = unlines [
@@ -323,7 +323,7 @@ installSupportModule = do mod <- addPhantomModule support_module
 -- Call it when the support module is an active phantom module but has been
 -- unloaded as a side effect by GHC (e.g. by calling GHC.loadTargets)
 reinstallSupportModule :: MonadInterpreter m => m ()
-reinstallSupportModule = do pm <- fromState hint_support_module
+reinstallSupportModule = do pm <- fromState hintSupportModule
                             removePhantomModule pm
                             installSupportModule
 
@@ -337,11 +337,11 @@ altPreludeName :: ModuleName -> String
 altPreludeName mod_name = "Prelude_" ++ mod_name
 
 supportString :: MonadInterpreter m => m String
-supportString = do mod_name <- fromState (pm_name . hint_support_module)
+supportString = do mod_name <- fromState (pmName . hintSupportModule)
                    return $ concat [mod_name, ".", altStringName mod_name]
 
 supportShow :: MonadInterpreter m => m String
-supportShow = do mod_name <- fromState (pm_name . hint_support_module)
+supportShow = do mod_name <- fromState (pmName . hintSupportModule)
                  return $ concat [mod_name, ".", altShowName mod_name]
 
 -- SHOULD WE CALL THIS WHEN MODULES ARE LOADED / UNLOADED?
