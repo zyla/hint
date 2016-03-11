@@ -31,7 +31,7 @@ testHint =
       --
       say "We can also evaluate an expression; the result will be a string"
       let expr2 = "length $ concat [[f,g],[h]]"
-      say $ "e.g. eval " ++ show expr1
+      say $ "e.g. eval " ++ show expr2
       a <- eval expr2
       say (show a)
       --
