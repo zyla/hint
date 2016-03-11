@@ -112,10 +112,10 @@ mapGhcExceptions :: MonadInterpreter m
                  -> m a
                  -> m a
 mapGhcExceptions buildEx action =
-    do  action
-          `MC.catch` (\err -> case err of
-                                GhcException s -> throwM (buildEx s)
-                                _              -> throwM err)
+    action
+      `MC.catch` (\err -> case err of
+                            GhcException s -> throwM (buildEx s)
+                            _              -> throwM err)
 
 catchIE :: MonadInterpreter m => m a -> (InterpreterError -> m a) -> m a
 catchIE = MC.catch

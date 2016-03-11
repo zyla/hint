@@ -15,7 +15,7 @@ import Prelude hiding ( mod )
 import Data.Char
 import Data.List
 
-import Control.Monad       ( liftM, filterM, when, guard )
+import Control.Monad       ( liftM, filterM, unless, guard )
 import Control.Monad.Trans ( liftIO )
 import Control.Monad.Catch
 
@@ -198,7 +198,7 @@ setTopLevelModules ms =
     do loaded_mods_ghc <- getLoadedModSummaries
        --
        let not_loaded = ms \\ map modNameFromSummary loaded_mods_ghc
-       when (not . null $ not_loaded) $
+       unless (null $ not_loaded) $
          throwM $ NotAllowed ("These modules have not been loaded:\n" ++
                               unlines not_loaded)
        --
@@ -207,7 +207,7 @@ setTopLevelModules ms =
        --
        let mod_is_interpr = runGhc1 GHC.moduleIsInterpreted
        not_interpreted <- filterM (liftM not . mod_is_interpr) ms_mods
-       when (not . null $ not_interpreted) $
+       unless (null $ not_interpreted) $
          throwM $ NotAllowed ("These modules are not interpreted:\n" ++
                               unlines (map moduleToString not_interpreted))
        --
