@@ -162,7 +162,7 @@ loadModules fs = do -- first, unload everything, and do some clean-up
                     doLoad fs `catchIE` (\e  -> reset >> throwM e)
 
 doLoad :: MonadInterpreter m => [String] -> m ()
-doLoad fs = do mayFail $ do
+doLoad fs = mayFail $ do
                    targets <- mapM (\f->runGhc2 GHC.guessTarget f Nothing) fs
                    --
                    runGhc1 GHC.setTargets targets
@@ -179,7 +179,7 @@ isModuleInterpreted m = findModule m >>= runGhc1 GHC.moduleIsInterpreted
 getLoadedModules :: MonadInterpreter m => m [ModuleName]
 getLoadedModules = do (active_pms, zombie_pms) <- getPhantomModules
                       ms <- map modNameFromSummary `liftM` getLoadedModSummaries
-                      return $ ms \\ (map pm_name $ active_pms ++ zombie_pms)
+                      return $ ms \\ map pm_name (active_pms ++ zombie_pms)
 
 modNameFromSummary :: GHC.ModSummary -> ModuleName
 modNameFromSummary =  moduleToString . GHC.ms_mod
@@ -198,7 +198,7 @@ setTopLevelModules ms =
     do loaded_mods_ghc <- getLoadedModSummaries
        --
        let not_loaded = ms \\ map modNameFromSummary loaded_mods_ghc
-       unless (null $ not_loaded) $
+       unless (null not_loaded) $
          throwM $ NotAllowed ("These modules have not been loaded:\n" ++
                               unlines not_loaded)
        --

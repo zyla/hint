@@ -27,7 +27,7 @@ setGhcOptions :: MonadInterpreter m => [String] -> m ()
 setGhcOptions opts =
     do old_flags <- runGhc GHC.getSessionDynFlags
        (new_flags,not_parsed) <- runGhc2 Compat.parseDynamicFlags old_flags opts
-       unless (null $ not_parsed) $
+       unless (null not_parsed) $
             throwM $ UnknownError
                             $ concat ["flags: ", unwords $ map quote not_parsed,
                                                "not recognized"]
