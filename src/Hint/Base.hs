@@ -73,9 +73,6 @@ type InterpreterSession = SessionData ()
 
 instance Exception InterpreterError
 
-adjust :: (a -> b) -> (a -> b)
-adjust = id
-
 type RunGhc  m a =
     (forall n.(MonadIO n, MonadMask n,Functor n) => GHC.GhcT n a)
  -> m a
@@ -126,13 +123,13 @@ type GhcErrLogger = GHC.LogAction
 type ModuleName = String
 
 runGhc1 :: MonadInterpreter m => RunGhc1 m a b
-runGhc1 f a = runGhc (adjust f a)
+runGhc1 f a = runGhc (f a)
 
 runGhc2 :: MonadInterpreter m => RunGhc2 m a b c
-runGhc2 f a = runGhc1 (adjust f a)
+runGhc2 f a = runGhc1 (f a)
 
 runGhc3 :: MonadInterpreter m => RunGhc3 m a b c d
-runGhc3 f a = runGhc2 (adjust f a)
+runGhc3 f a = runGhc2 (f a)
 
 -- ================ Handling the interpreter state =================
 
