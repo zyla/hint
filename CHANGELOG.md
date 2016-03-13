@@ -1,4 +1,4 @@
-### 0.5.0 (upcoming)
+### 0.5.0
 
 * Drop support for GHC 7.4
 * Remove deprecated functions and modules:
