@@ -1,5 +1,6 @@
 module Hint.Eval (
       interpret, as, infer,
+      unsafeInterpret,
       eval, parens
 ) where
 
