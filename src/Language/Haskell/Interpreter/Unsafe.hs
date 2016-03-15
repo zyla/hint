@@ -1,11 +1,13 @@
 module Language.Haskell.Interpreter.Unsafe (
-    unsafeSetGhcOption, unsafeRunInterpreterWithArgs
+    unsafeSetGhcOption, unsafeRunInterpreterWithArgs,
+    unsafeInterpret
 ) where
 
 import Control.Monad.Trans
 import Control.Monad.Catch
 
 import Hint.Base
+import Hint.Eval
 import Hint.Configuration
 import Hint.InterpreterT
 
