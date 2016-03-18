@@ -1,3 +1,7 @@
+### 0.5.1
+
+* Expose `unsafeInterpret` in `Language.Haskell.Interpreter.Unsafe`
+
 ### 0.5.0
 
 * Drop support for GHC 7.4
