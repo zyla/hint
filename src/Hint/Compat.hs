@@ -10,7 +10,6 @@ import qualified Hint.GHC as GHC
 -- to be able to define a FromGhcRep instance for both versions
 newtype Kind = Kind GHC.Kind
 
--- supportedLanguages :: [String]
 supportedExtensions = map f GHC.xFlags
     where
 #if (__GLASGOW_HASKELL__ >= 710)
