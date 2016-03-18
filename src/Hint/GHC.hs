@@ -1,50 +1,35 @@
 module Hint.GHC (
-    module GHC,
-    module Outputable,
-    module ErrUtils, Message,
-    module DriverPhases,
-    module StringBuffer,
-    module Lexer,
-    module Parser,
-    module DynFlags,
-    module FastString,
-    module Control.Monad.Ghc,
-    module HscTypes,
-    module PprTyThing,
-    module SrcLoc,
-#if __GLASGOW_HASKELL__ >= 708
-    module ConLike,
-#endif
+    Message, module X
 ) where
 
-import GHC hiding ( Phase, GhcT, runGhcT )
-import Control.Monad.Ghc ( GhcT, runGhcT )
+import GHC as X hiding ( Phase, GhcT, runGhcT )
+import Control.Monad.Ghc as X ( GhcT, runGhcT )
 
-import HscTypes ( SourceError, srcErrorMessages, GhcApiError )
+import HscTypes as X ( SourceError, srcErrorMessages, GhcApiError )
 
-import Outputable   ( PprStyle, SDoc, Outputable(ppr),
-                      showSDoc, showSDocForUser, showSDocUnqual,
-                      withPprStyle, defaultErrStyle )
+import Outputable as X ( PprStyle, SDoc, Outputable(ppr),
+                         showSDoc, showSDocForUser, showSDocUnqual,
+                         withPprStyle, defaultErrStyle )
 
-import ErrUtils     ( mkLocMessage, pprErrMsgBagWithLoc, MsgDoc) -- we alias MsgDoc as Message below
+import ErrUtils as X ( mkLocMessage, pprErrMsgBagWithLoc, MsgDoc) -- we alias MsgDoc as Message below
 
-import DriverPhases ( Phase(Cpp), HscSource(HsSrcFile) )
-import StringBuffer ( stringToStringBuffer )
-import Lexer        ( P(..), ParseResult(..), mkPState )
-import Parser       ( parseStmt, parseType )
-import FastString   ( fsLit )
+import DriverPhases as X ( Phase(Cpp), HscSource(HsSrcFile) )
+import StringBuffer as X ( stringToStringBuffer )
+import Lexer as X ( P(..), ParseResult(..), mkPState )
+import Parser as X ( parseStmt, parseType )
+import FastString as X ( fsLit )
 
 #if   __GLASGOW_HASKELL__ >= 710
-import DynFlags     ( xFlags, xopt, LogAction, FlagSpec(..) )
+import DynFlags as X ( xFlags, xopt, LogAction, FlagSpec(..) )
 #else
-import DynFlags     ( xFlags, xopt, LogAction )
+import DynFlags as X ( xFlags, xopt, LogAction )
 #endif
 
-import PprTyThing   ( pprTypeForUser )
-import SrcLoc       ( mkRealSrcLoc )
+import PprTyThing as X ( pprTypeForUser )
+import SrcLoc as X ( mkRealSrcLoc )
 
 #if __GLASGOW_HASKELL__ >= 708
-import ConLike      ( ConLike(RealDataCon) )
+import ConLike as X ( ConLike(RealDataCon) )
 #endif
 
 type Message = MsgDoc

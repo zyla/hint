@@ -207,7 +207,7 @@ setTopLevelModules ms =
        --
        let mod_is_interpr = runGhc1 GHC.moduleIsInterpreted
        not_interpreted <- filterM (liftM not . mod_is_interpr) ms_mods
-       unless (null $ not_interpreted) $
+       unless (null not_interpreted) $
          throwM $ NotAllowed ("These modules are not interpreted:\n" ++
                               unlines (map moduleToString not_interpreted))
        --
