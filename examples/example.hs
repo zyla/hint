@@ -1,11 +1,23 @@
+import Data.List
+
 import Control.Monad
 import Language.Haskell.Interpreter
 
 main :: IO ()
 main = do r <- runInterpreter testHint
           case r of
-            Left err -> printInterpreterError err
+            Left err -> putStrLn $ errorString err
             Right () -> putStrLn "that's all folks"
+
+errorString :: InterpreterError -> String
+errorString (WontCompile es) = intercalate "\n" (header : map unbox es)
+  where
+    header = "ERROR: Won't compile:"
+    unbox (GhcError e) = e
+errorString e = show e
+
+say :: String -> Interpreter ()
+say = liftIO . putStrLn
 
 -- observe that Interpreter () is an alias for InterpreterT IO ()
 testHint :: Interpreter ()
@@ -53,10 +65,3 @@ testHint =
       say "Here we evaluate an expression of type string, that when evaluated (again) leads to a string"
       res <- interpret "head $ map show [\"Worked!\", \"Didn't work\"]" infer >>= flip interpret infer
       say res
-
-say :: String -> Interpreter ()
-say = liftIO . putStrLn
-
-printInterpreterError :: InterpreterError -> IO ()
-printInterpreterError e = putStrLn $ "Ups... " ++ show e
-
