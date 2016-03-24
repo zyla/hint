@@ -43,7 +43,7 @@ instance MTL.MonadIO m => GHC.MonadIO (GhcT m) where
 instance MonadCatch m => MonadThrow (GhcT m) where
     throwM = lift . throwM
 
-instance (MonadIO m,MonadCatch m, MonadMask m) => MonadCatch (GhcT m) where
+instance (MonadIO m, MonadCatch m, MonadMask m) => MonadCatch (GhcT m) where
     m `catch` f = GhcT (unGhcT m `GHC.gcatch` (unGhcT . f))
 
 instance (MonadIO m, MonadMask m) => MonadMask (GhcT m) where

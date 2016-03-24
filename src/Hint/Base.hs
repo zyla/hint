@@ -61,7 +61,7 @@ data InterpreterState = St {
                            hintSupportModule :: PhantomModule,
                            importQualHackMod :: Maybe PhantomModule,
                            qualImports       :: [(ModuleName, String)],
-                           defaultExts       :: [(Extension,Bool)], -- R/O
+                           defaultExts       :: [(Extension, Bool)], -- R/O
                            configuration     :: InterpreterConfiguration
                         }
 
@@ -76,7 +76,7 @@ type InterpreterSession = SessionData ()
 instance Exception InterpreterError
 
 type RunGhc  m a =
-    (forall n.(MonadIO n, MonadMask n,Functor n) => GHC.GhcT n a)
+    (forall n.(MonadIO n, MonadMask n, Functor n) => GHC.GhcT n a)
  -> m a
 
 type RunGhc1 m a b =
@@ -152,10 +152,10 @@ mayFail action =
         es <- modifySessionRef ghcErrListRef (const [])
         --
         case (maybe_res, null es) of
-            (Nothing,True)  -> throwM $ UnknownError "Got no error message"
-            (Nothing,False) -> throwM $ WontCompile (reverse es)
-            (Just a, True)  -> return a
-            (Just _, False) -> fail $ "GHC returned a result but said: " ++
+            (Nothing, True)  -> throwM $ UnknownError "Got no error message"
+            (Nothing, False) -> throwM $ WontCompile (reverse es)
+            (Just a,  True)  -> return a
+            (Just _,  False) -> fail $ "GHC returned a result but said: " ++
                                       show es
 
 -- ================= Debugging stuff ===============

@@ -67,7 +67,7 @@ test_work_in_main = TestCase "work_in_main" [mod_file] $ do
                         liftIO $ writeFile mod_file "f = id"
                         loadModules [mod_file]
                         setTopLevelModules ["Main"]
-                        setImportsQ [("Prelude",Nothing),
+                        setImportsQ [("Prelude", Nothing),
                                        ("Data.Maybe", Just "Mb")]
                         --
                         typeOf "f $ (1 + 1 :: Int)" @@?= "Int"

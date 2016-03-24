@@ -40,7 +40,7 @@ module Language.Haskell.Interpreter(
     -- * Error handling
      InterpreterError(..), GhcError(..), MultipleInstancesNotAllowed(..),
     -- * Miscellaneous
-     ghcVersion,parens,
+     ghcVersion, parens,
      module Control.Monad.Trans
 ) where
 
