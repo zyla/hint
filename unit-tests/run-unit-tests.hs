@@ -106,12 +106,10 @@ test_qual_import = TestCase "qual_import" [] $ do
                            return ()
 
 test_basic_eval :: TestCase
-test_basic_eval = TestCase "basic_eval" [] $ do
-                           eval "()" @@?= "()"
+test_basic_eval = TestCase "basic_eval" [] $ eval "()" @@?= "()"
 
 test_eval_layout :: TestCase
-test_eval_layout = TestCase "eval_layout" [] $ do
-                           eval layout_expr @@?= "10"
+test_eval_layout = TestCase "eval_layout" [] $ eval layout_expr @@?= "10"
     where layout_expr = unlines ["let x = let y = 10",
                                  "        in y",
                                  "in x"]
@@ -194,8 +192,7 @@ test_catch = TestCase "catch" [] $ do
                       return $! s
 
 test_only_one_instance :: TestCase
-test_only_one_instance = TestCase "only_one_instance" [] $ do
-    liftIO $ do
+test_only_one_instance = TestCase "only_one_instance" [] $ liftIO $ do
         r <- newEmptyMVar
         let concurrent = runInterpreter (liftIO $ putMVar r False)
                           `catch` \MultipleInstancesNotAllowed ->
