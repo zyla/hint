@@ -4,10 +4,10 @@ module Hint.Eval (
       eval, parens
 ) where
 
-import qualified GHC.Exts ( unsafeCoerce# )
+import qualified GHC.Exts (unsafeCoerce#)
 
-import Data.Typeable hiding ( typeOf )
-import qualified Data.Typeable ( typeOf )
+import Data.Typeable hiding (typeOf)
+import qualified Data.Typeable (typeOf)
 
 import Hint.Base
 import Hint.Context

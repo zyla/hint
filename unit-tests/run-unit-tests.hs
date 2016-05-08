@@ -1,13 +1,13 @@
-module Main ( main ) where
+module Main (main) where
 
-import Prelude hiding ( catch )
+import Prelude hiding (catch)
 
-import Control.Exception.Extensible ( ArithException(..) )
+import Control.Exception.Extensible (ArithException(..))
 import Control.Monad.Catch as MC
 
-import Control.Monad       ( liftM, when, void )
+import Control.Monad (liftM, when, void)
 
-import Control.Concurrent ( forkIO )
+import Control.Concurrent (forkIO)
 import Control.Concurrent.MVar
 
 import System.IO
@@ -15,7 +15,7 @@ import System.FilePath
 import System.Directory
 import System.Exit
 
-import Test.HUnit ( (@?=), (@?) )
+import Test.HUnit ((@?=), (@?))
 import qualified Test.HUnit as HUnit
 
 import Language.Haskell.Interpreter
@@ -42,9 +42,9 @@ test_reload_modified = TestCase "reload_modified" [mod_file] $ do
                               "f :: Int -> Int",
                               "f = (1 +)"]
           --
-          get_f    =  do loadModules [mod_file]
-                         setTopLevelModules [mod_name]
-                         interpret "f" (as :: Int -> Int)
+          get_f    = do loadModules [mod_file]
+                        setTopLevelModules [mod_name]
+                        interpret "f" (as :: Int -> Int)
 
 test_lang_exts :: TestCase
 test_lang_exts = TestCase "lang_exts" [mod_file] $ do

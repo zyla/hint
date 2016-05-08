@@ -10,19 +10,19 @@ module Hint.Context (
       supportString, supportShow
 ) where
 
-import Prelude hiding ( mod )
+import Prelude hiding (mod)
 
 import Data.Char
 import Data.List
 
-import Control.Monad       ( liftM, filterM, unless, guard )
-import Control.Monad.Trans ( liftIO )
+import Control.Monad       (liftM, filterM, unless, guard)
+import Control.Monad.Trans (liftIO)
 import Control.Monad.Catch
 
 import Hint.Base
-import Hint.Util ( (>=>) ) -- compat version
+import Hint.Util ((>=>)) -- compat version
 import Hint.Conversions
-import qualified Hint.Util   as Util
+import qualified Hint.Util as Util
 import qualified Hint.Compat as Compat
 import qualified Hint.CompatPlatform as Compat
 
@@ -62,8 +62,8 @@ addPhantomModule :: MonadInterpreter m
                  -> m PhantomModule
 addPhantomModule mod_text =
     do pm <- newPhantomModule
-       let t  = Compat.fileTarget (pmFile pm)
-           m  = GHC.mkModuleName (pmName pm)
+       let t = Compat.fileTarget (pmFile pm)
+           m = GHC.mkModuleName (pmName pm)
        --
        liftIO $ writeFile (pmFile pm) (mod_text $ pmName pm)
        --
@@ -159,7 +159,7 @@ isPhantomModule mn = do (as,zs) <- getPhantomModules
 loadModules :: MonadInterpreter m => [String] -> m ()
 loadModules fs = do -- first, unload everything, and do some clean-up
                     reset
-                    doLoad fs `catchIE` (\e  -> reset >> throwM e)
+                    doLoad fs `catchIE` (\e -> reset >> throwM e)
 
 doLoad :: MonadInterpreter m => [String] -> m ()
 doLoad fs = mayFail $ do
@@ -182,7 +182,7 @@ getLoadedModules = do (active_pms, zombie_pms) <- getPhantomModules
                       return $ ms \\ map pmName (active_pms ++ zombie_pms)
 
 modNameFromSummary :: GHC.ModSummary -> ModuleName
-modNameFromSummary =  moduleToString . GHC.ms_mod
+modNameFromSummary = moduleToString . GHC.ms_mod
 
 getLoadedModSummaries :: MonadInterpreter m => m [GHC.ModSummary]
 getLoadedModSummaries =
@@ -345,4 +345,4 @@ supportShow = do mod_name <- fromState (pmName . hintSupportModule)
                  return $ concat [mod_name, ".", altShowName mod_name]
 
 -- SHOULD WE CALL THIS WHEN MODULES ARE LOADED / UNLOADED?
--- foreign import ccall "revertCAFs" rts_revertCAFs  :: IO ()
+-- foreign import ccall "revertCAFs" rts_revertCAFs :: IO ()

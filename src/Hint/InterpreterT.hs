@@ -14,9 +14,9 @@ import Hint.Extension
 import Control.Monad.Reader
 import Control.Monad.Catch as MC
 
-import Data.Typeable ( Typeable )
+import Data.Typeable (Typeable)
 import Control.Concurrent.MVar
-import System.IO.Unsafe ( unsafePerformIO )
+import System.IO.Unsafe (unsafePerformIO)
 
 import Data.IORef
 import Data.Maybe
@@ -152,13 +152,13 @@ instance Show MultipleInstancesNotAllowed where
 
 initialState :: InterpreterState
 initialState = St {
-                   activePhantoms      = [],
-                   zombiePhantoms      = [],
-                   hintSupportModule  = error "No support module loaded!",
+                   activePhantoms    = [],
+                   zombiePhantoms    = [],
+                   hintSupportModule = error "No support module loaded!",
                    importQualHackMod = Nothing,
-                   qualImports         = [],
-                   defaultExts          = error "defaultExts missing!",
-                   configuration        = defaultConf
+                   qualImports       = [],
+                   defaultExts       = error "defaultExts missing!",
+                   configuration     = defaultConf
                   }
 
 newSessionData :: MonadIO m => a -> m (SessionData a)

@@ -14,12 +14,12 @@ module Hint.Configuration (
 import Control.Monad
 import Control.Monad.Catch
 import Data.Char
-import Data.List ( intercalate )
+import Data.List (intercalate)
 
 import qualified Hint.GHC as GHC
 import qualified Hint.Compat as Compat
 import Hint.Base
-import Hint.Util ( quote )
+import Hint.Util (quote)
 
 import Hint.Extension
 
@@ -75,7 +75,7 @@ get = _get
 languageExtensions :: MonadInterpreter m => Option m [Extension]
 languageExtensions = Option setter getter
     where setter es = do resetExtensions
-                         setGhcOptions $ map (extFlag True)  es
+                         setGhcOptions $ map (extFlag True) es
                          onConf $ \c -> c{languageExts = es}
           --
           getter = fromConf languageExts

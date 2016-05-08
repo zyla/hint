@@ -1,11 +1,11 @@
 module Hint.Parsers where
 
-import Prelude hiding(span)
+import Prelude hiding (span)
 
 import Hint.Base
 import qualified Hint.Compat as Compat
 
-import Control.Monad.Trans ( liftIO )
+import Control.Monad.Trans (liftIO)
 
 import qualified Hint.GHC as GHC
 
