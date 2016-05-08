@@ -103,7 +103,6 @@ test_qual_import = TestCase "qual_import" [] $ do
                                         ("Data.Map", Just "M")]
                            typeChecks "null []" @@? "Unqual null"
                            typeChecks "M.null M.empty" @@? "Qual null"
-                           return ()
 
 test_basic_eval :: TestCase
 test_basic_eval = TestCase "basic_eval" [] $ eval "()" @@?= "()"

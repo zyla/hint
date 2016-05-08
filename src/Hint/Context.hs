@@ -119,8 +119,7 @@ removePhantomModule pm =
          then do mayFail $ do res <- runGhc1 GHC.load GHC.LoadAllTargets
                               return $ guard (isSucceeded res) >> Just ()
                  liftIO $ removeFile (pmFile pm)
-         else do onState (\s -> s{zombiePhantoms = pm:zombiePhantoms s})
-                 return ()
+         else onState (\s -> s{zombiePhantoms = pm:zombiePhantoms s})
 
 -- Returns a tuple with the active and zombie phantom modules respectively
 getPhantomModules :: MonadInterpreter m => m ([PhantomModule], [PhantomModule])
