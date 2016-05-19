@@ -68,8 +68,8 @@ showGhcEx = flip GHC.showGhcException ""
 -- ================= Executing the interpreter ==================
 
 initialize :: (MonadIO m, MonadThrow m, MonadMask m, Functor m)
-              => [String]
-              -> InterpreterT m ()
+           => [String]
+           -> InterpreterT m ()
 initialize args =
     do log_handler <- fromSession ghcErrLogger
        -- Set a custom log handler, to intercept error messages :S
@@ -114,9 +114,9 @@ runInterpreter = runInterpreterWithArgs []
 -- were command-line args. Returns @Left InterpreterError@ in case of
 -- error.
 runInterpreterWithArgs :: (MonadIO m, MonadMask m, Functor m)
-                          => [String]
-                          -> InterpreterT m a
-                          -> m (Either InterpreterError a)
+                       => [String]
+                       -> InterpreterT m a
+                       -> m (Either InterpreterError a)
 runInterpreterWithArgs args action =
   ifInterpreterNotRunning $
     do s <- newInterpreterSession `MC.catch` rethrowGhcException
@@ -162,7 +162,7 @@ initialState = St {
                   }
 
 newSessionData :: MonadIO m => a -> m (SessionData a)
-newSessionData  a =
+newSessionData a =
     do initial_state    <- liftIO $ newIORef initialState
        ghc_err_list_ref <- liftIO $ newIORef []
        return SessionData {

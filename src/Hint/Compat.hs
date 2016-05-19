@@ -61,7 +61,7 @@ configureDynFlags dflags = dflags{GHC.ghcMode    = GHC.CompManager,
                                   GHC.verbosity  = 0}
 
 parseDynamicFlags :: GHC.GhcMonad m
-                   => GHC.DynFlags -> [String] -> m (GHC.DynFlags, [String])
+                  => GHC.DynFlags -> [String] -> m (GHC.DynFlags, [String])
 parseDynamicFlags d = fmap firstTwo . GHC.parseDynamicFlags d . map GHC.noLoc
     where firstTwo (a,b,_) = (a, map GHC.unLoc b)
 
