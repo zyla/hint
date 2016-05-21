@@ -1,5 +1,6 @@
 module Hint.InterpreterT (
-    InterpreterT, Interpreter, runInterpreter, runInterpreterWithArgs,
+    InterpreterT, Interpreter,
+    runInterpreter, runInterpreterWithArgs, runInterpreterWithArgsLibdir,
     MultipleInstancesNotAllowed(..)
 ) where
 

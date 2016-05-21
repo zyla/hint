@@ -1,5 +1,5 @@
 module Language.Haskell.Interpreter.Unsafe (
-    unsafeSetGhcOption, unsafeRunInterpreterWithArgs,
+    unsafeSetGhcOption, unsafeRunInterpreterWithArgs, unsafeRunInterpreterWithArgsLibdir,
     unsafeInterpret
 ) where
 
@@ -29,3 +29,16 @@ unsafeRunInterpreterWithArgs :: (MonadMask m, MonadIO m, Functor m)
                              -> InterpreterT m a
                              -> m (Either InterpreterError a)
 unsafeRunInterpreterWithArgs = runInterpreterWithArgs
+
+-- | A variant of @unsafeRunInterpreterWithArgs@ which also lets you
+--   specify the folder in which the GHC bootstrap libraries (base,
+--   containers, etc.) can be found. This allows you to run hint on
+--   a machine in which GHC is not installed.
+--
+--   A typical libdir value would be "/opt/ghc/7.10.3/lib/ghc-7.10.3".
+unsafeRunInterpreterWithArgsLibdir :: (MonadIO m, MonadMask m, Functor m)
+                                   => [String]
+                                   -> String
+                                   -> InterpreterT m a
+                                   -> m (Either InterpreterError a)
+unsafeRunInterpreterWithArgsLibdir = runInterpreterWithArgsLibdir
