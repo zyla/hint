@@ -2,6 +2,7 @@ module Hint.Typecheck (
       typeOf, typeChecks, kindOf,
 ) where
 
+import Control.Monad (liftM)
 import Control.Monad.Catch
 
 import Hint.Base
@@ -9,6 +10,7 @@ import Hint.Parsers
 import Hint.Conversions
 
 import qualified Hint.Compat as Compat
+import qualified Hint.GHC as GHC
 
 -- | Returns a string representation of the type of the expression.
 typeOf :: MonadInterpreter m => String -> m String
@@ -18,7 +20,7 @@ typeOf expr =
        -- kind of errors
        failOnParseError parseExpr expr
        --
-       ty <- mayFail $ runGhc1 Compat.exprType expr
+       ty <- mayFail $ runGhc1 exprType expr
        --
        typeToString ty
 
@@ -36,9 +38,17 @@ kindOf type_expr =
        -- kind of errors
        failOnParseError parseType type_expr
        --
-       kind <- mayFail $ runGhc1 Compat.typeKind type_expr
+       kind <- mayFail $ runGhc1 typeKind type_expr
        --
        kindToString (Compat.Kind kind)
+
+-- add a bogus Maybe, in order to use it with mayFail
+exprType :: GHC.GhcMonad m => String -> m (Maybe GHC.Type)
+exprType = fmap Just . GHC.exprType
+
+-- add a bogus Maybe, in order to use it with mayFail
+typeKind :: GHC.GhcMonad m => String -> m (Maybe GHC.Kind)
+typeKind = fmap Just . (liftM snd) . (GHC.typeKind True)
 
 onCompilationError :: MonadInterpreter m
                    => ([GhcError] -> m a)

@@ -14,7 +14,7 @@ import Hint.Context
 import Hint.Parsers
 import Hint.Util
 
-import qualified Hint.Compat as Compat
+import qualified Hint.GHC as GHC
 
 -- | Convenience functions to be used with @interpret@ to provide witnesses.
 --   Example:
@@ -38,9 +38,13 @@ unsafeInterpret expr type_str =
        failOnParseError parseExpr expr
        --
        let expr_typesig = concat [parens expr, " :: ", type_str]
-       expr_val <- mayFail $ runGhc1 Compat.compileExpr expr_typesig
+       expr_val <- mayFail $ runGhc1 compileExpr expr_typesig
        --
        return (GHC.Exts.unsafeCoerce# expr_val :: a)
+
+-- add a bogus Maybe, in order to use it with mayFail
+compileExpr :: GHC.GhcMonad m => String -> m (Maybe GHC.HValue)
+compileExpr = fmap Just . GHC.compileExpr
 
 -- | @eval expr@ will evaluate @show expr@.
 --  It will succeed only if @expr@ has type t and there is a 'Show'

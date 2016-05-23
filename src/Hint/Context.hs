@@ -15,7 +15,7 @@ import Prelude hiding (mod)
 import Data.Char
 import Data.List
 
-import Control.Monad       (liftM, filterM, unless, guard)
+import Control.Monad       (liftM, filterM, unless, guard, foldM)
 import Control.Monad.Trans (liftIO)
 import Control.Monad.Catch
 
@@ -23,7 +23,6 @@ import Hint.Base
 import Hint.Util ((>=>)) -- compat version
 import Hint.Conversions
 import qualified Hint.Util as Util
-import qualified Hint.Compat as Compat
 import qualified Hint.CompatPlatform as Compat
 
 import qualified Hint.GHC as GHC
@@ -55,14 +54,53 @@ newPhantomModule =
        return PhantomModule{pmName = mod_name, pmFile = tmp_dir </> nums}
 
 allModulesInContext :: MonadInterpreter m => m ([ModuleName], [ModuleName])
-allModulesInContext = runGhc Compat.getContextNames
+allModulesInContext = runGhc getContextNames
+
+getContext :: GHC.GhcMonad m => m ([GHC.Module], [GHC.ImportDecl GHC.RdrName])
+getContext = GHC.getContext >>= foldM f ([], [])
+  where
+    f :: (GHC.GhcMonad m) =>
+         ([GHC.Module], [GHC.ImportDecl GHC.RdrName]) ->
+         GHC.InteractiveImport ->
+         m ([GHC.Module], [GHC.ImportDecl GHC.RdrName])
+    f (ns, ds) i = case i of
+      (GHC.IIDecl d)     -> return (ns, d : ds)
+      m@(GHC.IIModule _) -> do n <- iiModToMod m; return (n : ns, ds)
+
+modToIIMod :: GHC.Module -> GHC.InteractiveImport
+modToIIMod = GHC.IIModule . GHC.moduleName
+
+iiModToMod :: GHC.GhcMonad m => GHC.InteractiveImport -> m GHC.Module
+iiModToMod (GHC.IIModule m) = GHC.findModule m Nothing
+iiModToMod _ = error "iiModToMod!"
+
+getContextNames :: GHC.GhcMonad m => m([String], [String])
+getContextNames = fmap (\(as,bs) -> (map name as, map decl bs)) getContext
+    where name = GHC.moduleNameString . GHC.moduleName
+          decl = GHC.moduleNameString . GHC.unLoc . GHC.ideclName
+
+setContext :: GHC.GhcMonad m => [GHC.Module] -> [GHC.ImportDecl GHC.RdrName] -> m ()
+setContext ms ds =
+  let ms' = map modToIIMod ms
+      ds' = map GHC.IIDecl ds
+      is = ms' ++ ds'
+  in GHC.setContext is
+
+-- Explicitly-typed variants of getContext/setContext, for use where we modify
+-- or override the context.
+setContextModules :: GHC.GhcMonad m => [GHC.Module] -> [GHC.Module] -> m ()
+setContextModules as = setContext as . map (GHC.simpleImportDecl . GHC.moduleName)
+
+fileTarget :: FilePath -> GHC.Target
+fileTarget f = GHC.Target (GHC.TargetFile f $ Just next_phase) True Nothing
+    where next_phase = GHC.Cpp GHC.HsSrcFile
 
 addPhantomModule :: MonadInterpreter m
                  => (ModuleName -> ModuleText)
                  -> m PhantomModule
 addPhantomModule mod_text =
     do pm <- newPhantomModule
-       let t = Compat.fileTarget (pmFile pm)
+       let t = fileTarget (pmFile pm)
            m = GHC.mkModuleName (pmName pm)
        --
        liftIO $ writeFile (pmFile pm) (mod_text $ pmName pm)
@@ -70,13 +108,13 @@ addPhantomModule mod_text =
        onState (\s -> s{activePhantoms = pm:activePhantoms s})
        mayFail (do -- GHC.load will remove all the modules from scope, so first
                    -- we save the context...
-                   (old_top, old_imps) <- runGhc Compat.getContext
+                   (old_top, old_imps) <- runGhc getContext
                    --
                    runGhc1 GHC.addTarget t
                    res <- runGhc1 GHC.load (GHC.LoadUpTo m)
                    --
                    if isSucceeded res
-                     then do runGhc2 Compat.setContext old_top old_imps
+                     then do runGhc2 setContext old_top old_imps
                              return $ Just ()
                      else return Nothing)
         `catchIE` (\err -> case err of
@@ -101,9 +139,9 @@ removePhantomModule pm =
            if isLoaded
              then do -- take it out of scope
                      mod <- findModule (pmName pm)
-                     (mods, imps) <- runGhc Compat.getContext
+                     (mods, imps) <- runGhc getContext
                      let mods' = filter (mod /=) mods
-                     runGhc2 Compat.setContext mods' imps
+                     runGhc2 setContext mods' imps
                      --
                      let isNotPhantom = isPhantomModule . moduleToString  >=>
                                           return . not
@@ -111,7 +149,7 @@ removePhantomModule pm =
              else return True
        --
        let file_name = pmFile pm
-       runGhc1 GHC.removeTarget (GHC.targetId $ Compat.fileTarget file_name)
+       runGhc1 GHC.removeTarget (GHC.targetId $ fileTarget file_name)
        --
        onState (\s -> s{activePhantoms = filter (pm /=) $ activePhantoms s})
        --
@@ -210,8 +248,8 @@ setTopLevelModules ms =
          throwM $ NotAllowed ("These modules are not interpreted:\n" ++
                               unlines (map moduleToString not_interpreted))
        --
-       (_, old_imports) <- runGhc Compat.getContext
-       runGhc2 Compat.setContext ms_mods old_imports
+       (_, old_imports) <- runGhc getContext
+       runGhc2 setContext ms_mods old_imports
 
 -- | Sets the modules whose exports must be in context.
 --
@@ -251,9 +289,9 @@ setImportsQ ms =
                    else return Nothing
        --
        pm <- maybe (return []) (findModule . pmName >=> return . return) new_pm
-       (old_top_level, _) <- runGhc Compat.getContext
+       (old_top_level, _) <- runGhc getContext
        let new_top_level = pm ++ old_top_level
-       runGhc2 Compat.setContextModules new_top_level unqual_mods
+       runGhc2 setContextModules new_top_level unqual_mods
        --
        onState (\s ->s{qualImports = quals})
 
@@ -263,7 +301,7 @@ setImportsQ ms =
 cleanPhantomModules :: MonadInterpreter m => m ()
 cleanPhantomModules =
     do -- Remove all modules from context
-       runGhc2 Compat.setContext [] []
+       runGhc2 setContext [] []
        --
        -- Unload all previously loaded modules
        runGhc1 GHC.setTargets []
@@ -300,7 +338,7 @@ installSupportModule :: MonadInterpreter m => m ()
 installSupportModule = do mod <- addPhantomModule support_module
                           onState (\st -> st{hintSupportModule = mod})
                           mod' <- findModule (pmName mod)
-                          runGhc2 Compat.setContext [mod'] []
+                          runGhc2 setContext [mod'] []
     --
     where support_module m = unlines [
                                "module " ++ m ++ "( ",

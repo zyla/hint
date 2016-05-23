@@ -190,7 +190,7 @@ mkLogHandler r df _ src style msg =
 mkGhcError :: (GHC.SDoc -> String) -> GHC.SrcSpan -> GHC.PprStyle -> GHC.Message -> GhcError
 mkGhcError render src_span style msg = GhcError{errMsg = niceErrMsg}
     where niceErrMsg = render . GHC.withPprStyle style $
-                         Compat.mkLocMessage src_span msg
+                         GHC.mkLocMessage GHC.SevError src_span msg
 
 -- The MonadInterpreter instance
 

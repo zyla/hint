@@ -3,7 +3,6 @@ module Hint.Parsers where
 import Prelude hiding (span)
 
 import Hint.Base
-import qualified Hint.Compat as Compat
 
 import Control.Monad.Trans (liftIO)
 
@@ -21,7 +20,7 @@ runParser :: MonadInterpreter m => GHC.P a -> String -> m ParseResult
 runParser parser expr =
     do dyn_fl <- runGhc GHC.getSessionDynFlags
        --
-       buf <- Compat.stringToStringBuffer expr
+       buf <- (return . GHC.stringToStringBuffer) expr
        --
        -- ghc >= 7 panics if noSrcLoc is given
        let srcLoc = GHC.mkRealSrcLoc (GHC.fsLit "<hint>") 1 1
