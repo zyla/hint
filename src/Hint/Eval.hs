@@ -65,5 +65,5 @@ eval expr = do in_scope_show   <- supportShow
 -- Solution: @parens s = \"(let {foo =\n\" ++ s ++ \"\\n ;} in foo)\"@ where @foo@ does not occur in @s@
 parens :: String -> String
 parens s = concat ["(let {", foo, " =\n", s, "\n",
-                    "                     ;} in ", foo, ")"]
+                   "                     ;} in ", foo, ")"]
     where foo = safeBndFor s

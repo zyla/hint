@@ -13,8 +13,8 @@ import Control.Monad.Catch
 
 import qualified GHC (runGhcT)
 import qualified MonadUtils as GHC
-import qualified Exception  as GHC
-import qualified GhcMonad   as GHC
+import qualified Exception as GHC
+import qualified GhcMonad as GHC
 
 import qualified DynFlags as GHC
 

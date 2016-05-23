@@ -45,14 +45,14 @@ asModElemList df xs = concat [
                       ]
     where (cs,ts,ds,fs) =
            (
-             [asModElem df c | c@(GHC.ATyCon c')   <- xs, GHC.isClassTyCon c'],
-             [asModElem df t | t@(GHC.ATyCon c')   <- xs, (not . GHC.isClassTyCon) c'],
+             [asModElem df c | c@(GHC.ATyCon c') <- xs, GHC.isClassTyCon c'],
+             [asModElem df t | t@(GHC.ATyCon c') <- xs, (not . GHC.isClassTyCon) c'],
 #if __GLASGOW_HASKELL__ < 708
              [asModElem df d | d@GHC.ADataCon{} <- xs],
 #else
              [asModElem df d | d@(GHC.AConLike (GHC.RealDataCon{})) <- xs],
 #endif
-             [asModElem df f | f@GHC.AnId{}     <- xs]
+             [asModElem df f | f@GHC.AnId{} <- xs]
            )
           cs' = [Class n $ filter (alsoIn fs) ms  | Class n ms  <- cs]
           ts' = [Data  t $ filter (alsoIn ds) dcs | Data  t dcs <- ts]

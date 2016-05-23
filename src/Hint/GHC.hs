@@ -19,7 +19,7 @@ import Lexer as X (P(..), ParseResult(..), mkPState)
 import Parser as X (parseStmt, parseType)
 import FastString as X (fsLit)
 
-#if   __GLASGOW_HASKELL__ >= 710
+#if __GLASGOW_HASKELL__ >= 710
 import DynFlags as X (xFlags, xopt, LogAction, FlagSpec(..))
 #else
 import DynFlags as X (xFlags, xopt, LogAction)
