@@ -9,14 +9,12 @@ import Control.Applicative
 import Prelude
 
 #if defined(mingw32_HOST_OS) || defined(__MINGW32__)
-
 import Data.Word
-
 #else
-
 import System.Posix.Process
-
 #endif
+
+getPID :: IO Int
 
 #if defined(mingw32_HOST_OS) || defined(__MINGW32__)
 -- This function is not yet in the win32 package, so we have to
@@ -27,12 +25,7 @@ import System.Posix.Process
 foreign import stdcall unsafe "winbase.h GetCurrentProcessId"
     c_GetCurrentProcessId :: IO Word32
 
-getPID :: IO Int
 getPID = fromIntegral <$> c_GetCurrentProcessId
-
 #else
-
-getPID :: IO Int
 getPID = fromIntegral <$> getProcessID
-
 #endif
