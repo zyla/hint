@@ -5,7 +5,7 @@ import Prelude hiding (catch)
 import Control.Exception.Extensible (ArithException(..))
 import Control.Monad.Catch as MC
 
-import Control.Monad (liftM, when, void)
+import Control.Monad (liftM, when, void, (>=>))
 
 import Control.Concurrent (forkIO)
 import Control.Concurrent.MVar
@@ -236,9 +236,6 @@ printInterpreterError = hPrint stderr
 
 setSandbox :: Interpreter ()
 setSandbox = set [installedModulesInScope := False]
-
-(>=>) :: Monad m => (a -> m b) -> (b -> m c) -> (a -> m c)
-f >=> g = \a -> f a >>= g
 
 (@@?) :: (HUnit.AssertionPredicable p, MonadIO m) => m p -> String -> m ()
 p @@? msg = do b <- p; liftIO (b @? msg)

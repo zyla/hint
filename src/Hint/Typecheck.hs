@@ -2,7 +2,6 @@ module Hint.Typecheck (
       typeOf, typeChecks, kindOf,
 ) where
 
-import Control.Monad (liftM)
 import Control.Monad.Catch
 
 import Hint.Base
@@ -48,7 +47,7 @@ exprType = fmap Just . GHC.exprType
 
 -- add a bogus Maybe, in order to use it with mayFail
 typeKind :: GHC.GhcMonad m => String -> m (Maybe GHC.Kind)
-typeKind = fmap Just . (liftM snd) . (GHC.typeKind True)
+typeKind = fmap (Just . snd) . GHC.typeKind True
 
 onCompilationError :: MonadInterpreter m
                    => ([GhcError] -> m a)

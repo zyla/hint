@@ -15,12 +15,13 @@ import Prelude hiding (mod)
 import Data.Char
 import Data.List
 
-import Control.Monad       (liftM, filterM, unless, guard, foldM)
+import Control.Arrow ((***))
+
+import Control.Monad       (liftM, filterM, unless, guard, foldM, (>=>))
 import Control.Monad.Trans (liftIO)
 import Control.Monad.Catch
 
 import Hint.Base
-import Hint.Util ((>=>)) -- compat version
 import Hint.Conversions
 import qualified Hint.Util as Util
 import qualified Hint.CompatPlatform as Compat
@@ -75,7 +76,7 @@ iiModToMod (GHC.IIModule m) = GHC.findModule m Nothing
 iiModToMod _ = error "iiModToMod!"
 
 getContextNames :: GHC.GhcMonad m => m([String], [String])
-getContextNames = fmap (\(as,bs) -> (map name as, map decl bs)) getContext
+getContextNames = fmap (map name *** map decl) getContext
     where name = GHC.moduleNameString . GHC.moduleName
           decl = GHC.moduleNameString . GHC.unLoc . GHC.ideclName
 
