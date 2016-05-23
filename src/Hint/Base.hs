@@ -154,9 +154,7 @@ mayFail action =
         case (maybe_res, null es) of
             (Nothing, True)  -> throwM $ UnknownError "Got no error message"
             (Nothing, False) -> throwM $ WontCompile (reverse es)
-            (Just a,  True)  -> return a
-            (Just _,  False) -> fail $ "GHC returned a result but said: " ++
-                                      show es
+            (Just a, _)      -> return a
 
 -- ================= Debugging stuff ===============
 
