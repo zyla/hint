@@ -28,7 +28,7 @@ module Language.Haskell.Interpreter(
     -- ** Module querying
      ModuleElem(..), Id, name, children,
      getModuleExports,
-    -- ** Anotations
+    -- ** Annotations
     -- In the snippets below we use \'LBRACE\' and \'RBRACE\'
     -- to mean \'{\' and \'}\' respectively. We cannot put the
     -- pragmas inline in the code since GHC scarfs them up.
