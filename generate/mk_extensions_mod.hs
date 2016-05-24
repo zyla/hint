@@ -1,4 +1,5 @@
 import Language.Haskell.Extension
+import Distribution.Text
 import Text.PrettyPrint
 
 main = writeFile "src/Hint/Extension.hs" $ render moduleDoc
@@ -38,8 +39,15 @@ moduleDoc =
     text ""
   ]
 
+allKnown :: [KnownExtension]
+allKnown = [(minBound :: KnownExtension)..]
+
+allPositive, allNegative :: [Extension]
+allPositive = map EnableExtension allKnown
+allNegative = map DisableExtension allKnown
+
 known :: [Doc]
-known = map (text . show) [(minBound :: KnownExtension)..]
+known = map disp (allPositive ++ allNegative)
 
 unknown :: Doc
 unknown = text "UnknownExtension String"

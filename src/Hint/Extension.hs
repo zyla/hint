@@ -127,6 +127,112 @@ data Extension = OverlappingInstances
                | PartialTypeSignatures
                | NamedWildCards
                | DeriveAnyClass
+               | NoOverlappingInstances
+               | NoUndecidableInstances
+               | NoIncoherentInstances
+               | NoDoRec
+               | NoRecursiveDo
+               | NoParallelListComp
+               | NoMultiParamTypeClasses
+               | NoMonomorphismRestriction
+               | NoFunctionalDependencies
+               | NoRank2Types
+               | NoRankNTypes
+               | NoPolymorphicComponents
+               | NoExistentialQuantification
+               | NoScopedTypeVariables
+               | NoPatternSignatures
+               | NoImplicitParams
+               | NoFlexibleContexts
+               | NoFlexibleInstances
+               | NoEmptyDataDecls
+               | NoCPP
+               | NoKindSignatures
+               | NoBangPatterns
+               | NoTypeSynonymInstances
+               | NoTemplateHaskell
+               | NoForeignFunctionInterface
+               | NoArrows
+               | NoGenerics
+               | NoImplicitPrelude
+               | NoNamedFieldPuns
+               | NoPatternGuards
+               | NoGeneralizedNewtypeDeriving
+               | NoExtensibleRecords
+               | NoRestrictedTypeSynonyms
+               | NoHereDocuments
+               | NoMagicHash
+               | NoTypeFamilies
+               | NoStandaloneDeriving
+               | NoUnicodeSyntax
+               | NoUnliftedFFITypes
+               | NoInterruptibleFFI
+               | NoCApiFFI
+               | NoLiberalTypeSynonyms
+               | NoTypeOperators
+               | NoRecordWildCards
+               | NoRecordPuns
+               | NoDisambiguateRecordFields
+               | NoTraditionalRecordSyntax
+               | NoOverloadedStrings
+               | NoGADTs
+               | NoGADTSyntax
+               | NoMonoPatBinds
+               | NoRelaxedPolyRec
+               | NoExtendedDefaultRules
+               | NoUnboxedTuples
+               | NoDeriveDataTypeable
+               | NoDeriveGeneric
+               | NoDefaultSignatures
+               | NoInstanceSigs
+               | NoConstrainedClassMethods
+               | NoPackageImports
+               | NoImpredicativeTypes
+               | NoNewQualifiedOperators
+               | NoPostfixOperators
+               | NoQuasiQuotes
+               | NoTransformListComp
+               | NoMonadComprehensions
+               | NoViewPatterns
+               | NoXmlSyntax
+               | NoRegularPatterns
+               | NoTupleSections
+               | NoGHCForeignImportPrim
+               | NoNPlusKPatterns
+               | NoDoAndIfThenElse
+               | NoMultiWayIf
+               | NoLambdaCase
+               | NoRebindableSyntax
+               | NoExplicitForAll
+               | NoDatatypeContexts
+               | NoMonoLocalBinds
+               | NoDeriveFunctor
+               | NoDeriveTraversable
+               | NoDeriveFoldable
+               | NoNondecreasingIndentation
+               | NoSafeImports
+               | NoSafe
+               | NoTrustworthy
+               | NoUnsafe
+               | NoConstraintKinds
+               | NoPolyKinds
+               | NoDataKinds
+               | NoParallelArrays
+               | NoRoleAnnotations
+               | NoOverloadedLists
+               | NoEmptyCase
+               | NoAutoDeriveTypeable
+               | NoNegativeLiterals
+               | NoBinaryLiterals
+               | NoNumDecimals
+               | NoNullaryTypeClasses
+               | NoExplicitNamespaces
+               | NoAllowAmbiguousTypes
+               | NoJavaScriptFFI
+               | NoPatternSynonyms
+               | NoPartialTypeSignatures
+               | NoNamedWildCards
+               | NoDeriveAnyClass
                | UnknownExtension String
         deriving (Eq, Show, Read)
 
@@ -236,5 +342,111 @@ knownExtensions = [OverlappingInstances,
                    PatternSynonyms,
                    PartialTypeSignatures,
                    NamedWildCards,
-                   DeriveAnyClass
+                   DeriveAnyClass,
+                   NoOverlappingInstances,
+                   NoUndecidableInstances,
+                   NoIncoherentInstances,
+                   NoDoRec,
+                   NoRecursiveDo,
+                   NoParallelListComp,
+                   NoMultiParamTypeClasses,
+                   NoMonomorphismRestriction,
+                   NoFunctionalDependencies,
+                   NoRank2Types,
+                   NoRankNTypes,
+                   NoPolymorphicComponents,
+                   NoExistentialQuantification,
+                   NoScopedTypeVariables,
+                   NoPatternSignatures,
+                   NoImplicitParams,
+                   NoFlexibleContexts,
+                   NoFlexibleInstances,
+                   NoEmptyDataDecls,
+                   NoCPP,
+                   NoKindSignatures,
+                   NoBangPatterns,
+                   NoTypeSynonymInstances,
+                   NoTemplateHaskell,
+                   NoForeignFunctionInterface,
+                   NoArrows,
+                   NoGenerics,
+                   NoImplicitPrelude,
+                   NoNamedFieldPuns,
+                   NoPatternGuards,
+                   NoGeneralizedNewtypeDeriving,
+                   NoExtensibleRecords,
+                   NoRestrictedTypeSynonyms,
+                   NoHereDocuments,
+                   NoMagicHash,
+                   NoTypeFamilies,
+                   NoStandaloneDeriving,
+                   NoUnicodeSyntax,
+                   NoUnliftedFFITypes,
+                   NoInterruptibleFFI,
+                   NoCApiFFI,
+                   NoLiberalTypeSynonyms,
+                   NoTypeOperators,
+                   NoRecordWildCards,
+                   NoRecordPuns,
+                   NoDisambiguateRecordFields,
+                   NoTraditionalRecordSyntax,
+                   NoOverloadedStrings,
+                   NoGADTs,
+                   NoGADTSyntax,
+                   NoMonoPatBinds,
+                   NoRelaxedPolyRec,
+                   NoExtendedDefaultRules,
+                   NoUnboxedTuples,
+                   NoDeriveDataTypeable,
+                   NoDeriveGeneric,
+                   NoDefaultSignatures,
+                   NoInstanceSigs,
+                   NoConstrainedClassMethods,
+                   NoPackageImports,
+                   NoImpredicativeTypes,
+                   NoNewQualifiedOperators,
+                   NoPostfixOperators,
+                   NoQuasiQuotes,
+                   NoTransformListComp,
+                   NoMonadComprehensions,
+                   NoViewPatterns,
+                   NoXmlSyntax,
+                   NoRegularPatterns,
+                   NoTupleSections,
+                   NoGHCForeignImportPrim,
+                   NoNPlusKPatterns,
+                   NoDoAndIfThenElse,
+                   NoMultiWayIf,
+                   NoLambdaCase,
+                   NoRebindableSyntax,
+                   NoExplicitForAll,
+                   NoDatatypeContexts,
+                   NoMonoLocalBinds,
+                   NoDeriveFunctor,
+                   NoDeriveTraversable,
+                   NoDeriveFoldable,
+                   NoNondecreasingIndentation,
+                   NoSafeImports,
+                   NoSafe,
+                   NoTrustworthy,
+                   NoUnsafe,
+                   NoConstraintKinds,
+                   NoPolyKinds,
+                   NoDataKinds,
+                   NoParallelArrays,
+                   NoRoleAnnotations,
+                   NoOverloadedLists,
+                   NoEmptyCase,
+                   NoAutoDeriveTypeable,
+                   NoNegativeLiterals,
+                   NoBinaryLiterals,
+                   NoNumDecimals,
+                   NoNullaryTypeClasses,
+                   NoExplicitNamespaces,
+                   NoAllowAmbiguousTypes,
+                   NoJavaScriptFFI,
+                   NoPatternSynonyms,
+                   NoPartialTypeSignatures,
+                   NoNamedWildCards,
+                   NoDeriveAnyClass
                    ]
