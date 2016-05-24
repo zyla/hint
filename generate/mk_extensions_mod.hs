@@ -39,7 +39,7 @@ moduleDoc =
   ]
 
 known :: [Doc]
-known = map (text . show) knownExtensions
+known = map (text . show) [(minBound :: KnownExtension)..]
 
 unknown :: Doc
 unknown = text "UnknownExtension String"
