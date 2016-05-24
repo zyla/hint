@@ -1,3 +1,9 @@
+### 0.5.2
+
+* Add `runInterpreter` variant that takes a GHC libdir at runtime
+* Add missing negated extensions to the `Extension` type
+* Do not throw GHC warnings as errors
+
 ### 0.5.1
 
 * Expose `unsafeInterpret` in `Language.Haskell.Interpreter.Unsafe`
