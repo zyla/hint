@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 module Hint.Base (
     MonadInterpreter(..), RunGhc,
 
@@ -25,6 +26,7 @@ import Data.IORef
 import Data.Dynamic
 
 import qualified Hint.GHC as GHC
+import qualified Data.List
 
 import Hint.Extension
 
@@ -74,6 +76,13 @@ data InterpreterConfiguration = Conf {
 type InterpreterSession = SessionData ()
 
 instance Exception InterpreterError
+#if MIN_VERSION_base(4,8,0)
+  where
+    displayException (UnknownError err) = "UnknownError: " ++ err
+    displayException (WontCompile  es)  = unlines . Data.List.nub . map errMsg $ es
+    displayException (NotAllowed   err) = "NotAllowed: "   ++ err
+    displayException (GhcException err) = "GhcException: " ++ err
+#endif
 
 type RunGhc  m a =
     (forall n.(MonadIO n, MonadMask n, Functor n) => GHC.GhcT n a)
