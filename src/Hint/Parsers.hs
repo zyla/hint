@@ -7,6 +7,7 @@ import Hint.Base
 import Control.Monad.Trans (liftIO)
 
 import qualified Hint.GHC as GHC
+import qualified DynFlags as GHC
 
 data ParseResult = ParseOk | ParseError GHC.SrcSpan GHC.Message
 
@@ -50,7 +51,11 @@ failOnParseError parser expr = mayFail go
                              dflags <- runGhc GHC.getSessionDynFlags
                              let logger'  = logger dflags
                                  errStyle = GHC.defaultErrStyle dflags
-                             liftIO $ logger' GHC.SevError
+                             liftIO $ logger'
+#if __GLASGOW_HASKELL__ >= 800
+                                              GHC.NoReason
+#endif
+                                              GHC.SevError
                                               span
                                               errStyle
                                               err
