@@ -182,7 +182,11 @@ newSessionData a =
        }
 
 mkLogHandler :: IORef [GhcError] -> GhcErrLogger
+#if __GLASGOW_HASKELL__ >= 800
+mkLogHandler r df _ _ src style msg =
+#else
 mkLogHandler r df _ src style msg =
+#endif
     let renderErrMsg = GHC.showSDoc df
         errorEntry = mkGhcError renderErrMsg src style msg
     in modifyIORef r (errorEntry :)
