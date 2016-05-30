@@ -1,4 +1,3 @@
-{-# LANGUAGE CPP #-}
 module Hint.Base (
     MonadInterpreter(..), RunGhc,
 
@@ -26,7 +25,10 @@ import Data.IORef
 import Data.Dynamic
 
 import qualified Hint.GHC as GHC
+
+#if MIN_VERSION_base(4,8,0)
 import qualified Data.List
+#endif
 
 import Hint.Extension
 
