@@ -150,8 +150,10 @@ runInterpreterWithArgsLibdir args libdir action =
           newInterpreterSession = newSessionData ()
           cleanSession =
                do cleanPhantomModules
+#if __GLASGOW_HASKELL__ < 800
                   runGhc $ do dflags <- GHC.getSessionDynFlags
                               GHC.defaultCleanupHandler dflags (return ())
+#endif
 
 {-# NOINLINE uniqueToken #-}
 uniqueToken :: MVar ()
