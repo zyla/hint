@@ -7,7 +7,7 @@ module Hint.Base (
     InterpreterState(..), fromState, onState,
     InterpreterConfiguration(..),
 
-    runGhc1, runGhc2, runGhc3,
+    runGhc1, runGhc2,
 
     ModuleName, PhantomModule(..),
     findModule, moduleIsLoaded,
@@ -87,20 +87,28 @@ instance Exception InterpreterError
 #endif
 
 type RunGhc  m a =
+#if __GLASGOW_HASKELL__ >= 800
+    (forall n.(MonadIO n, MonadMask n) => GHC.GhcT n a)
+#else
     (forall n.(MonadIO n, MonadMask n, Functor n) => GHC.GhcT n a)
+#endif
  -> m a
 
 type RunGhc1 m a b =
+#if __GLASGOW_HASKELL__ >= 800
+    (forall n.(MonadIO n, MonadMask n) => a -> GHC.GhcT n b)
+#else
     (forall n.(MonadIO n, MonadMask n, Functor n) => a -> GHC.GhcT n b)
+#endif
  -> (a -> m b)
 
 type RunGhc2 m a b c =
+#if __GLASGOW_HASKELL__ >= 800
+    (forall n.(MonadIO n, MonadMask n) => a -> b -> GHC.GhcT n c)
+#else
     (forall n.(MonadIO n, MonadMask n, Functor n) => a -> b -> GHC.GhcT n c)
+#endif
  -> (a -> b -> m c)
-
-type RunGhc3 m a b c d =
-    (forall n.(MonadIO n, MonadMask n, Functor n) => a -> b -> c -> GHC.GhcT n d)
- -> (a -> b -> c -> m d)
 
 data SessionData a = SessionData {
                        internalState   :: IORef InterpreterState,
@@ -140,9 +148,6 @@ runGhc1 f a = runGhc (f a)
 
 runGhc2 :: MonadInterpreter m => RunGhc2 m a b c
 runGhc2 f a = runGhc1 (f a)
-
-runGhc3 :: MonadInterpreter m => RunGhc3 m a b c d
-runGhc3 f a = runGhc2 (f a)
 
 -- ================ Handling the interpreter state =================
 
