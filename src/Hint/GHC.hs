@@ -25,6 +25,10 @@ import DynFlags as X (xFlags, xopt, LogAction, FlagSpec(..))
 import DynFlags as X (xFlags, xopt, LogAction)
 #endif
 
+#if __GLASGOW_HASKELL__ >= 800
+import DynFlags as X (WarnReason(NoReason))
+#endif
+
 import PprTyThing as X (pprTypeForUser)
 import SrcLoc as X (mkRealSrcLoc)
 
