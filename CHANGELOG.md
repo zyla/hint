@@ -1,3 +1,8 @@
+### 0.6.0
+
+* Support for GHC 8.0
+* Add `displayException` to InterpreterError
+
 ### 0.5.2
 
 * Add `runInterpreter` variant that takes a GHC libdir at runtime
