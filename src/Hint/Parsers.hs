@@ -8,10 +8,6 @@ import Control.Monad.Trans (liftIO)
 
 import qualified Hint.GHC as GHC
 
-#if __GLASGOW_HASKELL__ >= 800
-import qualified DynFlags as GHC
-#endif
-
 data ParseResult = ParseOk | ParseError GHC.SrcSpan GHC.Message
 
 parseExpr :: MonadInterpreter m => String -> m ParseResult

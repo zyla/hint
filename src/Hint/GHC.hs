@@ -25,11 +25,19 @@ import DynFlags as X (xFlags, xopt, LogAction, FlagSpec(..))
 import DynFlags as X (xFlags, xopt, LogAction)
 #endif
 
+#if __GLASGOW_HASKELL__ >= 800
+import DynFlags as X (WarnReason(NoReason))
+#endif
+
 import PprTyThing as X (pprTypeForUser)
 import SrcLoc as X (mkRealSrcLoc)
 
 #if __GLASGOW_HASKELL__ >= 708
 import ConLike as X (ConLike(RealDataCon))
+#endif
+
+#if __GLASGOW_HASKELL__ >= 708
+import DynFlags as X (addWay', Way(..), dynamicGhc)
 #endif
 
 type Message = MsgDoc

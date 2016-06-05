@@ -16,7 +16,11 @@ supportedExtensions = map f GHC.xFlags
 #endif
 
 configureDynFlags :: GHC.DynFlags -> GHC.DynFlags
-configureDynFlags dflags = dflags{GHC.ghcMode    = GHC.CompManager,
+configureDynFlags dflags =
+#if __GLASGOW_HASKELL__ >= 708
+    (if GHC.dynamicGhc then GHC.addWay' GHC.WayDyn else id)
+#endif
+                           dflags{GHC.ghcMode    = GHC.CompManager,
                                   GHC.hscTarget  = GHC.HscInterpreted,
                                   GHC.ghcLink    = GHC.LinkInMemory,
                                   GHC.verbosity  = 0}
