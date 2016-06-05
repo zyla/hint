@@ -127,6 +127,18 @@ data Extension = OverlappingInstances
                | PartialTypeSignatures
                | NamedWildCards
                | DeriveAnyClass
+               | DeriveLift
+               | StaticPointers
+               | StrictData
+               | Strict
+               | ApplicativeDo
+               | DuplicateRecordFields
+               | TypeApplications
+               | TypeInType
+               | UndecidableSuperClasses
+               | MonadFailDesugaring
+               | TemplateHaskellQuotes
+               | OverloadedLabels
                | NoOverlappingInstances
                | NoUndecidableInstances
                | NoIncoherentInstances
@@ -233,6 +245,18 @@ data Extension = OverlappingInstances
                | NoPartialTypeSignatures
                | NoNamedWildCards
                | NoDeriveAnyClass
+               | NoDeriveLift
+               | NoStaticPointers
+               | NoStrictData
+               | NoStrict
+               | NoApplicativeDo
+               | NoDuplicateRecordFields
+               | NoTypeApplications
+               | NoTypeInType
+               | NoUndecidableSuperClasses
+               | NoMonadFailDesugaring
+               | NoTemplateHaskellQuotes
+               | NoOverloadedLabels
                | UnknownExtension String
         deriving (Eq, Show, Read)
 
@@ -343,6 +367,18 @@ knownExtensions = [OverlappingInstances,
                    PartialTypeSignatures,
                    NamedWildCards,
                    DeriveAnyClass,
+                   DeriveLift,
+                   StaticPointers,
+                   StrictData,
+                   Strict,
+                   ApplicativeDo,
+                   DuplicateRecordFields,
+                   TypeApplications,
+                   TypeInType,
+                   UndecidableSuperClasses,
+                   MonadFailDesugaring,
+                   TemplateHaskellQuotes,
+                   OverloadedLabels,
                    NoOverlappingInstances,
                    NoUndecidableInstances,
                    NoIncoherentInstances,
@@ -448,5 +484,17 @@ knownExtensions = [OverlappingInstances,
                    NoPatternSynonyms,
                    NoPartialTypeSignatures,
                    NoNamedWildCards,
-                   NoDeriveAnyClass
+                   NoDeriveAnyClass,
+                   NoDeriveLift,
+                   NoStaticPointers,
+                   NoStrictData,
+                   NoStrict,
+                   NoApplicativeDo,
+                   NoDuplicateRecordFields,
+                   NoTypeApplications,
+                   NoTypeInType,
+                   NoUndecidableSuperClasses,
+                   NoMonadFailDesugaring,
+                   NoTemplateHaskellQuotes,
+                   NoOverloadedLabels
                    ]
