@@ -209,7 +209,8 @@ test_normalize_type = TestCase "normalize_type" [mod_file] $ do
 
     where mod_text = unlines ["{-# LANGUAGE TypeFamilies #-}"
                              ,"module T where"
-                             ,"type family Foo x where Foo x = ()"]
+                             ,"type family Foo x"
+                             ,"type instance Foo x = ()"]
           mod_file = "TEST_NormalizeType.hs"
 
 tests :: [TestCase]
